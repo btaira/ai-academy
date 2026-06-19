@@ -14,17 +14,27 @@ All paths below are relative to the repo root (`ai-academy/`).
 
 ## Prerequisites
 
-Nothing to install — Playwright is already present in the global npm
-modules at `/opt/node22/lib/node_modules` (verified: `npm ls -g
---depth=0` lists `playwright@1.56.1`, and its Chromium binary launches
-out of the box). It is **not** a local project dependency (this repo
-has no `package.json` and no `node_modules/` — keep it that way; don't
-`npm install` anything into the repo).
+Nothing to install in this container — Playwright is already present
+in the global npm modules (verified: `npm ls -g --depth=0` lists
+`playwright@1.56.1`, and its Chromium binary launches out of the box).
+It is **not** a local project dependency (this repo has no
+`package.json` and no `node_modules/` — keep it that way; don't `npm
+install` anything into the repo).
 
 The driver is CommonJS (`.cjs`) and resolves `playwright` via
 `NODE_PATH`, because `NODE_PATH` is **not** honored for ESM `import`
 in Node — only for `require()`. That's the reason it's `.cjs`, not
-`.mjs`.
+`.mjs`. Don't hardcode the global modules path (it was
+`/opt/node22/lib/node_modules` in this container, but that's an
+artifact of this image, not a guarantee) — resolve it with `npm root
+-g` instead, as the commands below do, so the skill keeps working on
+a machine with Node installed at a different prefix (nvm, Homebrew,
+a different container image, etc).
+
+On a machine where Playwright isn't installed globally, install it
+once with `npm install -g playwright && npx -y playwright install
+--with-deps chromium` (not verified in this session — this container
+already had it).
 
 ## Build
 
@@ -36,7 +46,7 @@ editing panel content: `node scripts/validate.js`.)
 Pipe newline-separated commands to the driver over stdin:
 
 ```bash
-NODE_PATH=/opt/node22/lib/node_modules node .claude/skills/run-ai-academy/driver.cjs <<'EOF'
+NODE_PATH="$(npm root -g)" node .claude/skills/run-ai-academy/driver.cjs <<'EOF'
 nav
 wait 400
 screenshot home
@@ -115,8 +125,9 @@ thing to one.
 ## Troubleshooting
 
 - **`Cannot find module 'playwright'`**: you ran the driver without
-  `NODE_PATH=/opt/node22/lib/node_modules` in the environment, or you
-  ran it with `node --experimental-...` against an `.mjs` file. Use
-  the exact invocation in "Run (agent path)".
+  `NODE_PATH="$(npm root -g)"` in the environment, or you ran it with
+  `node --experimental-...` against an `.mjs` file, or this machine
+  genuinely doesn't have Playwright installed globally yet (see
+  Prerequisites). Use the exact invocation in "Run (agent path)".
 - **`h1` prints content from the wrong course/module**: you queried
   `.panel h1` without `:visible` — see Gotchas above.

@@ -39,6 +39,16 @@ The platform is **data-driven**: adding a course means adding an entry to the `C
 See `docs/architecture.md` for the full technical walkthrough.
 See `docs/adding-a-course.md` to add new courses.
 
+## Browser & Device Support
+
+Plain HTML/CSS/JS, no storage APIs, includes a `viewport` meta tag — it
+runs in any modern browser with no install. Verified responsive down to
+tablet width (768px). Below that there's a single breakpoint
+(`@media (max-width: 740px)`) that narrows the sidebar to 210px rather
+than collapsing it into a menu, so on narrow phone screens (≤~430px
+portrait) the content column gets cramped. Landscape phone widths and
+anything tablet-sized or larger look as intended.
+
 ## Development with Claude Code
 
 ```bash
@@ -48,6 +58,11 @@ node scripts/validate.js
 # See stats
 node scripts/build-stats.js
 ```
+
+To see a change rendered without a real browser (e.g. in this
+container), use the `run-ai-academy` skill — drives the file headlessly
+via Playwright and takes screenshots. See
+`.claude/skills/run-ai-academy/SKILL.md`.
 
 Read `CLAUDE.md` before starting any session — it's the AI's briefing document.
 
