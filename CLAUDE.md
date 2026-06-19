@@ -1,8 +1,10 @@
-# AI Engineering Academy — Claude Code Context
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Brief
 A single-file HTML interactive training platform covering AI engineering topics.
-Built iteratively with Claude. 11 courses, 148 modules, ~735KB.
+Built iteratively with Claude. 11 courses, 148 modules, ~710KB.
 The entire app — data, UI, logic, styles — lives in one file: `src/ai-academy.html`.
 
 ## Tech Stack
