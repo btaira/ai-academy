@@ -3171,17 +3171,37 @@ $ research-agent --mcp-server --port 8001
   <h1>Frameworks <span class="hl">&amp; SDKs</span></h1>
   <p class="lead">Building agents from scratch is possible but slow. These frameworks provide tested abstractions for the agent loop, memory, tool integration, and multi-agent coordination.</p>
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab(this,'ft1','f-anthropic')">Anthropic SDK</button>
+    <button class="tab-btn active" onclick="switchTab(this,'ft1','f-claudeagentsdk')">Claude Agent SDK</button>
+    <button class="tab-btn" onclick="switchTab(this,'ft1','f-anthropic')">Anthropic Client SDK</button>
     <button class="tab-btn" onclick="switchTab(this,'ft1','f-langgraph')">LangGraph</button>
     <button class="tab-btn" onclick="switchTab(this,'ft1','f-openai')">OpenAI Agents</button>
     <button class="tab-btn" onclick="switchTab(this,'ft1','f-google')">Google ADK</button>
     <button class="tab-btn" onclick="switchTab(this,'ft1','f-compare')">Comparison</button>
   </div>
   <div id="ft1">
-    <div class="tab-content active" id="f-anthropic">
-      <h2>Anthropic SDK (Python)</h2>
-      <p style="color:var(--muted2);margin-bottom:14px;">The Anthropic SDK provides a low-level but flexible foundation. Claude's tool use and extended thinking are built-in. Pairs naturally with MCP via the MCP SDK for tool connections.</p>
-      <div class="code-block"><span class="code-label">// SIMPLE ANTHROPIC TOOL-USE AGENT</span><span class="k">import</span> anthropic
+    <div class="tab-content active" id="f-claudeagentsdk">
+      <h2>Claude Agent SDK</h2>
+      <p style="color:var(--muted2);margin-bottom:14px;">The Claude Agent SDK (<code class="inline">claude-agent-sdk</code> for Python, <code class="inline">@anthropic-ai/claude-agent-sdk</code> for TypeScript) is a distinct, higher-level product from the raw Anthropic Client SDK in the next tab. It is the same engine that powers Claude Code, exposed as a library: the agent loop, a built-in tool set (Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch), permission modes, hooks, and subagents are all handled for you — you describe the task and the policy, not the loop.</p>
+      <div class="code-block"><span class="code-label">// CLAUDE AGENT SDK — BUILT-IN AGENT LOOP, NO MANUAL while-LOOP</span><span class="k">from</span> <span class="n">claude_agent_sdk</span> <span class="k">import</span> query, ClaudeAgentOptions
+
+options = ClaudeAgentOptions(
+    model=<span class="s">"claude-opus-4-8"</span>,
+    allowed_tools=[<span class="s">"Read"</span>, <span class="s">"Edit"</span>, <span class="s">"Bash"</span>, <span class="s">"WebSearch"</span>],
+    permission_mode=<span class="s">"acceptEdits"</span>,
+)
+
+<span class="k">async for</span> message <span class="k">in</span> query(
+    prompt=<span class="s">"Find the failing test in this repo, fix it, and re-run the suite"</span>,
+    options=options,
+):
+    print(message)</div>
+      <div class="info-box green"><strong>Why this matters:</strong> Before the Claude Agent SDK existed, "building a Claude agent" meant hand-rolling the <code class="inline">while True</code> tool loop shown in the Anthropic Client SDK tab. The Agent SDK now owns that loop — plus permissions, hooks (PreToolUse/PostToolUse/Stop), and subagents via <code class="inline">AgentDefinition</code> — so most new Claude-based agents should start here rather than reimplementing the loop manually.</div>
+      <ul class="checklist"><li>Built-in tool set: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, AskUserQuestion</li><li>Hooks for PreToolUse, PostToolUse, Stop, SessionStart, SessionEnd, UserPromptSubmit</li><li>Subagents: define an <code class="inline">AgentDefinition</code> and dispatch via the Agent tool</li><li>Native MCP server support, plus session resume/fork</li><li>This is the same engine Claude Code runs on — not a wrapper around it</li></ul>
+    </div>
+    <div class="tab-content" id="f-anthropic">
+      <h2>Anthropic Client SDK (Python) — manual loop</h2>
+      <p style="color:var(--muted2);margin-bottom:14px;">The raw Anthropic Client SDK (<code class="inline">anthropic</code> package) is the lowest-level entry point: you call <code class="inline">messages.create</code> directly and write the tool-dispatch loop yourself. Use this when you need full control over every step, or when building a custom runtime the Claude Agent SDK's built-in tools don't fit. Pairs naturally with MCP via the MCP SDK for tool connections.</p>
+      <div class="code-block"><span class="code-label">// SIMPLE ANTHROPIC TOOL-USE AGENT — HAND-ROLLED LOOP</span><span class="k">import</span> anthropic
 
 client = anthropic.Anthropic()
 tools = [
@@ -3192,7 +3212,7 @@ tools = [
 messages = [{<span class="n">"role"</span>:<span class="s">"user"</span>,<span class="n">"content"</span>:<span class="s">"What are the top AI news stories today?"</span>}]
 
 <span class="k">while</span> <span class="v">True</span>:
-    response = client.messages.create(model=<span class="s">"claude-opus-4-6"</span>,max_tokens=<span class="v">4096</span>,
+    response = client.messages.create(model=<span class="s">"claude-opus-4-8"</span>,max_tokens=<span class="v">4096</span>,
                                       tools=tools,messages=messages)
     <span class="k">if</span> response.stop_reason == <span class="s">"end_turn"</span>: <span class="k">break</span>
     <span class="k">if</span> response.stop_reason == <span class="s">"tool_use"</span>:
@@ -3230,7 +3250,8 @@ print(result.final_output)</div>
       <h2>Framework Comparison</h2>
       <table class="data-table">
         <tr><th>Framework</th><th>Best for</th><th>MCP</th><th>Multi-agent</th><th>Open source</th></tr>
-        <tr><td><span class="hl-amber">Anthropic SDK</span></td><td>Full control, Claude-native</td><td class="chk">✓ via MCP SDK</td><td class="partial">△ DIY</td><td class="chk">✓</td></tr>
+        <tr><td><span class="hl-amber">Claude Agent SDK</span></td><td>Built-in agent loop, Claude-native, Claude Code's engine</td><td class="chk">✓ native</td><td class="chk">✓ subagents</td><td class="chk">✓</td></tr>
+        <tr><td><span class="hl-amber">Anthropic Client SDK</span></td><td>Full manual control, Claude-native</td><td class="chk">✓ via MCP SDK</td><td class="partial">△ DIY</td><td class="chk">✓</td></tr>
         <tr><td><span class="hl">LangGraph</span></td><td>Complex workflows, any LLM</td><td class="chk">✓ native</td><td class="chk">✓ built-in</td><td class="chk">✓</td></tr>
         <tr><td><span class="hl-green">OpenAI Agents</span></td><td>Clean API, quick start</td><td class="chk">✓ native</td><td class="chk">✓ handoffs</td><td class="chk">✓</td></tr>
         <tr><td><span class="hl-violet">Google ADK</span></td><td>Google ecosystem, Vertex AI</td><td class="chk">✓ native</td><td class="chk">✓ A2A</td><td class="chk">✓</td></tr>
@@ -3265,6 +3286,7 @@ print(result.final_output)</div>
     <div class="card"><div class="card-icon">🔢</div><div class="card-title">Steps to Completion</div><div class="card-body">How many tool calls and reasoning steps did it take? Fewer steps = more efficient. High step counts often indicate reasoning loops or uncertainty.</div><span class="tag amber">efficiency</span></div>
     <div class="card"><div class="card-icon">💰</div><div class="card-title">Cost per Task</div><div class="card-body">Total tokens consumed × price. Track by task type to identify which workflows are economically viable at scale.</div><span class="tag violet">cost</span></div>
     <div class="card"><div class="card-icon">❌</div><div class="card-title">Failure Mode Analysis</div><div class="card-body">Categorize failures: tool errors, reasoning errors, goal drift, hallucinated tool calls, context overflow. Each has different fixes.</div><span class="tag red">quality</span></div>
+    <div class="card"><div class="card-icon">🗺️</div><div class="card-title">Plan Quality</div><div class="card-body">A newer evaluation dimension: judge the agent's plan itself, not just the outcome — does it decompose the task sensibly before executing, and does it revise the plan when new information contradicts it?</div><span class="tag amber">planning</span></div>
   </div>
   <h2>Tracing Agent Runs</h2>
   <div class="code-block"><span class="code-label">// STRUCTURED AGENT TRACE</span>{
@@ -3289,6 +3311,7 @@ print(result.final_output)</div>
     <div class="card"><div class="card-icon">📈</div><div class="card-title">Arize Phoenix</div><div class="card-body">Open-source LLM observability. Supports traces from LangChain, LlamaIndex, and custom agents via OpenTelemetry.</div><span class="tag green">open source</span></div>
     <div class="card"><div class="card-icon">🧪</div><div class="card-title">Braintrust</div><div class="card-body">End-to-end eval platform. Define test cases, run evals against agent runs, track regression over model versions.</div><span class="tag amber">evals</span></div>
     <div class="card"><div class="card-icon">🌉</div><div class="card-title">Langfuse</div><div class="card-body">Open-source LLM engineering platform. Self-hostable tracing + eval + prompt management. Good for on-premise requirements.</div><span class="tag violet">self-host</span></div>
+    <div class="card"><div class="card-icon">📊</div><div class="card-title">MLflow</div><div class="card-body">General-purpose ML platform with a mature tracing + eval module for agents. Widely adopted where teams already run MLflow for model tracking, so agent observability lands in the same place.</div><span class="tag green">open source</span></div>
   </div>
 </div>`,
 
@@ -3335,11 +3358,12 @@ print(result.final_output)</div>
 'agents:impl': () => `<div class="panel" id="panel-agents-impl">
   <div class="breadcrumb">Agents › <span class="bc-accent">Implementation</span> › Host Setup Guides</div>
   <h1>Agentic AI <span class="hl">Host Setup</span> Guides</h1>
-  <p class="lead">How to activate agentic AI capabilities in the 10 most widely used platforms. Each guide covers enabling agent mode, connecting tools, and running your first agentic task.</p>
+  <p class="lead">How to activate agentic AI capabilities in the 11 most widely used platforms. Each guide covers enabling agent mode, connecting tools, and running your first agentic task.</p>
 
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab(this,'ai1','ai-claudecode')">Claude Code</button>
-    <button class="tab-btn" onclick="switchTab(this,'ai1','ai-anthropicsdk')">Anthropic SDK</button>
+    <button class="tab-btn" onclick="switchTab(this,'ai1','ai-claudeagentsdk')">Claude Agent SDK</button>
+    <button class="tab-btn" onclick="switchTab(this,'ai1','ai-anthropicsdk')">Anthropic Client SDK</button>
     <button class="tab-btn" onclick="switchTab(this,'ai1','ai-langgraph')">LangGraph</button>
     <button class="tab-btn" onclick="switchTab(this,'ai1','ai-openaiagents')">OpenAI Agents</button>
     <button class="tab-btn" onclick="switchTab(this,'ai1','ai-googleadk')">Google ADK</button>
@@ -3414,14 +3438,69 @@ claude -p "Query the production DB for slow queries and file a report" \
       <div class="info-box green"><strong>Safety tip:</strong> Start with <code class="inline">--allowedTools "Read,Bash(npm test)"</code> to limit scope on first runs. Expand permissions once you trust the agent's behavior on your codebase.</div>
     </div>
 
-    <!-- ── 2. ANTHROPIC SDK ── -->
+    <!-- ── 2. CLAUDE AGENT SDK ── -->
+    <div class="tab-content" id="ai-claudeagentsdk">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+        <div class="hcc-icon" style="background:var(--accent-dim);font-size:22px;">🧠</div>
+        <div><div style="font-family:var(--display);font-weight:700;font-size:17px;">Claude Agent SDK</div>
+        <div style="font-size:12px;color:var(--muted);font-family:var(--mono);">Anthropic · Python / TypeScript · built-in agent loop · same engine as Claude Code</div></div>
+      </div>
+      <div class="info-box amber"><strong>Best for:</strong> Programmatic agents that need Claude Code's built-in tool set (Read/Write/Edit/Bash/Glob/Grep/WebSearch/WebFetch), permission system, and hooks — without hand-rolling the tool-dispatch loop. This is a distinct, higher-level product from the raw Anthropic Client SDK in the next tab.</div>
+
+      <h2>Step 1 — Install</h2>
+      <div class="code-block"><span class="code-label">// PYTHON</span>pip install claude-agent-sdk
+export ANTHROPIC_API_KEY=sk-ant-...
+
+<span class="c"># or TypeScript:</span>
+<span class="c"># npm install @anthropic-ai/claude-agent-sdk</span></div>
+
+      <h2>Step 2 — Run Your First Agentic Task</h2>
+      <div class="code-block"><span class="code-label">// query() — STREAMS MESSAGES, LOOP IS BUILT IN</span><span class="k">from</span> <span class="n">claude_agent_sdk</span> <span class="k">import</span> query, ClaudeAgentOptions
+
+options = ClaudeAgentOptions(
+    model=<span class="s">"claude-opus-4-8"</span>,
+    allowed_tools=[<span class="s">"Read"</span>, <span class="s">"Edit"</span>, <span class="s">"Bash"</span>, <span class="s">"WebSearch"</span>],
+    permission_mode=<span class="s">"acceptEdits"</span>,
+)
+
+<span class="k">async for</span> message <span class="k">in</span> query(
+    prompt=<span class="s">"Audit src/ for unused exports and delete them"</span>,
+    options=options,
+):
+    print(message)</div>
+
+      <h2>Step 3 — Add Hooks for Custom Policy</h2>
+      <div class="code-block"><span class="code-label">// HOOK INTO TOOL CALLS — e.g. block dangerous bash commands</span><span class="k">async def</span> <span class="fn">pre_tool_use</span>(tool_name, tool_input):
+    <span class="k">if</span> tool_name == <span class="s">"Bash"</span> <span class="k">and</span> <span class="s">"rm -rf"</span> <span class="k">in</span> tool_input.get(<span class="s">"command"</span>, <span class="s">""</span>):
+        <span class="k">return</span> {<span class="n">"decision"</span>: <span class="s">"block"</span>, <span class="n">"reason"</span>: <span class="s">"Destructive command blocked"</span>}
+    <span class="k">return</span> {<span class="n">"decision"</span>: <span class="s">"allow"</span>}
+
+options = ClaudeAgentOptions(
+    model=<span class="s">"claude-opus-4-8"</span>,
+    allowed_tools=[<span class="s">"Bash"</span>],
+    hooks={<span class="s">"PreToolUse"</span>: [pre_tool_use]},
+)</div>
+
+      <h2>Step 4 — Define a Subagent</h2>
+      <div class="code-block"><span class="code-label">// AgentDefinition — DELEGATE A SCOPED SUB-TASK</span><span class="k">from</span> <span class="n">claude_agent_sdk</span> <span class="k">import</span> AgentDefinition
+
+reviewer = AgentDefinition(
+    name=<span class="s">"code-reviewer"</span>,
+    description=<span class="s">"Reviews a diff for bugs and style issues"</span>,
+    allowed_tools=[<span class="s">"Read"</span>, <span class="s">"Grep"</span>],
+)
+<span class="c"># Dispatched via the Agent tool from the main session — runs in its own context window</span></div>
+      <div class="info-box green"><strong>Tip:</strong> Use the Claude Agent SDK instead of the raw Client SDK whenever the built-in tool set (file ops, Bash, web search/fetch) covers your use case — it removes an entire class of tool-loop bugs and gets permissions/hooks/subagents for free.</div>
+    </div>
+
+    <!-- ── 3. ANTHROPIC SDK ── -->
     <div class="tab-content" id="ai-anthropicsdk">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
         <div class="hcc-icon" style="background:var(--accent-dim);font-size:22px;">🐍</div>
-        <div><div style="font-family:var(--display);font-weight:700;font-size:17px;">Anthropic Python SDK</div>
-        <div style="font-size:12px;color:var(--muted);font-family:var(--mono);">Anthropic · Python · programmatic · full tool-use control</div></div>
+        <div><div style="font-family:var(--display);font-weight:700;font-size:17px;">Anthropic Client SDK (Python)</div>
+        <div style="font-size:12px;color:var(--muted);font-family:var(--mono);">Anthropic · Python · programmatic · full manual tool-use control</div></div>
       </div>
-      <div class="info-box amber"><strong>Best for:</strong> Building custom agents from scratch with complete control over the agent loop, tool routing, and memory. The lowest-level entry point — no framework magic, just the raw API.</div>
+      <div class="info-box amber"><strong>Best for:</strong> Building custom agents from scratch with complete control over the agent loop, tool routing, and memory. The lowest-level entry point — no framework magic, just the raw API. If the Claude Agent SDK's built-in tool set already covers your case, prefer that tab instead — you'll write less plumbing.</div>
 
       <h2>Step 1 — Install &amp; Configure</h2>
       <div class="code-block"><span class="code-label">// SETUP</span>pip install anthropic
@@ -3469,7 +3548,7 @@ messages = [{<span class="n">"role"</span>: <span class="s">"user"</span>, <span
 
 <span class="k">while</span> <span class="v">True</span>:
     resp = client.messages.create(
-        model=<span class="s">"claude-opus-4-6"</span>, max_tokens=<span class="v">8096</span>,
+        model=<span class="s">"claude-opus-4-8"</span>, max_tokens=<span class="v">8096</span>,
         tools=tools, messages=messages
     )
     messages.append({<span class="n">"role"</span>: <span class="s">"assistant"</span>, <span class="n">"content"</span>: resp.content})
@@ -3490,7 +3569,7 @@ messages = [{<span class="n">"role"</span>: <span class="s">"user"</span>, <span
 
       <h2>Step 4 — Enable Extended Thinking (optional)</h2>
       <div class="code-block"><span class="code-label">// EXTENDED THINKING — for complex reasoning tasks</span>resp = client.messages.create(
-    model=<span class="s">"claude-opus-4-6"</span>,
+    model=<span class="s">"claude-opus-4-8"</span>,
     max_tokens=<span class="v">16000</span>,
     thinking={<span class="n">"type"</span>: <span class="s">"enabled"</span>, <span class="n">"budget_tokens"</span>: <span class="v">10000</span>},
     tools=tools, messages=messages
@@ -3792,7 +3871,7 @@ researcher = Agent(
     goal=<span class="s">"Find accurate, comprehensive information on the given topic"</span>,
     backstory=<span class="s">"Expert researcher with 10 years finding actionable insights"</span>,
     tools=[web_search],
-    llm=<span class="s">"claude-opus-4-6"</span>,  <span class="c"># Claude agents!</span>
+    llm=<span class="s">"claude-opus-4-8"</span>,  <span class="c"># Claude agents!</span>
     verbose=<span class="v">True</span>
 )
 
@@ -3801,7 +3880,7 @@ writer = Agent(
     goal=<span class="s">"Write clear, engaging reports from research findings"</span>,
     backstory=<span class="s">"Published author specializing in AI and technology"</span>,
     tools=[file_write],
-    llm=<span class="s">"claude-opus-4-6"</span>
+    llm=<span class="s">"claude-opus-4-8"</span>
 )
 
 research_task = Task(
@@ -3927,7 +4006,8 @@ result = crew.kickoff()</div>
   <table class="data-table">
     <tr><th>Host</th><th>Best for</th><th>Code required</th><th>Multi-agent</th><th>MCP support</th></tr>
     <tr><td><span class="hl-amber">Claude Code</span></td><td>Agentic coding, CLI automation</td><td class="chk">Minimal</td><td class="partial">△ via --mcp-server</td><td class="chk">✓ native</td></tr>
-    <tr><td><span class="hl-amber">Anthropic SDK</span></td><td>Custom agents, full control</td><td class="chk">Yes (Python)</td><td class="partial">△ DIY</td><td class="chk">✓ via MCP SDK</td></tr>
+    <tr><td><span class="hl-amber">Claude Agent SDK</span></td><td>Built-in loop, Claude Code's engine as a library</td><td class="chk">Yes (Python/TS)</td><td class="chk">✓ subagents</td><td class="chk">✓ native</td></tr>
+    <tr><td><span class="hl-amber">Anthropic Client SDK</span></td><td>Custom agents, full manual control</td><td class="chk">Yes (Python)</td><td class="partial">△ DIY</td><td class="chk">✓ via MCP SDK</td></tr>
     <tr><td><span class="hl-green">LangGraph</span></td><td>Complex workflows, HITL, any LLM</td><td class="chk">Yes (Python/TS)</td><td class="chk">✓ graphs</td><td class="chk">✓ adapters</td></tr>
     <tr><td><span class="hl-green">OpenAI Agents</span></td><td>Clean API, fast start</td><td class="chk">Yes (Python)</td><td class="chk">✓ handoffs</td><td class="chk">✓ native</td></tr>
     <tr><td><span class="hl-green">Google ADK</span></td><td>Google ecosystem, Vertex AI</td><td class="chk">Yes (Python)</td><td class="chk">✓ A2A</td><td class="chk">✓ native</td></tr>
