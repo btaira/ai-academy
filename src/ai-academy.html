@@ -1446,10 +1446,13 @@ const COURSES = [
     { q: "What is 'vibe coding'?", options: ["Coding without a computer","Building software by describing intent to an AI in natural language and iterating on what it generates, often without reading every line","A type of music","A testing framework"], correct: 1, explanation: "Vibe coding describes the AI-first workflow of expressing intent in natural language and letting the model generate and revise code, steering by results and feel rather than writing every line by hand. It's fast and powerful \u2014 but without discipline it accumulates bloat and entropy quickly." },
     { q: "Why do vibe-coded projects tend to accumulate bloat faster than hand-written ones?", options: ["AI writes slower code","Generation is cheap and fast, so unused code, duplicate helpers, dead files, and redundant docs pile up faster than they're cleaned \u2014 and the human may not be reading every addition","AI never makes mistakes","Bloat is impossible in AI projects"], correct: 1, explanation: "Because the marginal cost of generating more code or docs is near zero, AI workflows produce volume quickly. Duplicates, abandoned experiments, and over-engineered abstractions accumulate \u2014 especially when the human isn't reviewing every line \u2014 unless you actively prune." },
     { q: "What is the purpose of a CLAUDE.md (or equivalent context file) in a project?", options: ["To store passwords","To give the AI persistent project context \u2014 conventions, architecture, constraints, and commands \u2014 so it behaves consistently across sessions","To replace the README for users","To configure the compiler"], correct: 1, explanation: "A context file like CLAUDE.md is a persistent, version-controlled brief for the AI: project structure, coding conventions, key commands, and do/don't rules. It keeps the model consistent across sessions and prevents it from re-deriving (and re-deciding) conventions every time." },
+    { q: "You want one context file that works across Claude Code, Cursor, and Copilot. What should you do?", options: ["Write only a CLAUDE.md \u2014 every tool reads it", "Write your conventions in AGENTS.md (the cross-tool standard) and have Claude Code import it from CLAUDE.md with @AGENTS.md", "Write the same content five times, once per tool's expected filename", "It's impossible; pick one tool"], correct: 1, explanation: "AGENTS.md has become the broadly-supported cross-tool standard, read natively by Cursor, Copilot, Aider, Devin, and others \u2014 but Claude Code specifically still reads CLAUDE.md, not AGENTS.md, natively. The fix is to put your real conventions in AGENTS.md once and add a CLAUDE.md that imports it with @AGENTS.md (or, as a fallback on POSIX systems, symlink CLAUDE.md to AGENTS.md), so every tool stays in sync from one source of truth." },
+    { q: "What's the difference between a rule written in your context file and a rule enforced by a Claude Code hook?", options: ["There is no difference", "A context-file rule is prose the model usually follows; a hook runs deterministic code that executes regardless of what the model decides, so it can't be skipped", "Hooks are slower and less reliable than prose rules", "Context files can only contain code, hooks can only contain prose"], correct: 1, explanation: "Context files are strong suggestions \u2014 well-written ones are followed most of the time, but they rely on the model reading and prioritizing them correctly. Hooks (PreToolUse, PostToolUse, etc.) execute real code at defined lifecycle points and run no matter what, which is why the handful of rules that must never be broken \u2014 never commit secrets, never skip tests before stopping \u2014 should be backed by a hook, not just a line in a context file." },
     { q: "Why is a clear, conventional directory structure especially important in AI-assisted projects?", options: ["It makes the repo look nice","It helps both you and the AI locate code predictably, reduces duplicate implementations, and lets the AI load only relevant context","Directory structure doesn't matter","It speeds up the CPU"], correct: 1, explanation: "A predictable structure (e.g., src/, tests/, docs/) lets the AI find and place code where it belongs instead of inventing new locations or duplicating logic. It also enables loading only the relevant directory into context, keeping the window focused." },
     { q: "What is a good practice to prevent the AI from creating duplicate or redundant code?", options: ["Never let the AI write code","Point it at existing modules and explicitly instruct it to reuse or extend them; periodically ask it to find and consolidate duplication","Delete the whole project weekly","Use a bigger model"], correct: 1, explanation: "Proactively tell the AI which existing utilities to reuse, and run periodic 'find duplicated logic and consolidate it' passes. Without this, an AI asked to add a feature will often write a fresh helper rather than discovering the one that already exists." },
     { q: "What is the recommended approach to AI-generated documentation to avoid doc bloat?", options: ["Generate a new doc for every change","Maintain a small set of living documents (README, architecture, decisions) and update them \u2014 rather than spawning many overlapping, stale files","Never write docs","Put all docs in code comments only"], correct: 1, explanation: "AI happily generates a new markdown file per request, producing piles of overlapping, quickly-stale docs. Instead, keep a few canonical living documents and instruct the AI to update them in place. Fewer, current docs beat many redundant ones." },
     { q: "Why should you commit small, frequent, well-described changes in a vibe-coded project?", options: ["To inflate the commit count","So you can review what the AI changed, isolate problems, and roll back cleanly \u2014 large opaque AI commits are hard to audit and revert","Git requires it","It makes the AI faster"], correct: 1, explanation: "Small, scoped commits with clear messages make AI-generated changes reviewable and reversible. A giant 'AI built the feature' commit mixing dozens of files is nearly impossible to audit or partially undo when something breaks." },
+    { q: "Why is reviewing every diff before committing especially important in AI-assisted projects?", options: ["It isn't \u2014 AI code never has security issues", "Beyond catching dead code and drift, AI-assisted commits have been found to expose secrets like API keys at more than twice the rate of human-only commits", "It's purely a style preference", "It only matters for open-source projects"], correct: 1, explanation: "AI assistants will readily hardcode a key or token they encounter (e.g., from a pasted .env or an error message) to make an example 'just work.' Measured data on AI-assisted commits shows secret exposure at over twice the rate of human-only commits, which makes the pre-commit diff review a security control, not just a tidiness habit." },
     { q: "What is a healthy way to handle AI-generated experimental code and one-off artifacts?", options: ["Keep everything forever just in case","Quarantine experiments (e.g., a scratch/ or experiments/ dir, gitignored or clearly marked) and delete them once their lesson is captured","Commit them to main immediately","Email them to yourself"], correct: 1, explanation: "Experiments, throwaway scripts, and generated artifacts should live in a clearly-marked, often gitignored area and be deleted once you've extracted what you needed. Letting them mingle with production code is a primary source of artifact bloat and confusion." },
   ],
 },
@@ -7559,6 +7562,7 @@ For deep sub-tasks:
   <h1>The <span class="hl">Bloat Problem</span></h1>
   <p class="lead">Bloat is the defining failure mode of AI-assisted development. Because generation is cheap and fast, projects accumulate dead code, redundant helpers, stale docs, and forgotten artifacts far faster than any human-written project. Left unmanaged, this entropy kills velocity — eventually making the project harder to work with than if it had been written by hand.</p>
   <div class="info-box red"><strong>The core dynamic:</strong> The marginal cost of the AI generating 50 more lines is near zero. So it does — even when 30 of those lines duplicate existing logic. You don't notice because you're not reading every line. Weeks later, the codebase has three versions of the same utility function and nobody knows which is canonical.</div>
+  <div class="info-box amber"><strong>This isn't anecdotal — it's measured.</strong> Industry analysis of AI-accelerated codebases in 2026 found code duplication up roughly 48% in repos with heavy AI authorship, refactoring activity down about 60% over the same period (the cleanup isn't keeping pace with the generation), and a majority of organizations expecting technical debt to reach moderate-to-high severity in 2026, with AI-assisted development cited as a primary driver. The dynamic this course teaches you to counter is a documented industry-wide trend, not a hypothetical.</div>
   <h2>The Three Bloat Types</h2>
   <div class="card-grid">
     <div class="card"><div class="card-icon">🧟</div><div class="card-title">Code Bloat</div><div class="card-body">Dead functions, duplicate helpers, abandoned experiments, overly-abstracted scaffolding the AI added "just in case." It compiles, it passes lint, it does nothing useful.</div><span class="tag red">code</span></div>
@@ -7589,6 +7593,8 @@ For deep sub-tasks:
   <div class="info-box amber"><strong>You don't have to read every line — but you must read some.</strong> The areas that warrant careful reading: anything touching auth or security, data persistence logic, anything the AI adds to an existing complex module, and any code that touches a user-visible behavior. A quick scan of what changed each commit is a minimum discipline. "Accept all" is a debt spiral.</div>
   <h2>The Rule of Thumb</h2>
   <div class="info-box"><strong>If you wouldn't be comfortable explaining this code to a colleague, it's not ready to commit.</strong> That discomfort is the signal to read it, understand it, or simplify it before it becomes someone else's mystery — including future-you.</div>
+  <h2>Prose Rules vs. Enforced Rules</h2>
+  <div class="info-box amber"><strong>Know the difference between a convention you've written down and a convention you've enforced.</strong> A rule in your context file ("never commit .env", "always run lint before stopping") is a strong suggestion the model usually follows — but it's prose, and prose can be missed under a long context or a rushed session. Claude Code's hooks (PreToolUse, PostToolUse, etc.) run real, deterministic code that executes regardless of what the model "decides." For the handful of rules that must never be violated — secrets never committed, tests must pass before a session ends, no edits to generated files — back the prose rule with a hook. Reserve hooks for the few rules that truly can't be skipped; everything else stays as a documented convention you and the AI both read.</div>
 </div>`,
 
 'vibe:directory': () => `<div class="panel" id="panel-vibe-directory">
@@ -7639,15 +7645,63 @@ For deep sub-tasks:
   shared/                 <span class="c"># still ONE shared utilities dir</span>
   <span class="c"># Everything for a feature lives together — easier to load</span>
   <span class="c"># a single feature into AI context cleanly.</span></div>
+  <h2 style="margin-top:28px;">Exercise: Audit This Directory Structure</h2>
+  <div class="info-box amber"><strong>Hands-on (10 minutes).</strong> A teammate's vibe-coded project looks like this after six weeks. Find every structural problem before reading the answer.</div>
+  <div class="code-block"><span class="code-label">// REAL EXAMPLE — SIX WEEKS OF UNCURATED AI SESSIONS</span>project/
+  src/
+    components/
+    utils/                 <span class="c"># shared helpers</span>
+    helpers/                <span class="c"># ...also shared helpers?</span>
+    auth-stuff/
+      login.js
+      authHelpers.js
+    Dashboard/              <span class="c"># PascalCase, inconsistent with rest</span>
+      dashboard_utils.js
+    api/
+      client.js
+      api-client-v2.js      <span class="c"># is this the same thing?</span>
+  test/                     <span class="c"># singular...</span>
+    auth.test.js
+  tests/                    <span class="c"># ...and plural — two test dirs</span>
+    dashboard.test.js
+  NOTES.md
+  TODO_old.md
+  TODO_new.md
+  scratch_data.json         <span class="c"># at repo root, not gitignored</span>
+  CLAUDE.md                 <span class="c"># last updated week 1, never since</span></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Reveal the structural problems <span class="acc-arrow">▾</span></div><div class="acc-body">1) <strong>Two shared-utility dirs</strong> (utils/ and helpers/) — guaranteed duplicate helpers split across both. 2) <strong>Inconsistent naming</strong> — auth-stuff/ (kebab, vague) next to Dashboard/ (PascalCase) next to api/ (lowercase) — the AI picked a different convention each session because none was specified. 3) <strong>api-client-v2.js next to client.js</strong> — classic "AI wrote a new version instead of editing the old one" pattern; almost certainly one is dead. 4) <strong>Two test directories</strong> (test/ and tests/) — both will keep growing because neither was deleted. 5) <strong>Three doc files of overlapping/competing purpose</strong> (NOTES.md, TODO_old.md, TODO_new.md) sitting at root, uncommitted-looking but actually committed. 6) <strong>An ungitignored data artifact at root</strong> — scratch_data.json should be in a gitignored scratch/ or deleted. 7) <strong>CLAUDE.md frozen at week 1</strong> — none of problems 1-6 are reflected in it, so the AI keeps being briefed on a project that no longer exists. The fix is one merged utils/ dir, one tests/ dir, one current context file, and a delete pass on the rest.</div></div>
 </div>`,
 
 'vibe:contextfiles': () => `<div class="panel" id="panel-vibe-contextfiles">
   <div class="breadcrumb">Vibe Coding › <span class="bc-accent">Project Structure</span> › Context Files</div>
   <h1>Context <span class="hl">Files</span></h1>
   <p class="lead">Every AI session starts with zero memory of past sessions. Context files are your solution — version-controlled documents that give the AI a persistent, accurate briefing on your project every time. They're the closest thing vibe coding has to institutional memory.</p>
-  <div class="info-box"><strong>CLAUDE.md is not README.md.</strong> README is for humans using your project. CLAUDE.md (or .cursorrules, copilot-instructions.md, etc.) is for the AI working on it — different audience, different content.</div>
+  <div class="info-box"><strong>A context file is not README.md.</strong> README is for humans using your project. The context file is for the AI working on it — different audience, different content.</div>
+  <h2>AGENTS.md Is Now the Cross-Tool Standard</h2>
+  <div class="info-box amber"><strong>This changed recently — update your mental model:</strong> <code class="inline">AGENTS.md</code> has emerged as the shared, tool-agnostic convention, read natively by Codex CLI, Cursor, Aider, Devin, Copilot, Gemini CLI, Windsurf, Amazon Q, and more. <strong>Claude Code is the exception</strong> — it reads <code class="inline">CLAUDE.md</code>, not <code class="inline">AGENTS.md</code>, natively. If your repo only has an AGENTS.md and no CLAUDE.md, Claude Code loads zero project instructions.</div>
+  <h2>Bridging CLAUDE.md and AGENTS.md</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">If you work across multiple AI tools (Claude Code plus Cursor or Copilot), write one file and point the other at it. Two options, in order of preference:</p>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab(this,'vibe-ctx1','vibe-ctx-import')">Import (recommended)</button>
+    <button class="tab-btn" onclick="switchTab(this,'vibe-ctx1','vibe-ctx-symlink')">Symlink (fallback)</button>
+  </div>
+  <div id="vibe-ctx1">
+    <div id="vibe-ctx-import" class="tab-content active">
+      <div class="code-block"><span class="code-label">// CLAUDE.md — IMPORT AGENTS.md, NO DUPLICATION</span><span class="c"># Project context</span>
+@AGENTS.md
+
+<span class="c"># Claude-specific additions (optional)</span>
+- Prefer subagents for large refactors; keep the main thread for planning.</div>
+      <div class="info-box green">Claude Code supports <code class="inline">@path</code> import syntax in CLAUDE.md. Write your real conventions once in AGENTS.md, then import them — every tool stays in sync, and Claude-only notes stay in CLAUDE.md where only Claude reads them. This survives Windows checkouts and CI runners that don't preserve symlinks.</div>
+    </div>
+    <div id="vibe-ctx-symlink" class="tab-content">
+      <div class="code-block"><span class="code-label">// FALLBACK: SYMLINK (POSIX ONLY)</span>ln -s AGENTS.md CLAUDE.md
+git add CLAUDE.md   <span class="c"># confirm git stored a symlink, not a copy</span></div>
+      <div class="info-box amber">Works, but fragile: you can't add Claude-only lines, and some Windows checkouts / CI runners don't preserve symlinks (use the <code class="inline">@AGENTS.md</code> import on Windows instead).</div>
+    </div>
+  </div>
   <h2>What Goes in a Context File</h2>
-  <div class="code-block"><span class="code-label">// CLAUDE.md — THE TEMPLATE</span># Project Brief
+  <div class="code-block"><span class="code-label">// AGENTS.md — THE TEMPLATE (import this from CLAUDE.md)</span># Project Brief
 [One paragraph: what this is, who it's for, the core purpose]
 
 # Tech Stack
@@ -7663,7 +7717,8 @@ For deep sub-tasks:
 - src/lib/      Shared utilities — ONLY place for shared code
 - tests/        Mirrors src/ structure exactly
 - scratch/      Gitignored experiments, never production code
-[Map every top-level dir to its purpose and rules]
+[Skip this section entirely if your layout already follows standard
+framework conventions the agent already knows — don't restate the obvious.]
 
 # Conventions
 - Functions: camelCase, pure where possible
@@ -7671,11 +7726,11 @@ For deep sub-tasks:
 - Types: PascalCase interfaces, co-located with usage
 - Error handling: use Result pattern (see src/lib/result.ts)
 - No default exports
-[The style guide the AI must follow]
+[Only list rules that differ from the language/framework default.]
 
-# Key Commands
+# Build, Test &amp; Commands
 - npm run dev    Start dev server (port 3000)
-- npm test       Run vitest
+- npm test       Run vitest (exact flags matter — include them)
 - npm run lint   ESLint + Prettier check
 - npm run build  Production build
 
@@ -7689,20 +7744,29 @@ For deep sub-tasks:
 [What you're working on right now — update each session]</div>
   <h2>Keeping It Current</h2>
   <ul class="cap-list">
-    <li><div class="cap-icon">🔄</div><div class="cap-text"><strong style="color:var(--accent)">Update the "Current Focus" section each session</strong><span>A stale CLAUDE.md is only slightly better than none. The current-focus section helps the AI pick up where you left off without re-explaining the context.</span></div></li>
-    <li><div class="cap-icon">🏗</div><div class="cap-text"><strong style="color:var(--accent)">Reflect major architectural decisions</strong><span>When you make a significant structure or pattern decision, add it to CLAUDE.md immediately. Future sessions inherit the decision automatically.</span></div></li>
-    <li><div class="cap-icon">📦</div><div class="cap-text"><strong style="color:var(--accent)">Commit CLAUDE.md with the changes it reflects</strong><span>Context file updates should be in the same commit as the changes they describe. This keeps them in sync and makes the history meaningful.</span></div></li>
-    <li><div class="cap-icon">🪶</div><div class="cap-text"><strong style="color:var(--accent)">Keep it lean</strong><span>Bloated context files are counter-productive — the AI has to wade through noise to find the rules. Aim for a CLAUDE.md the AI can read in one screenful. Move verbose reference into docs/ and link to it.</span></div></li>
+    <li><div class="cap-icon">🔄</div><div class="cap-text"><strong style="color:var(--accent)">Update the "Current Focus" section each session</strong><span>A stale context file is only slightly better than none. The current-focus section helps the AI pick up where you left off without re-explaining the context.</span></div></li>
+    <li><div class="cap-icon">🏗</div><div class="cap-text"><strong style="color:var(--accent)">Reflect major architectural decisions</strong><span>When you make a significant structure or pattern decision, add it immediately. Future sessions inherit the decision automatically.</span></div></li>
+    <li><div class="cap-icon">📦</div><div class="cap-text"><strong style="color:var(--accent)">Commit it with the changes it reflects</strong><span>Context file updates should be in the same commit as the changes they describe. This keeps them in sync and makes the history meaningful.</span></div></li>
+    <li><div class="cap-icon">🪶</div><div class="cap-text"><strong style="color:var(--accent)">Keep it short, critical rules first</strong><span>Bloated context files are counter-productive — the agent has to wade through noise to find the rules. Put the most important constraints near the top; move verbose reference into docs/ and link to it.</span></div></li>
+    <li><div class="cap-icon">🔒</div><div class="cap-text"><strong style="color:var(--accent)">Pair it with hooks for anything that must never fail</strong><span>A context file is a strong suggestion the model usually follows. For rules that cannot be skipped — "never commit .env", "always run lint before stopping" — back them with a deterministic Claude Code hook (PreToolUse / PostToolUse). Hooks run real code and can't be talked out of the rule; prose in a context file sometimes can.</span></div></li>
   </ul>
-  <h2>Platform-Specific Names</h2>
+  <h2>Platform-Specific Names (mid-2026)</h2>
   <table class="data-table">
     <tr><th>Tool</th><th>File</th><th>Location</th></tr>
-    <tr><td>Claude Code</td><td>CLAUDE.md</td><td>Repo root (or per-subdirectory)</td></tr>
-    <tr><td>Cursor</td><td>.cursorrules or .cursor/rules</td><td>Repo root</td></tr>
-    <tr><td>GitHub Copilot</td><td>copilot-instructions.md</td><td>.github/</td></tr>
-    <tr><td>Windsurf</td><td>.windsurfrules</td><td>Repo root</td></tr>
-    <tr><td>Any tool</td><td>AGENTS.md / AI.md</td><td>Wherever loaded</td></tr>
+    <tr><td>Claude Code</td><td>CLAUDE.md (native) — import <code class="inline">@AGENTS.md</code> for shared rules</td><td>Repo root (or per-subdirectory)</td></tr>
+    <tr><td>Codex CLI, Cursor, Aider, Devin, Copilot, Gemini CLI, Windsurf, Amazon Q</td><td>AGENTS.md</td><td>Repo root</td></tr>
+    <tr><td>Cursor (legacy)</td><td>.cursorrules or .cursor/rules</td><td>Repo root</td></tr>
+    <tr><td>GitHub Copilot (legacy)</td><td>copilot-instructions.md</td><td>.github/</td></tr>
   </table>
+  <h2 style="margin-top:28px;">Exercise: Write Your Own Context File</h2>
+  <div class="info-box"><strong>Hands-on (15-20 minutes).</strong> Pick a real or hypothetical project you're working on and write an AGENTS.md for it using the template above. Then answer these four checks:</div>
+  <ul class="checklist">
+    <li>Does the "Tech Stack" section name exact versions, not just "React" or "Node"?</li>
+    <li>Does "Directory Structure" map every top-level folder to a one-line rule — or did you correctly skip it because your layout is already framework-standard?</li>
+    <li>Is every line in "Conventions" something that differs from the language/framework default? (If the AI would already do it without being told, delete the line.)</li>
+    <li>Could you read the entire file in under 60 seconds? If not, move detail into docs/ and link to it from here.</li>
+  </ul>
+  <div class="info-box green">If you use Claude Code day to day, finish the exercise by adding a one-line <code class="inline">@AGENTS.md</code> import to a CLAUDE.md so the file works for every tool, not just one.</div>
 </div>`,
 
 'vibe:docs': () => `<div class="panel" id="panel-vibe-docs">
@@ -7769,6 +7833,26 @@ beyond what's needed right now."</div>
 - Why you believe it's unused
 - Confidence: HIGH / MEDIUM / LOW
 Do not delete anything — list only. I will review and confirm."</div>
+  <h2 style="margin-top:28px;">Exercise: Spot the Bloat</h2>
+  <div class="info-box amber"><strong>Hands-on (10 minutes).</strong> The three snippets below were all generated by an AI assistant across three different sessions on the same project, two weeks apart. Find the problems before reading the answer.</div>
+  <div class="code-block"><span class="code-label">// src/lib/format.ts — session 1</span><span class="k">export function</span> <span class="n">formatUserDate</span>(date: Date): string {
+  <span class="k">return</span> date.toLocaleDateString(<span class="s">'en-US'</span>, { year: <span class="s">'numeric'</span>, month: <span class="s">'short'</span>, day: <span class="s">'numeric'</span> });
+}</div>
+  <div class="code-block"><span class="code-label">// src/features/dashboard/utils.ts — session 2 (two weeks later)</span><span class="k">export function</span> <span class="n">prettyDate</span>(d: Date) {
+  <span class="k">return</span> d.toLocaleDateString(<span class="s">'en-US'</span>, { year: <span class="s">'numeric'</span>, month: <span class="s">'short'</span>, day: <span class="s">'numeric'</span> });
+}
+
+<span class="k">export function</span> <span class="n">formatDateForDisplay</span>(date) { <span class="c">// no type — note this</span>
+  <span class="k">if</span> (!date) <span class="k">return</span> <span class="s">''</span>;
+  <span class="k">return</span> <span class="k">new</span> Date(date).toLocaleDateString();
+}</div>
+  <div class="code-block"><span class="code-label">// src/features/billing/invoice-helpers.ts — session 3</span><span class="k">class</span> <span class="n">DateFormatterFactory</span> {
+  <span class="k">static</span> <span class="n">create</span>(locale = <span class="s">'en-US'</span>) {
+    <span class="k">return</span> { format: (d) =&gt; d.toLocaleDateString(locale, { year: <span class="s">'numeric'</span>, month: <span class="s">'short'</span>, day: <span class="s">'numeric'</span> }) };
+  }
+}
+<span class="c">// used in exactly one place, instead of just calling formatUserDate()</span></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Reveal the bloat findings <span class="acc-arrow">▾</span></div><div class="acc-body">1) <strong>Three implementations of the same date formatter</strong> — formatUserDate, prettyDate, and formatDateForDisplay all do roughly the same thing with subtly different behavior (formatDateForDisplay silently returns '' on falsy input; the others don't guard at all). 2) <strong>formatDateForDisplay has no types</strong> — likely added under time pressure, now untyped code sits next to a typed codebase. 3) <strong>DateFormatterFactory is preemptive abstraction</strong> — a factory pattern for a single call site, more ceremony than the formatUserDate() it should have just called. The fix: pick formatUserDate as canonical, delete the other two, fix the one call site that needs locale support to take a parameter instead of a factory, and add "reuse src/lib/format.ts for all date formatting" to your context file so the next session doesn't repeat this.</div></div>
 </div>`,
 
 'vibe:docbloat': () => `<div class="panel" id="panel-vibe-docbloat">
@@ -7812,6 +7896,7 @@ dist/               <span class="c"># build output</span></div>
   <h1>Git <span class="hl">Hygiene</span></h1>
   <p class="lead">Git is your safety net and your audit trail. In a vibe-coded project where you're not reading every line, it's also the mechanism that makes large AI changes reviewable and reversible. Poor git hygiene turns AI's speed into a liability.</p>
   <div class="info-box red"><strong>The worst anti-pattern:</strong> "AI, implement the whole feature." Accept. One 47-file commit with message "implement feature." This is unauditable, unrollback-able, and impossible to reason about when something breaks. It destroys the value of version control.</div>
+  <div class="info-box red"><strong>Git hygiene is also a security control.</strong> Analysis of AI-assisted commits in 2026 found they expose secrets (API keys, tokens, credentials) at more than twice the rate of human-only commits. The AI will happily hardcode a key it sees in your .env to "make the example work," and if you're skimming a large diff instead of reviewing it line by line, that secret ships straight to your remote. Reviewing every diff before commit and keeping .env out of context (never paste its contents into a prompt) is not optional polish — it's the control that catches this.</div>
   <h2>Small, Frequent, Scoped Commits</h2>
   <div class="code-block"><span class="code-label">// BAD — AI-generated mega-commit</span>commit a7f3b9e
 "implement user authentication and dashboard and fix styles and add tests"
@@ -7990,7 +8075,7 @@ git status                 <span class="c"># any unintended files staged?</span>
   <div class="cheat-grid">
     <div class="cheat-card"><h3>Mindset</h3><ul class="checklist"><li>Architect, not coder</li><li>Editor, not just accepter</li><li>Pruner, not just builder</li><li>Convention enforcer</li></ul></div>
     <div class="cheat-card"><h3>Directory Rules</h3><ul class="checklist"><li>src/ = all production code</li><li>ONE shared lib/ (no duplicates)</li><li>tests/ mirrors src/</li><li>scratch/ = gitignored experiments</li><li>docs/ = 4-5 living docs max</li></ul></div>
-    <div class="cheat-card"><h3>CLAUDE.md Must Have</h3><ul class="checklist"><li>Project brief (one para)</li><li>Tech stack + versions</li><li>Directory map + rules</li><li>Conventions + DO NOTs</li><li>Current Focus (updated each session)</li></ul></div>
+    <div class="cheat-card"><h3>Context File Must Have</h3><ul class="checklist"><li>Project brief (one para)</li><li>Tech stack + versions</li><li>Directory map + rules</li><li>Conventions + DO NOTs</li><li>Current Focus (updated each session)</li><li>AGENTS.md for cross-tool + CLAUDE.md importing it via @AGENTS.md</li></ul></div>
     <div class="cheat-card"><h3>Anti-Bloat Habits</h3><ul class="checklist"><li>Update docs, don't create new ones</li><li>Delete old code when replacing</li><li>Point AI at existing utilities</li><li>Scratch/ for experiments (gitignored)</li><li>ADR log for decisions</li></ul></div>
     <div class="cheat-card"><h3>Git Rhythm</h3><ul class="checklist"><li>Small scoped commits</li><li>Conventional commit messages</li><li>Branch per feature</li><li>git diff before every commit</li><li>Tag before major refactors</li></ul></div>
     <div class="cheat-card"><h3>Weekly Cadence</h3><ul class="checklist"><li>Session: start + end ritual</li><li>3-4 sessions: mini prune</li><li>Weekly: refactor + CLAUDE.md update</li><li>Monthly: doc audit + cleanup</li></ul></div>
