@@ -1366,13 +1366,16 @@ const COURSES = [
   ],
   quiz: [
     { q: "What is the central problem context engineering solves?", options: ["Making the model train faster","Deciding what information to place in a finite, attention-limited context window to maximize output quality","Reducing the number of model parameters","Encrypting the prompt"], correct: 1, explanation: "Context engineering is the discipline of curating exactly what enters the context window \u2014 and in what order and form \u2014 because the window is finite, every token costs money and attention, and more context is not automatically better." },
-    { q: "Why isn't 'just put everything in the context window' a good strategy, even with large windows?", options: ["It's always cheaper to use less","Cost and latency scale with tokens, and models attend unevenly \u2014 irrelevant content dilutes attention and degrades quality (context rot)","Large windows don't exist","The model will refuse","correct"], correct: 1, explanation: "Even when content fits, every token adds cost and latency, and irrelevant material competes for the model's attention. Performance can actually degrade as the window fills with low-signal content \u2014 a phenomenon often called context rot. Curation beats accumulation." },
+    { q: "Why isn't 'just put everything in the context window' a good strategy, even with large windows?", options: ["It's always cheaper to use less","Cost and latency scale with tokens, and models attend unevenly \u2014 irrelevant content dilutes attention and degrades quality (context rot)","Large windows don't exist","The model will refuse"], correct: 1, explanation: "Even when content fits, every token adds cost and latency, and irrelevant material competes for the model's attention. Performance can actually degrade as the window fills with low-signal content \u2014 a phenomenon often called context rot. Curation beats accumulation." },
     { q: "What is the 'lost in the middle' effect?", options: ["The model forgets its system prompt","Models recall information at the beginning and end of the context more reliably than content buried in the middle","The middle layers of the network are unused","A bug in tokenization"], correct: 1, explanation: "LLMs exhibit a U-shaped attention bias: content at the start and end of the context is recalled more reliably than content in the middle. Place the most critical instructions and information at the edges, not the center, of a long context." },
     { q: "What is rolling summarization used for?", options: ["Making the model's answers shorter","Compressing older conversation turns into a compact summary to free context space while preserving key information","Summarizing the system prompt","Translating the conversation"], correct: 1, explanation: "As a conversation grows past a threshold, rolling summarization condenses the oldest turns into a short summary (often 10:1 compression), which replaces the verbose originals \u2014 freeing tokens while retaining the essential thread." },
     { q: "In a long-running agent, what is the fastest-growing and most volatile part of the context?", options: ["The system prompt","Accumulated tool-call results and observations","The user's name","The temperature setting"], correct: 1, explanation: "Tool results accumulate with every step of an agent loop and can balloon quickly. Managing them \u2014 via compression, selective retention, or external storage \u2014 is the central context-engineering challenge in agentic systems." },
     { q: "What is the difference between context (working memory) and external memory?", options: ["They are the same thing","Context is the finite in-window working memory for the current turn; external memory is persistent storage (files, vector DBs) the model retrieves from on demand","External memory is faster","Context never changes"], correct: 1, explanation: "Context is transient working memory \u2014 what the model sees right now, bounded by the window. External memory persists across turns and sessions; relevant pieces are retrieved into context just-in-time. Good context engineering moves information fluidly between the two." },
     { q: "What is 'just-in-time' retrieval in context engineering?", options: ["Loading all data at startup","Pulling only the specific information needed for the current step into context, rather than pre-loading everything","Caching the entire database","Retrieving data after the model responds"], correct: 1, explanation: "Just-in-time retrieval keeps the context lean by fetching only what each step needs, when it needs it \u2014 mirroring how a person opens the one reference they need rather than spreading every document on the desk at once." },
     { q: "What is context offloading?", options: ["Deleting the conversation","Moving bulky information out of the context window into external storage (files, notes, scratchpads) and pulling it back only when needed","Sending context to another model","Compressing the model weights"], correct: 1, explanation: "Offloading writes detailed information to an external store \u2014 a file, a scratchpad, a structured note \u2014 and keeps only a reference or summary in context. The model retrieves the full detail on demand, keeping the working window focused." },
+    { q: "What did Chroma's 2025 'Context Rot' study find when testing 18 frontier models (including GPT-4.1, Claude 4, and Gemini 2.5) on long-context tasks?", options: ["Performance is constant as long as content fits within the window","Reliability declines continuously as input length grows \u2014 even on simple retrieval tasks, and well before the window is full","Only open-weight models show degradation","Longer context always improves accuracy"], correct: 1, explanation: "The study found degradation is a continuous slope, not a cliff at the context limit \u2014 a model with a 200K window can show meaningful quality loss by 50K tokens. This is empirical evidence that 'it fits in the window' is not the same as 'the model will use it well.'" },
+    { q: "As of 2026, why is it misleading to say 'the context window' as if it were one fixed number across all frontier models?", options: ["All major models now have exactly the same window size","Window sizes vary widely by family and tier \u2014 Claude models are commonly ~200K while GPT-5.x and Gemini 3.x reach the high hundreds-of-thousands to low millions of tokens","Context windows were deprecated in favor of unlimited memory","Token counts no longer apply to modern models"], correct: 1, explanation: "Context window size is model- and tier-specific and changes with nearly every release. Treating it as a universal constant leads to budgets that are wrong for whichever model you're actually calling \u2014 always check the specific model's documented limit." },
+    { q: "What does Anthropic's native context-editing feature (the clear_tool_uses strategy) do?", options: ["Deletes the system prompt once the conversation gets long","Automatically clears older tool-call results once input tokens cross a configured threshold, while keeping a placeholder so the model still knows the action occurred","Rewrites the user's original question","Switches the model to a smaller context window"], correct: 1, explanation: "Context editing is a server-side primitive: you configure a token trigger and how many recent tool results to keep verbatim, and the API automatically clears older, bulkier tool outputs \u2014 implementing the 'compact tool results' pattern without custom code. Pairing it with the memory tool lets the model save important details before they're cleared." },
   ],
 },
 
@@ -6231,7 +6234,38 @@ Used .................................. 21,200 / 200,000
     <li><div class="cap-icon">🧮</div><div class="cap-text"><strong style="color:var(--accent)">Right-size, don't max out</strong><span>Using a fraction of the window is fine — even ideal. Just because you have 200K tokens doesn't mean filling them helps. Lean context is faster, cheaper, and often more accurate.</span></div></li>
   </ul>
   <h2>Caching Changes the Math</h2>
-  <div class="info-box green"><strong>Prompt caching:</strong> Stable prefixes (system prompt, tool definitions, fixed context) can be cached so you don't pay full price to re-send them every turn. Structure your context so the stable parts come first and the variable parts last — this maximizes cache hits and slashes cost on multi-turn workloads.</div>
+  <div class="info-box green"><strong>Prompt caching:</strong> Stable prefixes (system prompt, tool definitions, fixed context) can be cached so you don't pay full price to re-send them every turn. Structure your context so the stable parts come first and the variable parts last — this maximizes cache hits and slashes cost on multi-turn workloads. On Anthropic's API, a cache write costs roughly 25% more than a normal input token, but a cache <em>read</em> costs only about 10% of the standard input price — call it a ~90% discount on repeated prefixes. OpenAI and Gemini apply caching automatically (implicit caching) on repeated prefixes, typically a ~50% discount. Either way: stable-first ordering isn't just tidy, it's the difference between paying full price every turn and paying full price once.</div>
+  <h2>Current Context Windows (know your actual budget)</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">"200K window" isn't a universal constant — it varies by model family and shifts with every release. As of mid-2026, rough orders of magnitude across frontier models:</p>
+  <table class="data-table">
+    <tr><th>Model family</th><th>Typical context window</th><th>Note</th></tr>
+    <tr><td>Claude Opus / Sonnet</td><td>~200K tokens</td><td>Some Sonnet tiers offer a 1M-token beta option</td></tr>
+    <tr><td>GPT-5.x</td><td>~256K – 1M+ tokens</td><td>Varies by exact model and tier</td></tr>
+    <tr><td>Gemini 3.x Pro</td><td>~1M – 2M tokens</td><td>Largest mainstream window as of 2026</td></tr>
+    <tr><td>Open-weight (Llama 4 class)</td><td>Up to ~10M claimed</td><td>Effective recall degrades well before the advertised max</td></tr>
+  </table>
+  <div class="info-box amber"><strong>Bigger windows don't retire this discipline — they raise the stakes.</strong> A 1M-token window doesn't mean you should use 1M tokens. Independent long-context research shows quality measurably degrades well before the window fills (see Failure Modes). Budgeting discipline matters <em>more</em>, not less, as windows grow — the temptation to dump everything in scales with the room available.</div>
+  <h2>Hands-On: Build a Token Budget Worksheet</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Use the rule of thumb <strong>~1.3 tokens per word</strong> (or ~4 characters per token) for English prose; code typically runs about 2x denser. Work through this worksheet for a real agent you're designing or already running.</p>
+  <div class="code-block"><span class="code-label">// WORKSHEET — FILL IN YOUR OWN NUMBERS</span>Model context window:.......................... ____________ tokens
+Target max input usage (e.g. 40% of window):... ____________ tokens
+Reserved for output:............................ ____________ tokens
+
+Component                          Words   Tokens (words x 1.3)
+------------------------------------------------------------------
+System prompt                      ______  ______
+Tool definitions (n tools x avg)   ______  ______
+Retrieved docs / RAG chunks        ______  ______
+Conversation history (current)     ______  ______
+Tool call results (current)        ______  ______
+Current user message               ______  ______
+------------------------------------------------------------------
+TOTAL INPUT                                ______
+
+<span class="c"># Check: TOTAL INPUT + Reserved-for-output  &lt;=  Target max input usage?</span>
+<span class="c"># If not: what's the single largest line item, and which compression</span>
+<span class="c"># technique (next module) would cut it the most?</span></div>
+  <div class="info-box"><strong>Try it now:</strong> A 300-word system prompt is ~390 tokens. Five tool definitions averaging 150 words each is ~975 tokens. A 2,000-word conversation history is ~2,600 tokens. Add up a real or planned agent's components against the window for your actual model from the table above — most people are surprised which line item dominates once they do the arithmetic instead of guessing.</div>
 </div>`,
 
 'ctx:anatomy': () => `<div class="panel" id="panel-ctx-anatomy">
@@ -6349,6 +6383,30 @@ filtered = [{title, url, snippet} for r in raw[:5]]   <span class="c"># ~500 tok
   </div>
   <h2>Compression Tradeoffs</h2>
   <div class="info-box amber"><strong>Compression is lossy — be deliberate about what you lose.</strong> Over-aggressive summarization can drop a detail that mattered later. Keep recent content verbatim (where errors are costly), compress older content (where gist suffices), and when in doubt offload to retrievable storage rather than discarding outright.</div>
+  <h2>Hands-On: Calculate Your Compression Ratio</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">"10:1 compression" is a claim you should verify, not assume. Walk through a real example with actual numbers.</p>
+  <div class="code-block"><span class="code-label">// WORKED EXAMPLE — ROLLING SUMMARIZATION</span>Original: 14 conversation turns, ~3,400 words  -&gt;  ~4,420 tokens (x1.3)
+Summary:  1 paragraph, ~140 words             -&gt;  ~180 tokens (x1.3)
+
+Compression ratio = original_tokens / summary_tokens
+                   = 4,420 / 180
+                   = <span class="hl">24.5 : 1</span>
+
+Tokens freed       = 4,420 - 180 = 4,240 tokens
+% of a 200K window freed = 4,240 / 200,000 = 2.1%
+% of a 30K "working budget" freed = 4,240 / 30,000 = 14.1%
+
+<span class="c"># The same absolute savings matters far more in a tight working</span>
+<span class="c"># budget than in a huge window — compression ROI scales inversely</span>
+<span class="c"># with how constrained your actual operating budget is.</span></div>
+  <div class="info-box"><strong>Now do it with your own data:</strong> Take a real transcript or tool-result log. Count words (or paste into a tokenizer) before and after summarizing it with an LLM call. Compute the ratio with the formula above. Then ask the harder question: did the summary preserve every fact a later turn actually needed? Run the compressed version through a downstream task and check whether the answer changes — that's your real compression quality metric, not the ratio alone.</div>
+  <table class="data-table">
+    <tr><th>Technique</th><th>Typical ratio</th><th>Best for</th></tr>
+    <tr><td>Rolling summarization</td><td>10:1 – 25:1</td><td>Older conversation turns</td></tr>
+    <tr><td>Distillation / extraction</td><td>15:1 – 30:1</td><td>Structured docs, transcripts</td></tr>
+    <tr><td>Filtering (field selection)</td><td>20:1 – 50:1</td><td>Verbose API / tool JSON</td></tr>
+    <tr><td>Offloading</td><td>effectively &infin;:1 in-context</td><td>Large detail rarely re-read</td></tr>
+  </table>
 </div>`,
 
 'ctx:memory': () => `<div class="panel" id="panel-ctx-memory">
@@ -6432,19 +6490,62 @@ For deep sub-tasks:
   7. Spawn sub-agent with clean context
   8. Sub-agent returns only its conclusion</div>
   <div class="info-box green"><strong>The throughline:</strong> Reliable agents treat context as a actively-managed resource, not an append-only log. Compact, offload, hand off, and isolate — keep the working window focused on the now, with everything else a retrieval away.</div>
+  <h2>These Patterns Are Now Built Into Provider APIs</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Context management for agents has moved from "something you hand-roll" to a first-class API feature. Anthropic's Claude API ships explicit primitives for exactly the strategies above:</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">🧹</div><div class="card-title">Context Editing</div><div class="card-body">A server-side <code class="inline">clear_tool_uses</code> strategy automatically clears old tool results once input tokens cross a configured threshold, while keeping a placeholder so the model still knows an action happened. You set the trigger (e.g. 30,000 input tokens) and how many recent tool uses to keep verbatim.</div><span class="tag">automatic</span></div>
+    <div class="card"><div class="card-icon">🗃</div><div class="card-title">Memory Tool</div><div class="card-body">A file-system-style tool that lets the model write and read its own memory files across a session — the "scratchpad" pattern, but provided natively rather than hand-built with a custom tool.</div><span class="tag amber">native</span></div>
+    <div class="card"><div class="card-icon">🤝</div><div class="card-title">Combined Effect</div><div class="card-body">When paired, the model gets a warning before context editing clears old content, and can proactively write the important bits to a memory file first — so compaction loses tokens, not information.</div><span class="tag violet">resilient</span></div>
+  </div>
+  <div class="code-block"><span class="code-label">// ILLUSTRATIVE — ANTHROPIC CONTEXT-EDITING CONFIG SHAPE</span>context_management = {
+  "edits": [{
+    "type": "clear_tool_uses_20250919",
+    "trigger": { "type": "input_tokens", "value": 30000 },
+    "keep": { "type": "tool_uses", "value": 3 },
+    "exclude_tools": ["critical_database_query"]
+  }]
+}
+<span class="c">// Tool calls stay visible; their (often huge) results get cleared</span>
+<span class="c">// once the conversation crosses 30K input tokens, keeping the 3</span>
+<span class="c">// most recent tool results intact for continuity.</span></div>
+  <h2>Hands-On: Design Your Compaction Policy</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">For an agent you run (or plan to run) more than ~10 steps, answer these concretely — don't leave them abstract:</p>
+  <div class="code-block"><span class="code-label">// COMPACTION POLICY WORKSHEET</span>1. Trigger threshold: at what input-token count do you compact?
+   ____________ tokens  (e.g. 40% of your model's window)
+
+2. Keep-verbatim window: how many of the most recent steps/tool
+   results stay uncompressed?
+   ____________ steps
+
+3. What gets extracted before clearing? (be specific, not "important stuff")
+   - Decisions made: ____________
+   - Facts established: ____________
+   - Open threads / TODOs: ____________
+
+4. Where does cleared detail go — discarded, or offloaded to a
+   file/memory store the agent can re-read?
+   ____________
+
+5. Which tools are exempt from clearing (e.g. a tool whose result
+   the agent must always see)?
+   ____________</div>
+  <div class="info-box"><strong>Test it against a failure case:</strong> Pick the longest real run you have logs for. At the step where it started to degrade or lose track of something, would your policy above have caught it? If you can't answer, your trigger threshold is probably too high or your "what gets extracted" answer is too vague.</div>
 </div>`,
 
 'ctx:failures': () => `<div class="panel" id="panel-ctx-failures">
   <div class="breadcrumb">Context Eng › <span class="bc-accent">Advanced</span> › Failure Modes</div>
   <h1>Context <span class="hl">Failure Modes</span></h1>
   <p class="lead">When context is poorly engineered, models fail in characteristic ways. Recognizing these failure modes lets you diagnose problems quickly — and most trace back to too much, poorly-ordered, or conflicting context.</p>
-  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">🌫 Context Rot <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Symptom:</strong> Quality degrades as the context fills, even within the window limit. <strong>Cause:</strong> Accumulated low-signal content dilutes attention; the model loses the thread among noise. <strong>Fix:</strong> Compress aggressively, prune stale content, keep the window lean. More context is not better.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">🌫 Context Rot <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Symptom:</strong> Quality degrades as the context fills, even within the window limit, and even on tasks that should be trivial (like exact retrieval). <strong>Cause:</strong> Accumulated low-signal content dilutes attention; the model loses the thread among noise. <strong>Fix:</strong> Compress aggressively, prune stale content, keep the window lean. More context is not better.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">🕳 Lost in the Middle <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Symptom:</strong> The model ignores a fact that's clearly present in the context. <strong>Cause:</strong> The fact sits in the low-attention middle of a long context. <strong>Fix:</strong> Move critical information to the start or end; shorten the context so there's no neglected middle.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">⚔️ Context Conflict / Poisoning <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Symptom:</strong> The model gives inconsistent or wrong answers, seemingly contradicting itself. <strong>Cause:</strong> The context contains conflicting information — outdated facts alongside current ones, or a hallucination that got written into memory and keeps getting retrieved. <strong>Fix:</strong> Deduplicate, version, and validate what enters context and memory; remove superseded content.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">📉 Distraction <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Symptom:</strong> The model fixates on irrelevant retrieved content or goes off on a tangent. <strong>Cause:</strong> Loosely-relevant material was retrieved and pulled the model's focus. <strong>Fix:</strong> Improve retrieval precision (reranking, filtering); inject only high-relevance content.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">✂️ Truncation Loss <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Symptom:</strong> The model forgets something from earlier in a long conversation. <strong>Cause:</strong> Older content was silently dropped when the window filled. <strong>Fix:</strong> Summarize before truncating (don't just cut); offload important earlier content to retrievable memory.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">🔀 Tool Overload <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Symptom:</strong> The model picks the wrong tool or misuses tools. <strong>Cause:</strong> Too many tool definitions loaded at once; the model can't reliably choose. <strong>Fix:</strong> Load only the tools relevant to the current task; group and gate tools situationally.</div></div>
   <div class="info-box green"><strong>The common root:</strong> Nearly every failure mode is a symptom of unmanaged context — too much, badly ordered, conflicting, or carelessly truncated. The cure is almost always the same: less, cleaner, better-ordered context.</div>
+  <h2>The Evidence: Context Rot Is Measured, Not Folklore</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Chroma's "Context Rot" study evaluated 18 frontier models (including GPT-4.1, Claude 4, and Gemini 2.5) on controlled long-context tasks and found that reliability declines <strong>continuously</strong> as input length grows — not as a cliff at the window limit, but as a steady slope. A model with a 200K-token window can show significant degradation by 50K tokens, well under a quarter full. Distractor content, ambiguous needle-haystack similarity, and how the surrounding text is structured all make it worse, independent of whether the relevant fact is technically "in the window."</p>
+  <div class="info-box red"><strong>The practical takeaway:</strong> Don't treat "fits in the context window" as a quality bar. Test your actual task at realistic context lengths, not just toy examples — a RAG pipeline that returns perfect answers with 3 retrieved chunks may degrade noticeably with 15, even though all 15 fit comfortably.</div>
 </div>`,
 
 'ctx:measure': () => `<div class="panel" id="panel-ctx-measure">
