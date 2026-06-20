@@ -1134,6 +1134,8 @@ const COURSES = [
     { q: "What is 'chunk overlap' and why is it used?", options: ["Storing the same chunk twice for redundancy","Including some text from the end of one chunk at the start of the next, to avoid losing context at boundaries","Merging duplicate chunks","Overlapping multiple vector databases"], correct: 1, explanation: "Chunk overlap (typically 10–20%) repeats some text between consecutive chunks. This ensures that an idea spanning a chunk boundary appears complete in at least one chunk, preventing context loss when a key sentence gets split across the boundary." },
     { q: "What problem does 'query rewriting' solve in RAG?", options: ["It makes queries shorter to save tokens","It transforms a vague or conversational user query into one or more search-optimized queries that retrieve better","It translates queries to SQL","It removes profanity from queries"], correct: 1, explanation: "User queries are often vague, conversational, or context-dependent ('what about the second one?'). Query rewriting uses an LLM to expand, clarify, or decompose the query into search-optimized forms — improving retrieval recall, especially for multi-turn conversations." },
     { q: "Which metric specifically measures whether the LLM's answer is grounded in the retrieved context?", options: ["Latency","Faithfulness (groundedness) — whether claims in the answer are supported by retrieved chunks","Token count","Embedding dimension"], correct: 1, explanation: "Faithfulness (or groundedness) measures whether the generated answer's claims are actually supported by the retrieved context, rather than hallucinated. It's distinct from answer relevance and retrieval recall — a complete RAG evaluation measures all three." },
+    { q: "In Reciprocal Rank Fusion (RRF), what happens to a document that ranks well in BOTH the vector search and the keyword search results?", options: ["It gets removed as a duplicate","Its scores from both lists are summed, pushing it toward the top of the fused ranking","Only its better rank is kept, the other is discarded","It is penalized for appearing twice"], correct: 1, explanation: "RRF computes 1/(k + rank) for a document in each result list and sums those values across lists. A document appearing high in both the vector and keyword results accumulates a larger combined score than one that only appears in a single list, so it rises to the top of the fused ranking." },
+    { q: "What problem does 'late chunking' specifically address that standard chunk-then-embed approaches struggle with?", options: ["Storage costs of large vector databases","Loss of meaning from pronouns and cross-references that point to information in a different chunk", "Slow embedding API latency","Incompatibility between embedding models"], correct: 1, explanation: "Late chunking embeds the full document first with a long-context model, then pools token embeddings into chunks — so each chunk's vector retains context from elsewhere in the document. This specifically helps when a chunk contains a pronoun or reference (e.g. 'it trips at 12A') whose antecedent ('the eFuse') lives in an earlier, separately-chunked sentence." },
   ],
 },
 
@@ -5167,22 +5169,48 @@ similarity(embed("overcurrent protection"), embed("eFuse 12A limit"))
 
 similarity(embed("overcurrent protection"), embed("Tuesday lunch menu"))
 <span class="c">// -> 0.04  (low — unrelated)</span></div>
-  <h2>Choosing an Embedding Model</h2>
+  <h2>Choosing an Embedding Model (current generation)</h2>
   <table class="data-table">
     <tr><th>Model</th><th>Provider</th><th>Dimensions</th><th>Notes</th></tr>
-    <tr><td><span class="hl">voyage-3</span></td><td>Voyage AI (Anthropic-recommended)</td><td>1024</td><td>Strong on technical &amp; retrieval tasks</td></tr>
-    <tr><td><span class="hl">text-embedding-3-large</span></td><td>OpenAI</td><td>3072 (scalable)</td><td>High quality, dimension-adjustable</td></tr>
-    <tr><td><span class="hl-amber">text-embedding-3-small</span></td><td>OpenAI</td><td>1536</td><td>Cheaper, good baseline</td></tr>
-    <tr><td><span class="hl-green">bge-large / e5</span></td><td>Open source (BAAI / Microsoft)</td><td>1024</td><td>Self-hostable, no API cost</td></tr>
-    <tr><td><span class="hl-violet">Cohere embed-v3</span></td><td>Cohere</td><td>1024</td><td>Strong multilingual support</td></tr>
+    <tr><td><span class="hl">voyage-3.5 / voyage-3-large</span></td><td>Voyage AI (Anthropic-recommended)</td><td>1024 (configurable)</td><td>Top-tier on code &amp; technical retrieval; instruction-tunable variants</td></tr>
+    <tr><td><span class="hl">gemini-embedding-001</span></td><td>Google</td><td>3072 (truncatable)</td><td>Strong general + multilingual; unified model replacing prior Gecko line</td></tr>
+    <tr><td><span class="hl-amber">text-embedding-3-large / -small</span></td><td>OpenAI</td><td>3072 / 1536 (scalable)</td><td>Safe default, dimension-adjustable via API param</td></tr>
+    <tr><td><span class="hl-violet">embed-v4</span></td><td>Cohere</td><td>1536 (Matryoshka)</td><td>Multimodal (text+image) and multilingual; emits dense + sparse vectors for hybrid in one call</td></tr>
+    <tr><td><span class="hl-green">BGE-M3 / Qwen3-Embedding</span></td><td>Open source (BAAI / Alibaba)</td><td>1024</td><td>Self-hostable, no API cost, multi-vector (dense+sparse+multi-vector) output</td></tr>
   </table>
+  <div class="info-box amber"><strong>Stay current:</strong> embedding leaderboards move fast — check the <span class="hl">MTEB</span> (Massive Text Embedding Benchmark) leaderboard before locking in a model, and always benchmark candidates on a sample of <em>your own</em> documents and queries rather than trusting a generic leaderboard rank.</div>
   <h2>Key Principles</h2>
   <ul class="cap-list">
     <li><div class="cap-icon">🔗</div><div class="cap-text"><strong style="color:var(--accent)">Same model for index and query</strong><span>Chunks and queries must be embedded by the same model. Different models produce incompatible vector spaces — similarity scores become meaningless.</span></div></li>
-    <li><div class="cap-icon">📏</div><div class="cap-text"><strong style="color:var(--accent)">Dimensions trade quality for cost</strong><span>Higher dimensions capture more nuance but cost more storage and compute. Some models (text-embedding-3) let you truncate dimensions to trade quality for speed.</span></div></li>
+    <li><div class="cap-icon">📏</div><div class="cap-text"><strong style="color:var(--accent)">Dimensions trade quality for cost</strong><span>Higher dimensions capture more nuance but cost more storage and compute. Matryoshka-style models (OpenAI text-embedding-3, Cohere embed-v4, Gemini) let you truncate dimensions post-hoc to trade quality for speed without re-embedding.</span></div></li>
     <li><div class="cap-icon">🌐</div><div class="cap-text"><strong style="color:var(--accent)">Domain matters</strong><span>General embedding models can struggle with highly specialized jargon. For technical domains (hardware, legal, medical), evaluate domain-tuned or stronger models — the quality gap is real.</span></div></li>
     <li><div class="cap-icon">📐</div><div class="cap-text"><strong style="color:var(--accent)">Normalize for cosine similarity</strong><span>Most RAG systems use cosine similarity. Many vector DBs expect normalized vectors — check whether your model outputs normalized embeddings or whether you must normalize them.</span></div></li>
   </ul>
+  <h2>Try It — Embed and Compare Similarity Yourself</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">This is a runnable exercise. Install one embedding SDK, embed a few sentences, and compute cosine similarity by hand so the "vectors that mean similar things sit close together" claim stops being abstract.</p>
+  <div class="code-block"><span class="code-label">// EXERCISE: COSINE SIMILARITY FROM SCRATCH</span>pip install voyageai numpy
+
+import voyageai, numpy as np
+vo = voyageai.Client()  <span class="c"># reads VOYAGE_API_KEY env var</span>
+
+texts = [
+    "How do I reset my password?",
+    "I forgot my login credentials",
+    "What's on the cafeteria menu today?",
+]
+result = vo.embed(texts, model="voyage-3.5", input_type="document")
+vecs = np.array(result.embeddings)
+
+def cosine(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+print("password vs forgot-login:", cosine(vecs[0], vecs[1]))  <span class="c"># expect high, e.g. ~0.7-0.9</span>
+print("password vs menu:       ", cosine(vecs[0], vecs[2]))  <span class="c"># expect low, e.g. &lt;0.3</span>
+
+<span class="c"># TASK: swap in 3 sentences from your own domain. Does a near-duplicate</span>
+<span class="c"># meaning score high even with completely different words? If not,</span>
+<span class="c"># this embedding model may be a poor fit for your content.</span></div>
+  <div class="info-box green"><strong>What to look for:</strong> if two paraphrased sentences don't score meaningfully higher than two unrelated ones on your own data, that's a signal to benchmark a different embedding model before building anything else on top of it.</div>
 </div>`,
 
 'rag:chunking': () => `<div class="panel" id="panel-rag-chunking">
@@ -5196,6 +5224,7 @@ similarity(embed("overcurrent protection"), embed("Tuesday lunch menu"))
     <button class="tab-btn" onclick="switchTab(this,'ct1','c-semantic')">Semantic</button>
     <button class="tab-btn" onclick="switchTab(this,'ct1','c-recursive')">Recursive</button>
     <button class="tab-btn" onclick="switchTab(this,'ct1','c-parent')">Parent-Child</button>
+    <button class="tab-btn" onclick="switchTab(this,'ct1','c-late')">Late Chunking</button>
   </div>
   <div id="ct1">
     <div class="tab-content active" id="c-fixed">
@@ -5244,15 +5273,55 @@ matched_child = vector_search(query)
 return get_parent(matched_child.parent_id)  <span class="c"># full section to LLM</span></div>
       <div class="info-box violet"><strong>Why it works:</strong> A specific sentence matches the query precisely (high retrieval accuracy), but the LLM gets the whole surrounding section (rich context for generation). Solves the small-vs-large tradeoff elegantly.</div>
     </div>
+    <div class="tab-content" id="c-late">
+      <h2>Late Chunking</h2>
+      <p style="color:var(--muted2);margin-bottom:12px;">Instead of splitting text first and embedding each small piece in isolation, late chunking runs a <em>long-context</em> embedding model over the <strong>whole document first</strong>, then pools the resulting token-level embeddings into chunks. Each chunk's vector is computed with full-document context already baked in.</p>
+      <div class="code-block"><span class="code-label">// WHY IT HELPS: ANAPHORA</span><span class="c"># Document: "The MAX17761 is a smart eFuse. It trips at 12A and</span>
+<span class="c">#            shuts down thermally at 150C."</span>
+<span class="c">#</span>
+<span class="c"># Naive chunking might split into:</span>
+<span class="c">#   Chunk A: "The MAX17761 is a smart eFuse."</span>
+<span class="c">#   Chunk B: "It trips at 12A and shuts down thermally at 150C."</span>
+<span class="c">#</span>
+<span class="c"># Chunk B embedded ALONE has no idea what "It" refers to.</span>
+<span class="c"># Late chunking embeds the full passage first, so Chunk B's vector</span>
+<span class="c"># still carries the "MAX17761 eFuse" signal even after splitting.</span></div>
+      <div class="info-box"><strong>Tradeoffs:</strong> requires a long-context embedding model (8K+ tokens) and is more expensive per document than chunk-then-embed. Most valuable when your documents are full of pronouns, cross-references, or section headers that earlier text disambiguates — research shows meaningful recall gains specifically on documents with heavy anaphoric reference. For straightforward prose, recursive or semantic chunking is usually good enough.</div>
+    </div>
   </div>
   <h2>Chunking Rules of Thumb</h2>
   <ul class="checklist">
-    <li>Start with 256–512 tokens per chunk, 10–20% overlap — then tune based on eval results</li>
+    <li>Start with 256–512 tokens per chunk, 10–20% overlap — then tune based on eval results (note: overlap shows little benefit if you're also running sparse/BM25 retrieval — measure on your own corpus)</li>
     <li>Never split tables, code blocks, or list items across chunks</li>
     <li>Prepend section/document headers to each chunk for standalone context</li>
     <li>Store rich metadata (source, section, page, date) for filtering and citations</li>
     <li>Test chunking empirically — measure retrieval recall on a golden query set</li>
+    <li>If queries about pronouns/cross-references keep failing, try late chunking before reaching for a bigger model</li>
   </ul>
+  <h2>Try It — Recursive Chunking, Hands-On</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Run this on a real text file and inspect the actual chunk boundaries — seeing where the splitter chose to cut is the fastest way to build intuition for chunk-size tradeoffs.</p>
+  <div class="code-block"><span class="code-label">// EXERCISE: RECURSIVE CHARACTER SPLITTER</span>pip install langchain-text-splitters
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512,        <span class="c"># characters (swap for a token-based splitter in production)</span>
+    chunk_overlap=64,
+    separators=["\n\n", "\n", ". ", " "],
+)
+
+with open("my_document.txt") as f:
+    text = f.read()
+
+chunks = splitter.split_text(text)
+print(f"{len(chunks)} chunks produced")
+for i, c in enumerate(chunks[:3]):
+    print(f"--- chunk {i} ({len(c)} chars) ---")
+    print(c[:200], "...")
+
+<span class="c"># TASK: try chunk_size=128 and chunk_size=1024 on the same document.</span>
+<span class="c"># Inspect 3 chunks at each size. At which size do chunks start losing</span>
+<span class="c"># coherent meaning? At which size do they start mixing unrelated topics?</span></div>
 </div>`,
 
 'rag:vectordbs': () => `<div class="panel" id="panel-rag-vectordbs">
@@ -5274,10 +5343,11 @@ return get_parent(matched_child.parent_id)  <span class="c"># full section to LL
   <h2>Selection Guide</h2>
   <ul class="cap-list">
     <li><div class="cap-icon">🏃</div><div class="cap-text"><strong style="color:var(--accent)">Prototyping?</strong><span>Chroma — runs in-process, zero setup, perfect for notebooks and proofs of concept.</span></div></li>
-    <li><div class="cap-icon">🐘</div><div class="cap-text"><strong style="color:var(--accent)">Already using Postgres?</strong><span>pgvector — keep vectors next to your relational data, combine SQL filters with vector search in one query. Minimal new infrastructure.</span></div></li>
-    <li><div class="cap-icon">☁️</div><div class="cap-text"><strong style="color:var(--accent)">Want zero ops at scale?</strong><span>Pinecone — fully managed, serverless. You never touch an index. Pay for convenience.</span></div></li>
-    <li><div class="cap-icon">🔧</div><div class="cap-text"><strong style="color:var(--accent)">Want control + hybrid search?</strong><span>Weaviate or Qdrant — open-source, self-hostable, with hybrid search and filtering built in. Good for private/on-prem.</span></div></li>
+    <li><div class="cap-icon">🐘</div><div class="cap-text"><strong style="color:var(--accent)">Already using Postgres?</strong><span>pgvector — keep vectors next to your relational data, combine SQL filters with vector search in one query. With an HNSW index, pgvector now matches or beats dedicated vector DBs at roughly 1M-vector scale, so for most teams already on Postgres, standing up a separate vector database isn't justified until scale or QPS genuinely demands it.</span></div></li>
+    <li><div class="cap-icon">☁️</div><div class="cap-text"><strong style="color:var(--accent)">Want zero ops at scale?</strong><span>Pinecone — fully managed, serverless, sub-100ms latency at billions of vectors. You never touch an index. Pay for convenience.</span></div></li>
+    <li><div class="cap-icon">🔧</div><div class="cap-text"><strong style="color:var(--accent)">Want control + hybrid search?</strong><span>Weaviate or Qdrant — open-source, self-hostable, with hybrid search and filtering built in. Qdrant tends to benchmark fastest for raw ANN latency; Weaviate has the most mature built-in hybrid-search tooling. Good for private/on-prem.</span></div></li>
   </ul>
+  <div class="info-box amber"><strong>Don't over-choose:</strong> the vector DB is rarely the bottleneck in RAG quality — chunking, embeddings, and reranking matter far more. Pick the option with the least new operational surface area for your team (often pgvector if you already run Postgres) and revisit only if benchmarks show you actually need it.</div>
 </div>`,
 
 'rag:hybrid': () => `<div class="panel" id="panel-rag-hybrid">
@@ -5305,10 +5375,35 @@ RRF_score(doc) = sum over each search of:  1 / (k + rank_in_that_search)
   <h2>Practical Guidance</h2>
   <ul class="checklist">
     <li>Hybrid search consistently beats pure vector search on technical and enterprise corpora — measure it on your data</li>
-    <li>Many vector DBs (Weaviate, Qdrant, pgvector) support hybrid search natively — check before building it yourself</li>
+    <li>Many vector DBs (Weaviate, Qdrant, pgvector, Cohere embed-v4's native sparse output) support hybrid search natively — check before building it yourself</li>
     <li>Weight the two methods based on your content: code/specs/IDs → lean keyword; conversational/conceptual → lean vector</li>
     <li>Always follow hybrid retrieval with a reranker for the final ordering (next module)</li>
   </ul>
+  <h2>Try It — Implement RRF From Scratch</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Fusion is simpler than it sounds. This exercise fuses two ranked lists (pretend one came from a vector search, one from BM25) using the same formula production systems use.</p>
+  <div class="code-block"><span class="code-label">// EXERCISE: RECIPROCAL RANK FUSION</span>def rrf_fuse(vector_results, keyword_results, k=60, top_n=5):
+    <span class="c">"""
+    vector_results, keyword_results: lists of doc_ids, best match first.
+    Returns doc_ids sorted by fused score, best first.
+    """</span>
+    scores = {}
+    for rank, doc_id in enumerate(vector_results):
+        scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank + 1)
+    for rank, doc_id in enumerate(keyword_results):
+        scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank + 1)
+    return sorted(scores, key=scores.get, reverse=True)[:top_n]
+
+<span class="c"># Pretend "doc7" matched well on meaning (vector) but "MAX17761" is an</span>
+<span class="c"># exact part number only BM25 would rank highly</span>
+vector_hits  = ["doc3", "doc7", "doc1", "doc9", "doc2"]
+keyword_hits = ["doc9", "doc1", "doc7", "doc4", "doc3"]
+
+print(rrf_fuse(vector_hits, keyword_hits))
+<span class="c"># -> docs appearing high in BOTH lists (doc1, doc7, doc9) should rise to the top</span>
+
+<span class="c"># TASK: change keyword_hits so "doc9" is #1 in both lists and confirm</span>
+<span class="c"># it now wins the fused ranking. Then try k=10 vs k=200 — what changes?</span></div>
+  <div class="info-box"><strong>What changing k does:</strong> a small k (e.g. 10) makes rank position matter a lot — being #1 vs #2 swings the score heavily. A large k (e.g. 200) flattens the differences, so appearing <em>anywhere</em> in both lists matters more than exact rank. 60 is the common default because it works well across most corpora.</div>
 </div>`,
 
 'rag:reranking': () => `<div class="panel" id="panel-rag-reranking">
@@ -5336,12 +5431,37 @@ RRF_score(doc) = sum over each search of:  1 / (k + rank_in_that_search)
   <div class="info-box"><strong>Why the two-stage design:</strong> Cross-encoders are too slow to run against your whole corpus, but extremely accurate on a small candidate set. So retrieval (bi-encoder) narrows millions to ~50, then reranking (cross-encoder) picks the best ~5. Fast <em>and</em> accurate.</div>
   <h2>Reranker Options</h2>
   <ul class="cap-list">
-    <li><div class="cap-icon">🥇</div><div class="cap-text"><strong style="color:var(--accent)">Cohere Rerank</strong><span>Managed reranking API, strong quality, easy to integrate. A popular default for production.</span></div></li>
-    <li><div class="cap-icon">🔬</div><div class="cap-text"><strong style="color:var(--accent)">Voyage rerank</strong><span>Anthropic-recommended reranker, strong on technical and retrieval-heavy tasks.</span></div></li>
-    <li><div class="cap-icon">🆓</div><div class="cap-text"><strong style="color:var(--accent)">BGE-reranker / open source</strong><span>Self-hostable cross-encoders. No API cost, full control — good for private deployments.</span></div></li>
-    <li><div class="cap-icon">🤖</div><div class="cap-text"><strong style="color:var(--accent)">LLM-as-reranker</strong><span>Use an LLM to score relevance directly. Flexible and powerful, but slower and more expensive than dedicated rerankers.</span></div></li>
+    <li><div class="cap-icon">🥇</div><div class="cap-text"><strong style="color:var(--accent)">Cohere Rerank</strong><span>Managed reranking API with a large context window, strong multilingual coverage, and consistently top-ranked quality. A popular default for production.</span></div></li>
+    <li><div class="cap-icon">🔬</div><div class="cap-text"><strong style="color:var(--accent)">Voyage rerank</strong><span>Anthropic-recommended reranker, strong on technical, code, and instruction-following retrieval tasks; quality drops more than Cohere's on non-English languages, so check coverage if you're multilingual.</span></div></li>
+    <li><div class="cap-icon">🆓</div><div class="cap-text"><strong style="color:var(--accent)">BGE-reranker / mxbai-rerank / open source</strong><span>Self-hostable cross-encoders. No API cost, full control — good for private deployments. Newer open releases are closing the gap with managed APIs.</span></div></li>
+    <li><div class="cap-icon">🤖</div><div class="cap-text"><strong style="color:var(--accent)">LLM-as-reranker</strong><span>Use an LLM to score relevance directly. Flexible and powerful, but slower and more expensive than dedicated rerankers — best reserved for small candidate sets or when you need reasoning about relevance, not just a score.</span></div></li>
   </ul>
   <div class="info-box green"><strong>Impact:</strong> Adding a reranker is frequently the single biggest quality jump in a RAG pipeline — it directly fixes the "right document retrieved but buried at rank 8" problem that causes wrong or incomplete answers.</div>
+  <h2>Try It — Measure the Reranker's Impact Yourself</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">The fastest way to internalize "reranking is high-ROI" is to watch a correct-but-buried result jump to the top.</p>
+  <div class="code-block"><span class="code-label">// EXERCISE: BEFORE / AFTER RERANKING</span>pip install cohere
+
+import cohere
+co = cohere.Client()  <span class="c"># reads CO_API_KEY env var</span>
+
+query = "What is the thermal shutdown threshold of the eFuse?"
+
+<span class="c"># Pretend this is what fast vector search returned — note the answer</span>
+<span class="c"># is in candidate index 4, buried near the bottom</span>
+candidates = [
+    "The eFuse supports hot-swap insertion without inrush current spikes.",
+    "Power budget for the rail is 5W typical, 8W peak.",
+    "Reverse polarity protection trips within 100 microseconds.",
+    "The board uses a 4-layer PCB stackup for thermal dissipation.",
+    "Thermal shutdown engages at 150C junction temperature and auto-recovers at 130C.",
+]
+
+reranked = co.rerank(query=query, documents=candidates, model="rerank-v3.5", top_n=5)
+for r in reranked.results:
+    print(f"score={r.relevance_score:.3f}  {candidates[r.index]}")
+
+<span class="c"># TASK: confirm the thermal-shutdown sentence (originally rank 5) is now</span>
+<span class="c"># rank 1 with a much higher score than the others. That gap IS the ROI.</span></div>
 </div>`,
 
 'rag:advanced': () => `<div class="panel" id="panel-rag-advanced">
@@ -5378,10 +5498,40 @@ RRF_score(doc) = sum over each search of:  1 / (k + rank_in_that_search)
   </table>
   <h2>Tooling</h2>
   <ul class="cap-list">
-    <li><div class="cap-icon">📐</div><div class="cap-text"><strong style="color:var(--accent)">RAGAS</strong><span>Open-source framework purpose-built for RAG evaluation. Computes faithfulness, answer relevance, context precision/recall using LLM-as-judge.</span></div></li>
-    <li><div class="cap-icon">🔭</div><div class="cap-text"><strong style="color:var(--accent)">LangSmith / Phoenix</strong><span>Trace every retrieval and generation step; build evaluation datasets; track metrics across pipeline changes.</span></div></li>
+    <li><div class="cap-icon">📐</div><div class="cap-text"><strong style="color:var(--accent)">RAGAS</strong><span>Open-source framework purpose-built for RAG evaluation. Computes faithfulness, answer relevance, context precision/recall using LLM-as-judge — free to use, the cost is the judge-model API calls.</span></div></li>
+    <li><div class="cap-icon">🧪</div><div class="cap-text"><strong style="color:var(--accent)">TruLens / DeepEval</strong><span>Alternative open-source eval frameworks with the same core RAG metrics; both can point the judge at any OpenAI-compatible endpoint, including a self-hosted model, for evals that never leave your infrastructure.</span></div></li>
+    <li><div class="cap-icon">🔭</div><div class="cap-text"><strong style="color:var(--accent)">LangSmith / Phoenix / Langfuse</strong><span>Trace every retrieval and generation step; build evaluation datasets; track metrics across pipeline changes over time.</span></div></li>
     <li><div class="cap-icon">📋</div><div class="cap-text"><strong style="color:var(--accent)">Golden Q&A set</strong><span>Curate 30–100 representative questions with known correct answers and known source chunks. Run on every change. Your most valuable RAG asset.</span></div></li>
   </ul>
+  <h2>Try It — Run a Faithfulness Check</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">You don't need a framework to start. This minimal LLM-as-judge faithfulness check is the same idea RAGAS automates at scale — run it once by hand to see exactly what it's checking.</p>
+  <div class="code-block"><span class="code-label">// EXERCISE: MINIMAL LLM-AS-JUDGE FAITHFULNESS CHECK</span>import anthropic
+client = anthropic.Anthropic()
+
+context = "Thermal shutdown engages at 150C junction temperature and auto-recovers at 130C."
+answer  = "The eFuse shuts down at 150C and turns back on once it cools to 130C."
+
+judge_prompt = f"""You are checking whether an answer is fully supported by a
+context. List each factual claim in the ANSWER, then mark it SUPPORTED or
+UNSUPPORTED based only on the CONTEXT below. An UNSUPPORTED claim means the
+context does not say this, even if it sounds plausible.
+
+CONTEXT:
+{context}
+
+ANSWER:
+{answer}"""
+
+resp = client.messages.create(
+    model="claude-sonnet-4-6", max_tokens=512,
+    messages=[{"role": "user", "content": judge_prompt}]
+)
+print(resp.content[0].text)
+
+<span class="c"># TASK: edit the answer variable to add one invented fact not in the context</span>
+<span class="c"># (e.g. "...and has a 3-year warranty"). Confirm the judge marks it</span>
+<span class="c"># UNSUPPORTED. This is exactly the kind of hallucination that</span>
+<span class="c"># faithfulness scoring is designed to catch at scale.</span></div>
 </div>`,
 
 'rag:ragprod': () => `<div class="panel" id="panel-rag-ragprod">
@@ -5545,10 +5695,10 @@ print(resp.content[0].text)</div>
   <h1>Quick <span class="hl">Reference</span></h1>
   <div class="cheat-grid">
     <div class="cheat-card"><h3>Pipeline Steps</h3><ul class="checklist"><li>Load → Chunk → Embed → Store</li><li>Query → Retrieve → Rerank → Augment → Generate</li></ul></div>
-    <div class="cheat-card"><h3>Chunking</h3><ul class="checklist"><li>Start 256-512 tokens, 10-20% overlap</li><li>Split on semantic boundaries</li><li>Never split tables/code/lists</li><li>Parent-child for precision + context</li></ul></div>
+    <div class="cheat-card"><h3>Chunking</h3><ul class="checklist"><li>Start 256-512 tokens, 10-20% overlap</li><li>Split on semantic boundaries</li><li>Never split tables/code/lists</li><li>Parent-child for precision + context</li><li>Late chunking for heavy cross-references</li></ul></div>
     <div class="cheat-card"><h3>Retrieval Quality</h3><ul class="checklist"><li><span class="hl">Hybrid</span> = vector + keyword (BM25)</li><li><span class="hl">Rerank</span> = biggest quality jump</li><li>Retrieve wide (50), rerank narrow (5)</li><li>Metadata filters for precision</li></ul></div>
-    <div class="cheat-card"><h3>Embeddings</h3><ul class="checklist"><li>Same model for index + query</li><li>voyage-3, text-embedding-3-large</li><li>Normalize for cosine similarity</li><li>Domain matters for technical text</li></ul></div>
-    <div class="cheat-card"><h3>Eval Metrics</h3><ul class="checklist"><li><span class="hl">Context recall</span> — found the answer?</li><li><span class="hl">Faithfulness</span> — grounded, not hallucinated?</li><li><span class="hl">Answer relevance</span> — addresses question?</li><li>Tool: RAGAS</li></ul></div>
+    <div class="cheat-card"><h3>Embeddings</h3><ul class="checklist"><li>Same model for index + query</li><li>voyage-3.5, gemini-embedding-001, embed-v4</li><li>Normalize for cosine similarity</li><li>Domain matters for technical text</li></ul></div>
+    <div class="cheat-card"><h3>Eval Metrics</h3><ul class="checklist"><li><span class="hl">Context recall</span> — found the answer?</li><li><span class="hl">Faithfulness</span> — grounded, not hallucinated?</li><li><span class="hl">Answer relevance</span> — addresses question?</li><li>Tools: RAGAS, TruLens, DeepEval</li></ul></div>
     <div class="cheat-card"><h3>Advanced</h3><ul class="checklist"><li>Query rewriting — fix vague queries</li><li>HyDE — embed hypothetical answer</li><li>Contextual retrieval — chunk context</li><li>Multi-hop — agentic retrieval</li></ul></div>
   </div>
 </div>`,
