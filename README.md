@@ -26,7 +26,7 @@ xdg-open src/ai-academy.html    # Linux
 | 6 | LLM Fundamentals | 12 | Tokens, attention, training, RLHF, inference |
 | 7 | AI for Hardware Engineers | 12 | Compliance, schematic review, BOM, test data |
 | 8 | Context Engineering | 13 | Token budget, compression, memory, agent context |
-| 9 | Managing Vibe-Coded Projects | 14 | Directory structure, CLAUDE.md, bloat prevention |
+| 9 | Managing Vibe-Coded Projects | 14 | Directory structure, AGENTS.md/CLAUDE.md, bloat prevention |
 | 10 | QA Stack & GitHub Actions | 13 | Unit/integration/E2E tests, CI pipelines, AI test gen |
 | 11 | Docker with AI | 12 | Dockerfiles, Compose, session scripts, CI/CD |
 
