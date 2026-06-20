@@ -1259,6 +1259,10 @@ const COURSES = [
     { q: "Why are LLM outputs probabilistic rather than deterministic by default?", options: ["Because of hardware errors","Because the model samples the next token from a probability distribution, and sampling introduces randomness (controlled by temperature)","Because the internet changes","Because of network latency"], correct: 1, explanation: "At each step the model produces a probability distribution over possible next tokens. Sampling from this distribution (rather than always taking the most likely token) introduces controlled randomness. Temperature 0 makes it deterministic (always pick the top token); higher temperatures increase diversity." },
     { q: "Why do LLMs hallucinate?", options: ["They are programmed to lie","They generate the most statistically plausible continuation, which isn't always factually true — they have no built-in truth verification","Their training data is encrypted","They run out of memory"], correct: 1, explanation: "LLMs predict plausible token sequences based on patterns, not verified facts. When the model lacks specific knowledge, it generates text that 'sounds right' statistically but may be false. There's no inherent fact-checking — which is why grounding (RAG) and verification matter for factual tasks." },
     { q: "What is the KV cache and why does it matter?", options: ["A database of API keys","A cache of computed key/value attention tensors that avoids recomputing them for prior tokens during generation, dramatically speeding up inference","A backup of the model weights","A cache of user conversations"], correct: 1, explanation: "During generation, the model would otherwise recompute attention for all prior tokens at every step. The KV cache stores the key and value tensors for already-processed tokens, so only the new token needs computation. This is essential for efficient inference but consumes memory that grows with context length." },
+    { q: "What does a Mixture of Experts (MoE) architecture do?", options: ["Trains several entirely separate models and votes between them","Splits the feed-forward layers into many specialized sub-networks ('experts') and routes each token to only a few of them, so the model has huge total capacity but activates only a fraction per token","Runs the same model on multiple GPUs for redundancy","Compresses the model weights to a smaller file size"], correct: 1, explanation: "MoE models (DeepSeek-V3, Mixtral, and most current frontier models) have many expert FFN sub-networks but a learned router sends each token to only a handful of them. DeepSeek-V3 has 671B total parameters but activates only about 37B per token — near-frontier quality at a fraction of the per-token compute of an equivalently capable dense model." },
+    { q: "What problem do Grouped-Query Attention (GQA) and Multi-head Latent Attention (MLA) solve?", options: ["They make the model's vocabulary larger","They reduce the size of the KV cache needed during inference, compared to standard multi-head attention, enabling longer context and higher throughput", "They eliminate the need for positional encoding","They remove the need for a tokenizer"], correct: 1, explanation: "Standard multi-head attention gives every head its own Key/Value projections, which makes the KV cache large and expensive to store during generation. GQA (used in Llama, Mistral) shares K/V across groups of heads; MLA (used in DeepSeek) compresses K/V into a small latent vector. Both shrink the cache with minimal quality loss, which is why nearly all current production models use one of them instead of plain multi-head attention." },
+    { q: "What is Direct Preference Optimization (DPO), and how does it differ from classic RLHF?", options: ["It removes the need for any preference data at all","It optimizes the model directly on pairs of preferred/rejected responses with a simple loss, skipping the separate reward model and the reinforcement-learning loop that classic RLHF requires", "It only works for image-generation models","It is a way to compress model weights"], correct: 1, explanation: "Classic RLHF trains a separate reward model from human preference rankings, then uses reinforcement learning (e.g. PPO) to optimize the LLM against that reward model — a complex, often unstable pipeline. DPO reframes the same preference data as a direct classification-style loss on the policy model itself, skipping the reward model and RL loop. It's simpler and more stable, and by the mid-2020s is widely used either standalone or alongside RLHF/RLAIF in multi-stage alignment pipelines." },
+    { q: "What is speculative decoding, and why does it speed up inference?", options: ["It skips safety filters to generate faster","A small, fast 'draft' model proposes several next tokens, and the large target model verifies them all in one parallel pass, accepting matches for free and only falling back to normal generation on mismatches","It reduces the number of layers in the model permanently","It pre-computes every possible response in advance"], correct: 1, explanation: "Speculative decoding uses a cheap draft model (or a quantized self-speculative copy of the target model) to guess ahead several tokens, then has the expensive target model check all of them in a single forward pass instead of one token at a time. Accepted guesses are essentially free; only mismatches require a normal generation step. This can meaningfully speed up generation latency without changing the final output distribution." },
   ],
 },
 
@@ -6266,7 +6270,27 @@ ids:     [464,   384,  37,     7095,      1459,       284,   717,  32,  13]
     <tr><td><span class="hl">SentencePiece</span></td><td>Llama, T5, others</td><td>Language-agnostic sub-word tokenization, treats text as raw bytes</td></tr>
     <tr><td><span class="hl">WordPiece</span></td><td>BERT lineage</td><td>Similar to BPE, merges based on likelihood gains</td></tr>
   </table>
-  <div class="info-box amber"><strong>Practical takeaway:</strong> When estimating cost or context usage, count tokens, not words — use the provider's tokenizer or the rule of thumb (~0.75 words/token). And if a model fails at a character-level task, tokenization is often the culprit.</div>
+  <h2>Real Tokenizers, Real Vocabularies</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Vocabulary size is a real design choice with real consequences. OpenAI's current encoding, <span class="hl">o200k_base</span> (GPT-4o and newer), uses roughly 200K vocabulary entries — about double the ~100K of the older <span class="hl">cl100k_base</span> (GPT-4 / GPT-3.5 era). A larger vocabulary lets more text compress into fewer tokens (cheaper, more fits in context) at the cost of a bigger embedding table. Anthropic does not publish a downloadable Claude tokenizer — the only authoritative way to count Claude tokens is the <code class="inline">count_tokens</code> endpoint on the Messages API.</p>
+  <div class="code-block"><span class="code-label">// TRY THIS — HANDS-ON EXERCISE</span><span class="c">// Open OpenAI's tokenizer visualizer (platform.openai.com/tokenizer)</span>
+<span class="c">// or install tiktoken locally, then tokenize these three strings.</span>
+<span class="c">// Predict the token count BEFORE you check, then compare:</span>
+
+1. "ChatGPT is great."                              <span class="c">// short, common words</span>
+2. "The eFuse subsystem's overcurrent threshold is 12.5A."  <span class="c">// technical/compound</span>
+3. "supercalifragilisticexpialidocious"              <span class="c">// one rare long word</span>
+
+<span class="c">// Expect: (1) ~4-5 tokens. (2) splits far more than the word count</span>
+<span class="c">// suggests -- "eFuse", "subsystem's", "12.5A" all fragment. (3) one</span>
+<span class="c">// "word" becomes 6-9 sub-word pieces, never a single token.</span>
+
+<span class="c"># pip install tiktoken</span>
+<span class="k">import</span> tiktoken
+enc = tiktoken.get_encoding(<span class="s">"o200k_base"</span>)
+ids = enc.encode(<span class="s">"The eFuse subsystem's overcurrent threshold is 12.5A."</span>)
+print(len(ids), ids)
+print(enc.decode(ids[:3]))   <span class="c"># round-trip any slice back to text</span></div>
+  <div class="info-box amber"><strong>Practical takeaway:</strong> When estimating cost or context usage, count tokens, not words — use the provider's tokenizer (tiktoken for OpenAI, the Messages API count_tokens endpoint for Claude) or the rule of thumb (~0.75 words/token). And if a model fails at a character-level task, tokenization is often the culprit.</div>
 </div>`,
 
 'llm:embeddings': () => `<div class="panel" id="panel-llm-embeddings">
@@ -6327,8 +6351,48 @@ vec("king") - vec("man") + vec("woman")  ~=  vec("queen")
 
 <span class="c"># "Scaled dot-product attention" — the core operation,</span>
 <span class="c"># run in parallel across all tokens.</span></div>
+  <h2>Hands-On: Compute Attention by Hand</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">The formula is abstract until you run real numbers through it. Here's a tiny 3-token example — work through it with a calculator (or a few lines of Python/numpy) to see exactly how "scores → softmax → weighted blend" produces an output vector.</p>
+  <div class="code-block"><span class="code-label">// TOY EXAMPLE — 3 TOKENS, 2-DIM VECTORS (do the math yourself)</span><span class="c"># Sentence: "cat chased mouse" — computing attention for "chased"</span>
+<span class="c"># (real models use 64-128+ dims per head; this is simplified to fit on paper)</span>
+
+Query (for "chased"):      q = [1.0, 0.0]
+Keys:  k_cat = [1.0, 0.0]   k_chased = [0.0, 1.0]   k_mouse = [0.8, 0.2]
+Values: v_cat = [2,5]       v_chased = [0,1]         v_mouse = [4,1]
+
+<span class="c"># Step 1 — raw scores = dot product of query with each key</span>
+score_cat    = q·k_cat    = (1*1.0 + 0*0.0)  = 1.0
+score_chased = q·k_chased = (1*0.0 + 0*1.0)  = 0.0
+score_mouse  = q·k_mouse  = (1*0.8 + 0*0.2)  = 0.8
+
+<span class="c"># Step 2 — softmax turns scores into weights that sum to 1</span>
+<span class="c"># softmax(x) = exp(x) / sum(exp(all x))</span>
+exp(1.0)=2.72   exp(0.0)=1.00   exp(0.8)=2.23   -> sum = 5.95
+weight_cat    = 2.72 / 5.95 = <span class="hl">0.46</span>
+weight_chased = 1.00 / 5.95 = <span class="hl">0.17</span>
+weight_mouse  = 2.23 / 5.95 = <span class="hl">0.37</span>
+
+<span class="c"># Step 3 — output = weighted sum of Values</span>
+output = 0.46*[2,5] + 0.17*[0,1] + 0.37*[4,1]
+       = [0.92,2.30] + [0,0.17] + [1.48,0.37]
+       = <span class="hl">[2.40, 2.84]</span>
+
+<span class="c"># "chased" ends up attending most to "cat" (0.46) — plausible, since</span>
+<span class="c"># in "cat chased mouse" the subject is highly relevant to the verb.</span>
+<span class="c"># Try changing the query vector and re-running the three steps yourself.</span></div>
+  <div class="info-box"><strong>Exercise:</strong> Recompute the example above using q = [0.0, 1.0] instead (pretend "chased" is now "looking for its subject's target"). Which token gets the highest weight, and does that match your intuition?</div>
   <h2>Multi-Head Attention</h2>
   <div class="info-box violet"><strong>Many perspectives at once:</strong> Models don't run attention just once — they run many "heads" in parallel, each learning to focus on different kinds of relationships (one head tracks grammar, another tracks references, another tracks topic). Their outputs combine, giving the model a rich, multi-faceted view of how tokens relate.</div>
+  <h2>Modern Attention Variants</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Plain multi-head attention (MHA) gives every head its own Key and Value projections — accurate, but the KV cache it needs at inference time grows expensive. Most current production models use a cheaper variant:</p>
+  <table class="data-table">
+    <tr><th>Variant</th><th>Idea</th><th>Used by</th></tr>
+    <tr><td><span class="hl">MHA</span> (Multi-Head)</td><td>Every head has its own K/V projections — most expressive, biggest KV cache</td><td>Original transformer, early GPT models</td></tr>
+    <tr><td><span class="hl">MQA</span> (Multi-Query)</td><td>All heads share one K/V projection — smallest cache, some quality loss</td><td>PaLM, some efficiency-focused models</td></tr>
+    <tr><td><span class="hl">GQA</span> (Grouped-Query)</td><td>Heads are split into groups; each group shares a K/V projection — a middle ground</td><td>Llama 2/3, Mistral, most current open models</td></tr>
+    <tr><td><span class="hl">MLA</span> (Multi-head Latent Attention)</td><td>Compresses K/V into a small shared latent vector before caching, then reconstructs per-head — big cache savings with little quality loss</td><td>DeepSeek-V2/V3</td></tr>
+  </table>
+  <div class="info-box green"><strong>Why this is in an inference module too:</strong> GQA and MLA exist purely to shrink the KV cache (covered later) — the memory cost of remembering every token's Key and Value during generation. Smaller KV cache means longer context and higher throughput per GPU, which is why nearly every current frontier model uses one of these variants instead of plain MHA.</div>
 </div>`,
 
 'llm:architecture': () => `<div class="panel" id="panel-llm-architecture">
@@ -6362,7 +6426,23 @@ vec("king") - vec("man") + vec("woman")  ~=  vec("queen")
     <tr><td>Attention heads</td><td>32 – 128</td><td>More heads → more relationship types tracked</td></tr>
     <tr><td>Parameters (total)</td><td>billions – trillions</td><td>More parameters → more capacity &amp; knowledge</td></tr>
   </table>
-  <div class="info-box green"><strong>Mixture of Experts (MoE):</strong> Many modern large models use MoE — they have many "expert" FFNs but activate only a few per token. This gives the capacity of a huge model at the compute cost of a much smaller one. It's how models scale to trillions of parameters efficiently.</div>
+  <div class="info-box green"><strong>Mixture of Experts (MoE):</strong> Most current frontier models use MoE — the feed-forward block is split into many "expert" sub-networks, and a learned router sends each token to only a handful of them (e.g. 8 of 256). This gives the knowledge capacity of a huge model at the compute cost of a much smaller one. DeepSeek-V3 is a concrete example: 671B total parameters, but only ~37B are active for any given token — GPT-4-class quality at a fraction of the inference compute. Mixtral-8x7B (46.7B total, ~13B active) was an earlier, smaller proof of the same idea. By 2025, MoE architectures power the majority of new frontier model releases — dense models like the original GPT-3 are increasingly the exception, not the rule.</div>
+  <h2>Exercise: Dense vs. MoE Compute</h2>
+  <div class="code-block"><span class="code-label">// WORK THROUGH THIS YOURSELF</span>A dense model has 70B parameters. Every token activates all 70B.
+
+An MoE model has 8 experts of ~9B parameters each (72B total in FFN
+layers, roughly comparable footprint), but the router picks only
+2 experts per token.
+
+<span class="c">// Q1: Roughly how many parameters does the MoE model actually</span>
+<span class="c">//     "use" (compute against) per token?</span>
+<span class="c">//     -> ~2 * 9B = 18B active, vs 70B for the dense model</span>
+
+<span class="c">// Q2: If inference cost scales with active parameters, roughly how</span>
+<span class="c">//     much cheaper per-token is the MoE forward pass?</span>
+<span class="c">//     -> ~70/18 ≈ 3.9x cheaper, while the model "knows" as much as</span>
+<span class="c">//        a 72B-class dense model would (and DeepSeek-V3 pushes this</span>
+<span class="c">//        idea to 671B total / 37B active — about 18x leverage)</span></div>
 </div>`,
 
 'llm:context': () => `<div class="panel" id="panel-llm-context">
@@ -6439,10 +6519,12 @@ Target:   "Paris"
   </div>
   <h2>Alignment Approaches</h2>
   <div class="card-grid">
-    <div class="card"><div class="card-icon">👍</div><div class="card-title">RLHF</div><div class="card-body">The classic approach. Human rankings → reward model → RL optimization. Powerful but complex to run.</div><span class="tag">classic</span></div>
-    <div class="card"><div class="card-icon">⚡</div><div class="card-title">DPO</div><div class="card-body">Direct Preference Optimization. Skips the separate reward model, optimizing directly on preference pairs. Simpler, increasingly popular.</div><span class="tag amber">efficient</span></div>
-    <div class="card"><div class="card-icon">📜</div><div class="card-title">Constitutional AI</div><div class="card-body">Anthropic's approach. The model critiques and revises its own outputs against a set of written principles (a "constitution"), reducing reliance on human labels for harm avoidance.</div><span class="tag violet">principled</span></div>
+    <div class="card"><div class="card-icon">👍</div><div class="card-title">RLHF</div><div class="card-body">The classic approach. Human rankings → reward model → RL optimization. Powerful but complex and expensive to run.</div><span class="tag">classic</span></div>
+    <div class="card"><div class="card-icon">⚡</div><div class="card-title">DPO</div><div class="card-body">Direct Preference Optimization. Skips the separate reward model, optimizing directly on preference pairs with a simple classification-style loss. Simpler and more stable than RLHF, and by the mid-2020s a dominant approach for many fine-tunes.</div><span class="tag amber">efficient</span></div>
+    <div class="card"><div class="card-icon">🤖</div><div class="card-title">RLAIF</div><div class="card-body">Reinforcement Learning from AI Feedback. An AI model (guided by a constitution or rubric) generates the preference judgments instead of human raters — scales far beyond what human labeling budgets allow, often combined with DPO downstream.</div><span class="tag green">scalable</span></div>
+    <div class="card"><div class="card-icon">📜</div><div class="card-title">Constitutional AI</div><div class="card-body">Anthropic's approach, used for the Claude family. The model critiques and revises its own outputs against a written set of principles (a "constitution"), then that self-critique data trains the model further — combining human data for helpfulness with AI feedback for harm avoidance.</div><span class="tag violet">principled</span></div>
   </div>
+  <div class="info-box"><strong>These aren't mutually exclusive:</strong> Modern alignment pipelines typically chain several stages — e.g. SFT, then rejection sampling, then DPO and/or RLHF rounds, sometimes with RLAIF-generated preference data feeding the later rounds. Meta's Llama 4, for example, combined SFT, rejection sampling, PPO, and DPO across multiple refinement passes rather than relying on a single technique.</div>
   <h2>What Alignment Does and Doesn't Fix</h2>
   <ul class="cap-list">
     <li><div class="cap-icon">✅</div><div class="cap-text"><strong style="color:var(--green)">Improves</strong><span>Helpfulness, instruction-following, tone, willingness to decline harmful requests, calibrated hedging.</span></div></li>
@@ -6470,8 +6552,36 @@ step 3 -> "...against overcurrent" -> sample -> " conditions"
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Top-p (nucleus sampling) <span class="acc-arrow">▾</span></div><div class="acc-body">Only sample from the smallest set of tokens whose probabilities sum to p (e.g. 0.9). This dynamically limits choices to the plausible set, cutting off the long tail of unlikely tokens. A common default is 0.9-0.95.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Top-k <span class="acc-arrow">▾</span></div><div class="acc-body">Only consider the k most likely tokens at each step. Simpler than top-p but less adaptive (k is fixed regardless of how peaked the distribution is). Often used together with or instead of top-p.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Max tokens &amp; stop sequences <span class="acc-arrow">▾</span></div><div class="acc-body">Max tokens caps output length (and cost). Stop sequences are strings that immediately halt generation when produced — useful for enforcing structure (stop after a closing brace) or preventing run-on output.</div></div>
+  <h2>Hands-On: Compute Temperature &amp; Top-p Yourself</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Work through this by hand to see exactly what temperature and top-p do to a real distribution. Suppose the model's raw next-token logits, after softmax at temperature 1, give these probabilities:</p>
+  <div class="code-block"><span class="code-label">// STARTING DISTRIBUTION (temperature = 1)</span>token:  "current"  "voltage"  "circuit"  "banana"  "..."
+prob:    0.50       0.30        0.15       0.04      0.01
+
+<span class="c">// Step 1 — apply temperature T by rescaling logits before softmax:</span>
+<span class="c">//   T &lt; 1 sharpens the distribution (more confident, less random)</span>
+<span class="c">//   T &gt; 1 flattens it (more random, more "creative")</span>
+<span class="c">// At T=0.5, the gap between "current" and "banana" widens further;</span>
+<span class="c">// at T=1.5, probabilities move closer together (banana becomes</span>
+<span class="c">// more reachable). At T=0, only "current" (the argmax) is ever picked.</span>
+
+<span class="c">// Step 2 — apply top-p = 0.9 on the T=1 distribution above:</span>
+<span class="c">// sort descending, keep adding until cumulative sum >= 0.9:</span>
+0.50 (cum 0.50) + 0.30 (cum 0.80) + 0.15 (cum 0.95) -> STOP, keep these 3
+<span class="c">// "banana" and "..." are cut entirely -- never sampled this step,</span>
+<span class="c">// even though they had nonzero probability under temperature alone.</span>
+
+<span class="c">// EXERCISE: with top-p = 0.75 instead, which tokens survive?</span>
+<span class="c">// -> only "current" (0.50) and "voltage" (cum 0.80 >= 0.75) survive.</span>
+<span class="c">// Notice: lowering p tightens the nucleus even with temperature fixed.</span></div>
+  <div class="info-box amber"><strong>Try it for real:</strong> Call any chat completion API with the same prompt and <code class="inline">temperature: 0</code>, <code class="inline">logprobs: true</code> (or the closest equivalent) to see the actual top alternative tokens and their probabilities at each step — then re-run at <code class="inline">temperature: 1.2</code> and compare how much the output changes.</div>
   <h2>The KV Cache</h2>
-  <div class="info-box violet"><strong>Why generation stays fast:</strong> Naively, generating each new token would recompute attention over all prior tokens. The <span class="hl">KV cache</span> stores the key and value vectors of already-processed tokens, so each new token only computes its own — turning quadratic recomputation into a manageable cost. The trade-off: the cache grows with context length and consumes significant memory, which is part of why long contexts are resource-heavy.</div>
+  <div class="info-box violet"><strong>Why generation stays fast:</strong> Naively, generating each new token would recompute attention over all prior tokens. The <span class="hl">KV cache</span> stores the key and value vectors of already-processed tokens, so each new token only computes its own — turning quadratic recomputation into a manageable cost. The trade-off: the cache grows with context length and consumes significant memory — which is exactly why GQA, MQA, and MLA (covered in the Attention module) exist: they shrink what has to be cached per token.</div>
+  <h2>Speeding Up Inference Further</h2>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">🎲</div><div class="card-title">Speculative Decoding</div><div class="card-body">A small, fast "draft" model guesses several tokens ahead; the large target model verifies them in a single parallel pass and accepts the ones that match what it would have generated anyway. Verified tokens are free — only mismatches require a normal full step. Modern variants even make the draft model a quantized copy of the target model itself (self-speculative decoding), reporting 2x+ speedups with little quality loss.</div><span class="tag">latency</span></div>
+    <div class="card"><div class="card-icon">📉</div><div class="card-title">Quantization</div><div class="card-body">Storing weights (and sometimes the KV cache) in lower precision — 8-bit or 4-bit instead of 16/32-bit floats — shrinks memory footprint and speeds up compute, usually with a small, often negligible, quality cost. Combining 4-bit weight quantization with a quantized KV cache compounds the savings, which is why it's now common in both research and production serving stacks.</div><span class="tag amber">memory</span></div>
+    <div class="card"><div class="card-icon">📦</div><div class="card-title">Batching</div><div class="card-body">Serving many requests together lets the GPU do more useful matrix-multiply work per memory load. Continuous batching (dynamically adding new requests to an in-flight batch rather than waiting for a fixed batch to finish) is standard in production inference servers.</div><span class="tag violet">throughput</span></div>
+  </div>
   <h2>Why Outputs Vary</h2>
   <ul class="checklist">
     <li>At temperature &gt; 0, sampling introduces randomness — the same prompt can give different outputs</li>
@@ -6513,9 +6623,9 @@ step 3 -> "...against overcurrent" -> sample -> " conditions"
   <div class="cheat-grid">
     <div class="cheat-card"><h3>The Pipeline</h3><ul class="checklist"><li>Text → Tokens → Embeddings</li><li>→ Transformer layers (attention + FFN)</li><li>→ Next-token probability → sample</li><li>→ Repeat (autoregressive)</li></ul></div>
     <div class="cheat-card"><h3>Tokens</h3><ul class="checklist"><li>~0.75 words per token (English)</li><li>Cost &amp; context measured in tokens</li><li>Numbers/letters tokenize awkwardly</li><li>BPE, SentencePiece, WordPiece</li></ul></div>
-    <div class="cheat-card"><h3>Attention</h3><ul class="checklist"><li>Every token attends to every other</li><li><span class="hl">Q</span>uery · <span class="hl">K</span>ey → weights → <span class="hl">V</span>alue</li><li>Multi-head = many relationship types</li><li>N-squared cost → context limits</li></ul></div>
-    <div class="cheat-card"><h3>Training Stages</h3><ul class="checklist"><li><span class="hl">Pre-training</span> — next-token prediction</li><li><span class="hl">SFT</span> — instruction following</li><li><span class="hl">RLHF / DPO</span> — human preferences</li><li>Constitutional AI — principled critique</li></ul></div>
-    <div class="cheat-card"><h3>Inference</h3><ul class="checklist"><li><span class="hl">Temperature</span> — 0 focused, 1 creative</li><li><span class="hl">Top-p / Top-k</span> — limit token pool</li><li>KV cache — speeds generation</li><li>Autoregressive — one token at a time</li></ul></div>
+    <div class="cheat-card"><h3>Attention</h3><ul class="checklist"><li>Every token attends to every other</li><li><span class="hl">Q</span>uery · <span class="hl">K</span>ey → weights → <span class="hl">V</span>alue</li><li>Multi-head = many relationship types</li><li>GQA / MLA shrink the KV cache</li><li>N-squared cost → context limits</li></ul></div>
+    <div class="cheat-card"><h3>Training Stages</h3><ul class="checklist"><li><span class="hl">Pre-training</span> — next-token prediction</li><li><span class="hl">SFT</span> — instruction following</li><li><span class="hl">RLHF / DPO / RLAIF</span> — preferences</li><li>Constitutional AI — principled critique</li></ul></div>
+    <div class="cheat-card"><h3>Inference</h3><ul class="checklist"><li><span class="hl">Temperature</span> — 0 focused, 1 creative</li><li><span class="hl">Top-p / Top-k</span> — limit token pool</li><li>KV cache — speeds generation</li><li>Speculative decoding / quantization — go faster</li></ul></div>
     <div class="cheat-card"><h3>Why It Fails</h3><ul class="checklist"><li>Hallucination — plausible ≠ true</li><li>Knowledge cutoff — frozen weights</li><li>Math/counting — token-level blindness</li><li>Lost in the middle — context position</li></ul></div>
   </div>
 </div>`,
