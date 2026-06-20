@@ -1484,6 +1484,10 @@ const COURSES = [
     { q: "What is a GitHub Actions 'workflow'?", options: ["A type of unit test","A YAML file in .github/workflows/ that defines triggers (events) and jobs (sequences of steps) that run automatically","A branch protection rule","A type of pull request"], correct: 1, explanation: "A GitHub Actions workflow is a YAML file defining: when to run (on: push, pull_request, schedule), what jobs to run, and the steps within each job. Workflows live in .github/workflows/ and run on GitHub's infrastructure automatically on the defined triggers." },
     { q: "What is 'test-driven development' (TDD) and what is its key discipline?", options: ["Writing tests only after all code is done","Writing a failing test first, then the minimum code to make it pass, then refactoring — the Red-Green-Refactor cycle","Automated test generation","Having QA write all tests"], correct: 1, explanation: "TDD's Red-Green-Refactor cycle: write a failing test (red), write the minimum code to pass it (green), then refactor for quality while keeping it green. This forces you to think about behavior before implementation and results in naturally testable, well-structured code." },
     { q: "What should a GitHub Actions CI pipeline do when any test fails?", options: ["Continue running all other jobs","Fail the run immediately and block the PR from merging — the broken build must be fixed before code can land","Send an email only","Delete the branch"], correct: 1, explanation: "A CI pipeline must fail loudly and block merges on any test failure. The value of CI is making it impossible to accidentally merge broken code. A pipeline that continues despite failures or doesn't block the PR provides false confidence and defeats the purpose." },
+    { q: "In a GitHub Actions workflow, how do you make an integration-test job spin up a real Postgres database for the duration of the job?", options: ["Install Postgres manually with apt-get in every step","Add a 'services:' block to the job with a postgres image, health checks, and a port mapping — GitHub starts it as a sidecar container before your steps run", "You can't run databases in GitHub Actions, only mocks", "Use 'runs-on: postgres-latest'"], correct: 1, explanation: "GitHub Actions' 'services:' key runs a container alongside your job for its whole duration. Define the image (e.g. postgres:17), env vars, a health check command/interval, and port mapping — then your test steps connect to it on localhost at the mapped port." },
+    { q: "In a multi-job GitHub Actions workflow, what does 'needs: [lint, unit-tests]' on a job do?", options: ["Nothing — it's just documentation", "Makes that job wait until the lint and unit-tests jobs both complete successfully before it starts", "Installs the lint and unit-tests packages as dependencies", "Merges the lint and unit-tests jobs into one"], correct: 1, explanation: "By default, GitHub Actions jobs run in parallel. 'needs:' creates an explicit dependency — the job won't start until all listed jobs finish successfully. This is how you sequence slow/expensive jobs (like E2E) to only run after cheaper gates (lint, unit tests) pass." },
+    { q: "Why pin GitHub Actions like 'actions/checkout' and 'actions/setup-node' to a specific major version, and why does that version need periodic updates?", options: ["Pinning is unnecessary — '@latest' is always safest", "Pinning avoids surprise breaking changes, but GitHub periodically retires the underlying Node.js runtime an action major version was built on, so old pins (e.g. @v4 on Node 20) eventually stop working and must be bumped", "Action versions never change once published", "Only private repos need to pin action versions"], correct: 1, explanation: "Actions are JS packages that run on a Node.js runtime baked into that major version. GitHub periodically forces runners onto a newer Node runtime and removes the old one — when that happens, action majors built on the retired runtime fail. Pin for stability, but revisit pins when GitHub announces a runtime deprecation." },
+    { q: "What is the Page Object Model pattern in Playwright E2E tests, and why use it?", options: ["A database schema for storing test results", "A class per page that encapsulates that page's selectors and actions (e.g. LoginPage.login()), so a UI change only requires updating one class instead of every test that uses that page", "A way to take screenshots of every page automatically", "A Playwright config option for parallel workers"], correct: 1, explanation: "Page Object Model wraps a page's locators and user actions in a class (e.g. LoginPage with emailInput, passwordInput, login()). Tests call the class's methods instead of repeating raw selectors. When a selector changes, you fix it in one place instead of hunting through every spec file that touches that page." },
   ],
 },
 
@@ -7279,7 +7283,7 @@ afterAll(async () => { await container.stop() })
 <span class="c"># Testcontainers spins up a real Postgres in Docker,</span>
 <span class="c"># runs your tests against it, then tears it down.</span>
 <span class="c"># Works in GitHub Actions with Docker enabled (default).</span></div>
-  <div class="info-box amber"><strong>Integration tests in CI need a database.</strong> Options: SQLite in-memory (fastest, least realistic), Testcontainers (real DB, needs Docker — works in GitHub Actions), or a GitHub Actions service container (postgres:15 as a service in the workflow YAML). The Actions service approach is the simplest for teams already on GitHub.</div>
+  <div class="info-box amber"><strong>Integration tests in CI need a database.</strong> Options: SQLite in-memory (fastest, least realistic), Testcontainers (real DB, needs Docker — works in GitHub Actions), or a GitHub Actions service container (postgres:17 as a service in the workflow YAML). The Actions service approach is the simplest for teams already on GitHub.</div>
 </div>`,
 
 'qa:e2e': () => `<div class="panel" id="panel-qa-e2e">
@@ -7448,12 +7452,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -7464,6 +7468,7 @@ jobs:
 
       - name: Check build
         run: npm run build</div>
+  <div class="info-box amber"><strong>Keep action versions current:</strong> GitHub periodically forces old Node.js runtimes off Actions infrastructure — Node 20 stopped being the default runtime in mid-2026 and was fully removed a few months later. Actions pinned to old majors (<code class="inline">@v4</code> of checkout/setup-node, built on the Node 20 runtime) start failing once that happens. Use <code class="inline">actions/checkout@v6</code> and <code class="inline">actions/setup-node@v6</code> (Node 24 runtime) and target <code class="inline">node-version: '24'</code> (current Active LTS) or at minimum <code class="inline">'22'</code> (Maintenance LTS) — not <code class="inline">'20'</code>.</div>
   <h2>Triggering Rules</h2>
   <div class="code-block"><span class="code-label">// COMMON TRIGGER PATTERNS</span>on:
   push:
@@ -7478,6 +7483,8 @@ jobs:
 
   workflow_dispatch:               <span class="c"># manual "Run workflow" button</span></div>
   <div class="info-box"><strong>Branch protection:</strong> After you have a working CI workflow, go to Settings > Branches > Add rule, require the CI job to pass before merging. Now it's impossible to merge broken code to main — the test suite enforces itself.</div>
+  <h2>Exercise: Add CI to a Real Repo</h2>
+  <div class="info-box green"><strong>Hands-on:</strong> In any repo with a package.json and a test script, create <code class="inline">.github/workflows/ci.yml</code> with the minimal workflow above. Commit it to a branch and open a PR — watch the "Checks" tab run lint/test live on GitHub. Then go to Settings → Branches → Branch protection rules, add a rule for main, and require the "test" status check to pass before merging. Finally, push a commit that fails a test on purpose and confirm GitHub blocks the merge button until it's fixed.</div>
 </div>`,
 
 'qa:pipeline': () => `<div class="panel" id="panel-qa-pipeline">
@@ -7493,7 +7500,7 @@ on:
     branches: [main]
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
   COVERAGE_THRESHOLD: '80'
 
 jobs:
@@ -7502,8 +7509,8 @@ jobs:
     name: Lint & Types
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with: { node-version: '&#36;{{ env.NODE_VERSION }}', cache: 'npm' }
       - run: npm ci
       - run: npm run lint
@@ -7514,13 +7521,13 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with: { node-version: '&#36;{{ env.NODE_VERSION }}', cache: 'npm' }
       - run: npm ci
       - run: npm run test:unit -- --coverage
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-coverage
           path: coverage/
@@ -7531,7 +7538,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:15
+        image: postgres:17
         env:
           POSTGRES_PASSWORD: testpassword
           POSTGRES_DB: testdb
@@ -7542,8 +7549,8 @@ jobs:
           --health-retries 5
         ports: ['5432:5432']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with: { node-version: '&#36;{{ env.NODE_VERSION }}', cache: 'npm' }
       - run: npm ci
       - run: npm run db:migrate
@@ -7559,8 +7566,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, unit-tests]      <span class="c"># only run if unit tests pass</span>
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with: { node-version: '&#36;{{ env.NODE_VERSION }}', cache: 'npm' }
       - run: npm ci
       - run: npx playwright install --with-deps chromium
@@ -7572,7 +7579,7 @@ jobs:
       - run: npm run test:e2e
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/
@@ -7583,8 +7590,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-tests]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v6
         with: { name: unit-coverage, path: coverage }
       - name: Check coverage threshold
         run: |
@@ -7595,6 +7602,8 @@ jobs:
             exit 1
           fi</div>
   <div class="info-box green"><strong>Parallel jobs = fast pipeline:</strong> Lint, unit tests, and integration tests run in parallel. E2E waits for unit tests to pass (no point running E2E if unit tests fail). The whole pipeline often completes in under 3 minutes for a typical app.</div>
+  <h2>Exercise: Build the Pipeline Incrementally</h2>
+  <div class="info-box"><strong>Hands-on:</strong> Don't paste the whole thing at once. Start with just the <code class="inline">lint</code> job, push, confirm it's green. Add <code class="inline">unit-tests</code> with the coverage upload, push, check the artifact appears under the run's "Summary" tab. Add the Postgres service container for <code class="inline">integration-tests</code> — run <code class="inline">echo $DATABASE_URL</code> as a debug step first to confirm the service is reachable on <code class="inline">localhost:5432</code> before wiring up real migrations. Building it job-by-job makes failures easy to isolate.</div>
 </div>`,
 
 'qa:autogen': () => `<div class="panel" id="panel-qa-autogen">
@@ -7625,10 +7634,10 @@ jobs:
   coverage-diff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { fetch-depth: 0 }
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
+      - uses: actions/setup-node@v6
+        with: { node-version: '24', cache: 'npm' }
       - run: npm ci
       - run: npm run coverage -- --reporter=json
       - name: Post coverage diff as PR comment
@@ -7662,13 +7671,13 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '24', cache: 'npm' }
       - run: npm ci
       - run: npm run coverage -- --reporter=text > coverage-report.txt
       - name: Open issue if coverage drops
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs')
