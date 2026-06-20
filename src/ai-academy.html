@@ -1314,6 +1314,8 @@ const COURSES = [
     { q: "Why should sensitive design data (proprietary schematics, unreleased specs) be handled carefully with AI tools?", options: ["It slows down the AI","Data sent to third-party model APIs may be logged or retained; use enterprise agreements, zero-retention endpoints, or local models for sensitive IP","It makes the output less accurate","There is no concern"], correct: 1, explanation: "Proprietary hardware IP sent to a public model API may be logged, retained, or used per the provider's terms. For sensitive data, use enterprise agreements with zero-retention/no-training guarantees, or run local open-weight models (Ollama) so nothing leaves your infrastructure. Always check your organization's data policy first." },
     { q: "What is a realistic, high-value AI application for environmental stress test data?", options: ["Replacing the test chamber","Summarizing trends, flagging anomalies, and drafting the analysis section of a report — with the engineer verifying conclusions","Deciding pass/fail autonomously for certification","Deleting outlier data automatically"], correct: 1, explanation: "AI can rapidly summarize large test datasets, surface trends and anomalies across temperature/humidity cycles, and draft report narratives — saving significant engineer time. But pass/fail and certification conclusions must be made by a qualified engineer reviewing the actual data; AI assists the analysis, it doesn't own the verdict." },
     { q: "How should AI assistance be reflected in formal engineering records?", options: ["It should never be mentioned","Document AI use as you would any tool or reference — noting that outputs were engineer-reviewed — to maintain traceability and accountability","Claim the engineer did everything manually","Only mention it if asked by an auditor"], correct: 1, explanation: "Just as you document the use of a reference handbook, calculator, or simulation tool, AI assistance should be noted in the engineering record — with the key fact that a qualified engineer reviewed and verified the outputs. This maintains traceability, accountability, and audit-readiness in regulated environments." },
+    { q: "Current multimodal AI models reviewing a schematic image are generally MOST reliable at which task?", options: ["Measuring exact trace widths and clearances from the image","Identifying component types and recognizing standard topologies (e.g. a buck converter or op-amp gain stage)","Computing the exact currents and voltages throughout the circuit","Reading dense reference-designator text at small sizes with perfect accuracy"], correct: 1, explanation: "Vision-capable models are comparatively strong at component/topology recognition, but weak at precise visual measurement, fine print, and multi-step numerical/symbolic reasoning from an image. Any specific number or measurement an AI reports from a schematic image should be independently verified against the source file, not trusted as a measurement." },
+    { q: "A compliance question requires combining a spec from two different datasheets to reach a conclusion. What should a well-built datasheet RAG answer do?", options: ["Average the two values and present a single confident number","Clearly separate what each source actually supports and flag what neither document addresses, rather than blending them into one unverifiable claim", "Ignore the second datasheet to keep the answer simple", "Decline to answer any question involving more than one document"], correct: 1, explanation: "The value of grounded RAG over plain LLM chat is precisely this: it should distinguish per-source facts from any inference layered on top, and explicitly flag gaps where the cited documents don't actually connect the way the question assumes. Silently synthesizing a confident answer across sources that don't support it is the failure mode citations are meant to prevent." },
   ],
 },
 
@@ -6181,15 +6183,42 @@ candidates for human investigation, not certifying the design.
 
 Focus this review on: power rail protection and decoupling.</div>
   <div class="info-box amber"><strong>Why "cite the rule":</strong> Requiring the AI to name the datasheet section or design principle behind each flag does two things — it lets the engineer verify quickly, and it exposes hallucinated reasoning (a flag with a fabricated or vague justification is a red flag about the flag).</div>
+  <h2>Worked Example: Reviewing a Power Input Stage</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Say you upload a schematic image (or paste a netlist description) of a 12V-input buck converter stage and ask the prompt above, focused on power rail protection. A capable current-generation multimodal model might respond like this:</p>
+  <div class="code-block"><span class="code-label">// EXAMPLE MODEL OUTPUT</span><span class="k">[VERIFY]</span> Net <span class="n">VIN_12V</span> — No visible reverse-polarity or
+transient protection (TVS/Schottky) before C1. Many 12V barrel-jack
+designs add one here. <span class="c">Cite: general practice for field-wired</span>
+<span class="c">DC inputs, not a specific datasheet clause — confirm intent with</span>
+<span class="c">design requirements before treating as a gap.</span>
+
+<span class="k">[VERIFY]</span> U1 pin 3 (EN) — Appears to float; no pull-up/pull-down
+visible. <span class="n">U1</span> datasheet section 7.3.2 recommends a 100k
+pull-up to VIN for default-on behavior. Confirm against the actual
+datasheet revision used — pin numbering may differ by package option.
+
+<span class="k">[VERIFY]</span> C3 placement — Bulk capacitor appears >15mm from U1's
+VIN pin in the layout snippet shown. Datasheet section 8.1 specifies
+"as close as possible." Distance is a visual estimate from the image,
+not a measurement — verify against the actual layout file.</div>
+  <div class="info-box"><strong>Read that output the right way:</strong> Two of the three flags are genuinely useful leads — a missing pull-up and a layout distance worth measuring for real. Notice the model was honest that the first item isn't tied to a specific clause, and that the third is a visual estimate, not a layout-tool measurement. That calibrated uncertainty is what a well-prompted review should produce — an output that asserts everything with equal confidence is the one to distrust.</div>
+  <h2>Try It Yourself</h2>
+  <div class="info-box green"><strong>Exercise:</strong> Take a non-sensitive reference schematic (a chip vendor's evaluation-board schematic PDF is ideal — publicly available, low stakes). Upload it to a current multimodal model with the flagging prompt above, scoped to one section (e.g. "the USB-PD negotiation circuitry" or "the battery charge path"). For each flag, open the actual datasheet section it cites and check: (1) does that section say what the AI claims, and (2) is the component/net it names actually present at that location in the schematic? Tally how many flags hold up — this calibrates your trust in the tool for your specific schematic style and AI model before you ever apply it to proprietary work.</div>
+  <h2>What Current Multimodal Models Are Actually Good and Bad At</h2>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">✅</div><div class="card-title">Strong: Topology &amp; Components</div><div class="card-body">Identifying component types, recognizing standard topologies (buck, LDO, op-amp gain stage), and matching against reference designs are areas where vision models now perform well.</div><span class="tag green">reliable-ish</span></div>
+    <div class="card"><div class="card-icon">⚠️</div><div class="card-title">Weak: Fine Print &amp; Measurements</div><div class="card-body">Tiny silkscreen text, exact trace-width/spacing measurements, and dense reference-designator labels are still failure-prone — verify any specific number it reads off an image against the source file.</div><span class="tag amber">verify-always</span></div>
+    <div class="card"><div class="card-icon">❌</div><div class="card-title">Unreliable: Multi-Step Analysis</div><div class="card-body">Deriving transfer functions, computing actual currents/voltages across the design, or chaining several inferences from the image is where models degrade fastest — route real calculations through code, not visual reasoning.</div><span class="tag red">do-not-trust</span></div>
+  </div>
   <h2>Hard Limits</h2>
-  <div class="info-box red"><strong>AI cannot:</strong> replace simulation (SPICE, SI/PI, thermal), verify against the actual board layout's physical reality, or make the final sign-off. It works from the description you give it and the patterns it learned — it has no ground truth about your specific design. Treat every output as a hypothesis to test, never a conclusion.</div>
+  <div class="info-box red"><strong>AI cannot:</strong> replace simulation (SPICE, SI/PI, thermal), verify against the actual board layout's physical reality, or make the final sign-off. It works from the description or image you give it and the patterns it learned — it has no ground truth about your specific design, and it cannot measure a real distance from a picture. Treat every output as a hypothesis to test, never a conclusion.</div>
 </div>`,
 
 'hwai:compliance': () => `<div class="panel" id="panel-hwai-compliance">
   <div class="breadcrumb">HW + AI › <span class="bc-accent">Design &amp; Review</span> › Compliance Interpretation</div>
   <h1>Compliance <span class="hl">Interpretation</span></h1>
-  <p class="lead">Safety standards like IEC 62368-1 are vast, cross-referenced, and dense. AI excels at navigating them — finding the relevant clause, summarizing requirements, and explaining how sections interrelate. But interpretation that informs a compliance decision must always be verified against the authoritative text by a qualified engineer.</p>
+  <p class="lead">Safety standards like IEC 62368-1 (the hazard-based safety standard now used across ICT and AV equipment, currently in its 4th Edition) are vast, cross-referenced, and dense. AI excels at navigating them — finding the relevant clause, summarizing requirements, and explaining how sections interrelate. But interpretation that informs a compliance decision must always be verified against the authoritative text by a qualified engineer.</p>
   <div class="info-box red"><strong>The compliance-specific risk:</strong> An LLM may confidently cite a clause number that doesn't say what it claims, or misremember a threshold value. In compliance, a wrong interpretation has legal and safety weight. RAG with citations + engineer verification is mandatory — never trust recalled clause content.</div>
+  <div class="info-box amber"><strong>Standards keep moving — verify the edition, not just the clause:</strong> Standards are periodically revised (IEC 62368-1 moved from its 3rd to 4th Edition, with regional adoption and enforcement dates staggered for years afterward — e.g. a 2023-published edition can still have a 2026 mandatory cutover in a given market). Before trusting any AI-cited clause number, confirm you're checking it against the same edition your RAG index was built from, and that the edition is the one currently enforced in your target market. An AI tool grounded in a stale PDF will cite real-looking clause numbers from the wrong edition.</div>
   <h2>High-Value Compliance Uses</h2>
   <div class="card-grid">
     <div class="card"><div class="card-icon">🧭</div><div class="card-title">Clause Navigation</div><div class="card-body">"Which clauses cover energy source classification for this circuit?" AI points you to the right sections far faster than manual search.</div><span class="tag">find</span></div>
@@ -6211,6 +6240,32 @@ Focus this review on: power rail protection and decoupling.</div>
     </div>
   </div>
   <div class="info-box"><strong>Example — energy source classification:</strong> Ask AI to find the clauses defining ES1/ES2/ES3 thresholds and summarize how they apply to a given circuit. It accelerates finding and understanding — but the engineer confirms the actual voltage/current/power thresholds against the standard text before classifying. The AI gets you to the right page faster; it doesn't make the call.</div>
+  <h2>Worked Example: A Tricky Cross-Clause Question</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">The hardest compliance questions span multiple clauses. Here's a realistic exchange with a RAG system indexed over the standard's text:</p>
+  <div class="code-block"><span class="code-label">// QUESTION</span><span class="n">Engineer:</span> "Our board's USB-C port sources 20W at 9V. Does the
+output need to be treated as ES2 or ES3, and does that change our
+clearance requirements to the chassis?"
+
+<span class="n">RAG answer (example):</span>
+"At 9V/20W the relevant clause for DC voltage/power classification
+places this in the <span class="k">ES2</span> range for the voltage threshold, <span class="k">[Clause 5.2.2.1]</span> —
+provided current is also limited per the same clause's table. <span class="k">[VERIFY:
+confirm the actual current draw against the table's current limit,
+not just voltage]</span>. Clearance to chassis (basic insulation) is
+addressed separately in <span class="k">[Clause 5.4.2]</span>, which depends on the
+working voltage and pollution degree of the enclosure — <span class="k">[VERIFY:
+pollution degree assumption against your enclosure's actual rating]</span>."</div>
+  <div class="info-box amber"><strong>Why this example is "tricky":</strong> The honest answer touches two different clauses (classification and clearance) and depends on a variable the AI cannot know on its own — actual current draw and enclosure pollution degree. A good compliance-RAG answer surfaces both clauses and flags exactly which inputs the engineer must supply or verify, rather than guessing at them. If a tool instead gives a single confident number with no caveats, that is the warning sign to dig into the source clauses yourself.</div>
+  <h2>Checklist: AI-Assisted Compliance Review</h2>
+  <ul class="checklist">
+    <li>Confirm the RAG index is built from the current, correctly-edition standard text for your target market — not a cached or superseded PDF</li>
+    <li>For every cited clause, open the actual standard and confirm the clause says what the AI claims it says</li>
+    <li>Identify which inputs the classification depends on (voltage, current, power, pollution degree, altitude) and verify each against your actual design — never let the AI assume them</li>
+    <li>Treat a multi-clause question as multiple verification steps, not one — each clause cited needs its own check</li>
+    <li>Have a second qualified engineer review any AI-assisted interpretation that will appear in a compliance file or certification submission</li>
+    <li>Record the AI's role explicitly: "research aid, all interpretations verified by [engineer] against [standard, edition, clause]"</li>
+  </ul>
+  <div class="info-box red"><strong>Reminder:</strong> None of this replaces engineering sign-off. AI-assisted compliance review accelerates research and surfaces what to check — a qualified engineer, and where required a certification body or notified body, still makes and owns the actual compliance determination.</div>
   <h2>Documentation for Audit</h2>
   <ul class="checklist">
     <li>Record which clauses were consulted and the verified interpretation</li>
@@ -6245,7 +6300,31 @@ Prioritize the list by risk severity.
 
 BOM data:
 {paste_bom_csv}</div>
-  <div class="info-box green"><strong>Workflow tip:</strong> Run this as a structured-output task (CSV or JSON) so results drop straight into a tracking spreadsheet. Pair with live distributor/lifecycle APIs for authoritative availability data — let AI organize and reason, let the data source supply the ground truth.</div>
+  <h2>Worked Example: A Five-Line BOM Excerpt</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Feed in a small excerpt to see the expected output shape before running it on a full BOM:</p>
+  <div class="code-block"><span class="code-label">// INPUT EXCERPT (CSV)</span>RefDes,MPN,Description,Qty,Supplier
+C14,GRM188R71H104KA93D,0.1uF 50V X7R 0603,12,Murata
+U7,MAX17761AAUE+,Battery charger IC,1,Maxim/ADI
+R22,RC0402FR-0710KL,10k 1% 0402,8,Yageo
+D3,1N4148W-7-F,Switching diode,4,Diodes Inc
+J1,USB4125-GF-A,USB-C connector,1,GCT</div>
+  <div class="code-block"><span class="code-label">// EXAMPLE MODEL OUTPUT</span><span class="n">U7</span> — MAX17761AAUE+ — <span class="k">[RATING-CHECK]</span>
+Single-source (Maxim/ADI only, no listed second source).
+<span class="k">[VERIFY]</span> confirm current lifecycle status (active/NRND) on the
+manufacturer's site — training data may not reflect this week's status.
+
+<span class="n">J1</span> — USB4125-GF-A — <span class="k">[RATING-CHECK]</span>
+Connector parts frequently have certification/contact-plating
+variants under similar part numbers. <span class="k">[VERIFY]</span> confirm this exact
+suffix matches the certification and current rating your design needs.
+
+<span class="n">C14, R22, D3</span> — No flags raised. Common, multi-sourced
+passive/discrete parts. Still recommend periodic lifecycle re-scan;
+passives can still go EOL during a long program.</div>
+  <div class="info-box amber"><strong>Note the calibration:</strong> The model didn't claim a definitive EOL/NRND status for U7 — it flagged that its knowledge may be stale and pointed at where to get the authoritative answer. That's the correct behavior for any fact that changes over time (lifecycle status, stock, pricing). A model asserting "U7 is NRND as of [specific date]" from memory alone is a bigger red flag than one admitting it doesn't know.</div>
+  <h2>Try It Yourself</h2>
+  <div class="info-box green"><strong>Exercise:</strong> Take a real (or de-identified) BOM from a past project and run the risk-scan prompt above. Pick the three highest-severity flags and actually verify them: check current lifecycle status on the distributor/manufacturer site, confirm the rating against the datasheet, and check sourcing. Note how many flags were real findings vs. false positives — that hit rate is the actual measure of whether this workflow is worth adopting for your team's BOMs.</div>
+  <div class="info-box"><strong>Workflow tip:</strong> Run this as a structured-output task (CSV or JSON) so results drop straight into a tracking spreadsheet. Pair with live distributor/lifecycle APIs for authoritative availability data — let AI organize and reason, let the data source supply the ground truth.</div>
 </div>`,
 
 'hwai:testdata': () => `<div class="panel" id="panel-hwai-testdata">
@@ -6271,6 +6350,9 @@ BOM data:
 3. Review the generated charts and statistics (engineer checks the code)
 4. Ask the AI to draft the results narrative from the verified numbers
 5. Engineer reviews, corrects, and owns the conclusions</div>
+  <h2>Try It Yourself</h2>
+  <div class="info-box green"><strong>Exercise:</strong> Take a CSV of any real test log you have (or synthesize one — e.g. 200 rows of "cycle, chamber_temp_C, vout_V, iout_A" for a thermal cycling test with a couple of injected outliers). Ask an AI coding assistant to: (1) write Python to compute mean/std/min/max of vout per temperature bin, (2) flag any reading within 5% of a stated spec limit, (3) generate a plot of vout vs. cycle colored by temperature bin. Then deliberately check one flagged "anomaly" by hand against the raw row — this is the habit that catches the rare case where the generated code has an off-by-one or unit-conversion bug. Trust the chart only after you've spot-checked the numbers behind it once.</div>
+  <div class="info-box amber"><strong>Common code-gen pitfall to watch for:</strong> Unit mix-ups (a column labeled "temp" might be °C in one log and °F in another) and silent NaN-dropping (pandas quietly excludes missing rows from a mean unless told otherwise) are the two most common ways an AI-written analysis script produces a confidently wrong number. Ask the AI to print row counts before/after any filtering step so drops are visible, not silent.</div>
 </div>`,
 
 'hwai:docs': () => `<div class="panel" id="panel-hwai-docs">
@@ -6322,7 +6404,33 @@ Decision notes:
     <li><div class="cap-icon">📄</div><div class="cap-text"><strong style="color:var(--accent)">Cite page and section</strong><span>Every answer must link to the exact datasheet page so the engineer can verify. Store page/section metadata at index time.</span></div></li>
     <li><div class="cap-icon">🚫</div><div class="cap-text"><strong style="color:var(--accent)">Decline when unsure</strong><span>Instruct the system to say "not found in the datasheets" rather than guess. A fabricated spec is far worse than an admitted gap.</span></div></li>
   </ul>
-  <div class="info-box green"><strong>Connects to the RAG course:</strong> This is a direct application of everything in the RAG Deep Dive — chunking, hybrid search, reranking, and grounded generation — tuned for the specific challenges of technical datasheets (dense tables, exact part numbers, safety-critical values).</div>
+  <h2>Worked Example: A Tricky Multi-Datasheet Question</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">Single-parameter lookups are the easy case. The questions that actually separate a well-built datasheet RAG system from a fragile demo are ones that require combining numbers from <em>multiple</em> datasheets correctly:</p>
+  <div class="code-block"><span class="code-label">// QUESTION</span><span class="n">Engineer:</span> "If I drive the gate of the IRFZ44N with the output of
+the TPS54360, is the gate threshold guaranteed to be met across the
+full -40C to 85C range?"</div>
+  <div class="code-block"><span class="code-label">// EXAMPLE GOOD RAG ANSWER</span>From the <span class="n">IRFZ44N datasheet</span> (p.2, Electrical Characteristics):
+Vgs(th) ranges 2.0V-4.0V at 25C. <span class="k">[VERIFY: the datasheet's table
+does not give a temperature coefficient for Vgs(th) on this page —
+check the typical characteristics curves on p.5 for the temperature
+dependence before concluding]</span>.
+
+From the <span class="n">TPS54360 datasheet</span> (p.4): the gate driver output is
+not a dedicated MOSFET gate driver — this is a buck converter IC,
+not a gate-drive IC. <span class="k">[VERIFY: confirm you intend to drive the
+IRFZ44N gate directly from this device's output; if so, check the
+output's drive voltage/current against the FZ44N's gate capacitance
+and your switching frequency — this combination is not addressed by
+either datasheet directly]</span>.
+
+<span class="c">I can't fully answer the temperature-margin question from these</span>
+<span class="c">two datasheets alone — the IRFZ44N's threshold temperature drift</span>
+<span class="c">and the TPS54360's output drive characteristics need to be checked</span>
+<span class="c">together, and the second part isn't addressed in either source.</span></div>
+  <div class="info-box amber"><strong>Why this is the right answer, not a weak one:</strong> The system correctly refused to synthesize a confident "yes, it's fine across temperature" by combining two documents that don't actually connect the way the question assumes. It named exactly which sub-question each datasheet does and doesn't answer, and pointed at the curve (not just the table) where the missing data might live. A RAG system that confidently said "yes, guaranteed across the full range" here would be fabricating a conclusion neither datasheet supports — the failure mode the citations are supposed to prevent.</div>
+  <h2>Try It Yourself</h2>
+  <div class="info-box green"><strong>Exercise:</strong> Pick two real datasheets from parts you actually use together (a sensor + its recommended ADC, or a regulator + the MOSFET it drives). Ask a multi-datasheet question that requires combining a spec from each one to reach a conclusion — and that has a plausible "gotcha" (a missing temperature coefficient, a units mismatch, an assumption the two parts don't actually share a rail). Compare: does the tool clearly separate what each source supports vs. what it's inferring, or does it blend them into one unverifiable claim? That distinction is the entire value of RAG over plain chat with an LLM.</div>
+  <div class="info-box"><strong>Connects to the RAG course:</strong> This is a direct application of everything in the RAG Deep Dive — chunking, hybrid search, reranking, and grounded generation — tuned for the specific challenges of technical datasheets (dense tables, exact part numbers, safety-critical values).</div>
 </div>`,
 
 'hwai:workflow': () => `<div class="panel" id="panel-hwai-workflow">
