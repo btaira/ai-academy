@@ -4160,9 +4160,19 @@ Rules:
   </div>
   <h2>Evaluation Methods</h2>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Human Evaluation — gold standard <span class="acc-arrow">▾</span></div><div class="acc-body">Human raters assess quality, relevance, and appropriateness. Most reliable, but expensive and slow. Best for: establishing ground truth, evaluating creative output, catching subtle failures. Use for a small labeled set (50-200 examples) that becomes your benchmark.</div></div>
-  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">LLM-as-Judge — scalable quality scoring <span class="acc-arrow">▾</span></div><div class="acc-body">Use a strong LLM to score another model's outputs against a rubric. Works well for: coherence, instruction-following, comparative ranking. A/B test by having the judge evaluate both outputs blindly and pick the winner. Correlation with human judgment is high (~0.8) when rubrics are explicit.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">LLM-as-Judge — scalable quality scoring <span class="acc-arrow">▾</span></div><div class="acc-body">Use a strong LLM to score another model's outputs against a rubric. Works well for: coherence, instruction-following, comparative ranking. A/B test by having the judge evaluate both outputs blindly and pick the winner. Correlation with careful human judgment is high when rubrics are explicit, criterion-separated, and calibrated against a human-labeled sample — but a judge is not a free pass to skip human spot-checks. See the bias pitfalls below before trusting judge scores blindly.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Automated Metrics — fast regression detection <span class="acc-arrow">▾</span></div><div class="acc-body">For tasks with clear right answers: exact match, F1 score, ROUGE (summarization overlap), BLEU (translation). For structure: JSON schema validation, regex pattern matching. Run on every model or prompt change. Flag regressions before deployment.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Golden Test Sets — your most valuable asset <span class="acc-arrow">▾</span></div><div class="acc-body">A curated set of representative inputs with expected outputs, covering: common cases, edge cases, and known failure modes. Start with 20-50 examples and grow it. Every production bug that reaches users should add a test case. Run this set on every prompt change, model update, or deployment.</div></div>
+  <h2>LLM-as-Judge Bias Pitfalls</h2>
+  <p style="color:var(--muted2);margin-bottom:14px;">A judge model has its own systematic blind spots. Know these before you trust a score:</p>
+  <table class="data-table">
+    <tr><th>Bias</th><th>What happens</th><th>Mitigation</th></tr>
+    <tr><td><span class="hl-red">Position bias</span></td><td>In pairwise A/B comparisons, the judge favors whichever answer is shown first, independent of quality</td><td>Run each pair twice with positions swapped; average the result</td></tr>
+    <tr><td><span class="hl-red">Verbosity bias</span></td><td>Longer answers score higher even at matched quality — judges conflate length with thoroughness</td><td>Add an explicit rubric line: "Do not reward length alone"; cap response length in the eval set</td></tr>
+    <tr><td><span class="hl-red">Self-preference bias</span></td><td>A judge tends to rate outputs from its own model family higher than equally good outputs from other families</td><td>Use a judge from a different model family than the system under test, or ensemble judges across families</td></tr>
+    <tr><td><span class="hl-amber">Format bias</span></td><td>Judges over-reward answers that superficially match the rubric's expected format/structure</td><td>Separate "did it follow format" (automated check) from "is the content good" (judge score)</td></tr>
+  </table>
+  <div class="info-box"><strong>Practical default:</strong> For launch-gating decisions, don't rely on a single judge call. Use an explicit, criterion-separated rubric, judge from a different model family than the one being evaluated, and periodically spot-check a sample of judge scores against human raters to confirm calibration hasn't drifted.</div>
   <h2>LLM-as-Judge Template</h2>
   <div class="code-block"><span class="code-label">// EVALUATION PROMPT</span>You are an expert evaluator. Score this AI response on 1-5.
 
@@ -4174,7 +4184,20 @@ Score on:
 2. Completeness (1=missing key info, 5=fully addressed)
 3. Clarity (1=confusing, 5=crystal clear)
 
+Do NOT reward length alone — a concise, complete answer should score as well
+as a verbose one. Judge the content, not the format style, separately from
+any automated format/schema check you run elsewhere in the pipeline.
+
 Return JSON: {"accuracy":N,"completeness":N,"clarity":N,"reasoning":"..."}</div>
+  <h2>Try It Yourself — Build a 5-Example Golden Set</h2>
+  <div class="code-block"><span class="code-label">// 10-MINUTE EXERCISE</span>1. Pick one AI feature you use or are building right now.
+2. Write 5 representative inputs: 2 typical, 2 edge cases, 1 known failure mode.
+3. For each, write the expected output (or the key properties a correct
+   output must have — not necessarily verbatim text).
+4. Run your current prompt against all 5. Mark pass/fail per example.
+5. Change ONE thing in the prompt. Re-run all 5. Did anything flip from
+   pass to fail? That's a regression you would have shipped silently
+   without this test set.</div>
 </div>`,
 
 'skills:tooldesign': () => `<div class="panel" id="panel-skills-tooldesign">
@@ -4262,7 +4285,7 @@ Return JSON: {"accuracy":N,"completeness":N,"clarity":N,"reasoning":"..."}</div>
   <h2>The Four RAG Quality Levers</h2>
   <ul class="cap-list">
     <li><div class="cap-icon">✂️</div><div class="cap-text"><strong style="color:var(--accent)">Chunking Strategy</strong><span>How you split documents before embedding. Chunk by semantic unit (paragraph, section), not fixed character count. Overlap 10-20% between consecutive chunks to avoid boundary breaks.</span></div></li>
-    <li><div class="cap-icon">🧲</div><div class="cap-text"><strong style="color:var(--accent)">Embedding Model</strong><span>The quality of semantic search is bounded by your embedding model. text-embedding-3-large and voyage-3 outperform generic models for technical and domain-specific content.</span></div></li>
+    <li><div class="cap-icon">🧲</div><div class="cap-text"><strong style="color:var(--accent)">Embedding Model</strong><span>The quality of semantic search is bounded by your embedding model. Current-generation specialized embedding models (e.g. the latest Voyage AI and OpenAI embedding families) consistently outperform older or generic-purpose models for technical and domain-specific content — check the current leaderboards (e.g. MTEB) before picking one, since this ranking shifts every few months.</span></div></li>
     <li><div class="cap-icon">🎯</div><div class="cap-text"><strong style="color:var(--accent)">Retrieval Strategy</strong><span>Pure vector search misses keyword matches. Hybrid search (vector + BM25) outperforms either alone. Add a reranker as a second pass to reorder top-K results before injecting into context.</span></div></li>
     <li><div class="cap-icon">💬</div><div class="cap-text"><strong style="color:var(--accent)">Grounding Prompt</strong><span>Instruct the model to answer ONLY from the provided context and cite sources. Without this, the model freely mixes retrieved content with hallucinated parametric knowledge.</span></div></li>
   </ul>
@@ -4274,6 +4297,36 @@ Return JSON: {"accuracy":N,"completeness":N,"clarity":N,"reasoning":"..."}</div>
     <tr><td><span class="hl-red">Model ignores context</span></td><td>Model prefers parametric knowledge</td><td>Stronger grounding prompt; "ONLY from context"</td></tr>
     <tr><td><span class="hl-red">Stale answers</span></td><td>Index not updated when source changes</td><td>Incremental indexing on document update events</td></tr>
   </table>
+  <h2>Try It Yourself — Chunk a Document by Hand</h2>
+  <p style="color:var(--muted2);margin-bottom:14px;">Before trusting a chunking library, do one pass manually. It builds the intuition that makes you able to debug a real pipeline later.</p>
+  <div class="code-block"><span class="code-label">// EXERCISE — MANUAL CHUNKING WALKTHROUGH</span><span class="c">// Take this 3-paragraph excerpt from a fictional HR policy doc:</span>
+
+"Employees accrue 1.5 days of PTO per month of full-time service.
+Unused PTO rolls over up to a maximum of 10 days into the next
+calendar year; any balance above 10 days is forfeited on Jan 1.
+
+Sick leave is tracked separately from PTO and does not roll over.
+Employees receive 8 sick days per calendar year, reset each January.
+
+To request PTO, submit a request in the HR portal at least 5
+business days in advance. Manager approval is required for requests
+longer than 3 consecutive days."
+
+<span class="c">// Step 1: Chunk by FIXED CHARACTER COUNT (e.g. 150 chars), no regard for meaning.
+// Write out where the cuts land. Notice a cut mid-sentence, e.g. splitting
+// "rolls over up to a maximum of 10 days" from "into the next calendar year".</span>
+
+<span class="c">// Step 2: Now chunk by SEMANTIC UNIT (one paragraph = one chunk).
+// Each chunk is now a complete, self-contained policy statement.</span>
+
+<span class="c">// Step 3: Ask yourself — a user asks "How many sick days do I get?"
+// With Step 1's chunks, does the retrieved chunk contain a complete answer,
+// or does it cut off mid-fact? With Step 2's chunks?</span>
+
+<span class="c">// Step 4: Now add 15% overlap between Step 2's chunks. Does that change
+// whether a query about "PTO rollover AND forfeiture" retrieves both
+// halves of that idea even if they straddle a chunk boundary?</span></div>
+  <div class="info-box"><strong>Takeaway:</strong> Chunking by character count is the most common beginner mistake in RAG — it's the easiest to implement and the first thing to break on real documents. Semantic chunking (paragraph/section boundaries) with modest overlap fixes most "the answer was in the document but it didn't retrieve it" complaints.</div>
 </div>`,
 
 'skills:finetuning': () => `<div class="panel" id="panel-skills-finetuning">
@@ -4307,6 +4360,21 @@ Return JSON: {"accuracy":N,"completeness":N,"clarity":N,"reasoning":"..."}</div>
 // 2. Diverse — cover the full range of real-world inputs
 // 3. Consistent — same format every time, no exceptions
 // 4. Balanced — don't over-represent easy/common cases</div>
+  <div class="info-box"><strong>Provider landscape note:</strong> Frontier model providers deliberately limit fine-tuning access more than you might expect — unrestricted fine-tuning can erode safety properties baked in during training, so it's often gated by use case, volume, or enterprise agreement rather than offered as a self-serve API for every model. Open-weight models (Llama, Mistral, Qwen family, etc.) remain the most flexible option when you need full control over the training process. Always check current provider docs — fine-tuning availability per model changes often.</div>
+  <h2>Try It Yourself — Fine-Tune or Not? Decision Exercise</h2>
+  <p style="color:var(--muted2);margin-bottom:14px;">Walk through these three real-world cases. For each, decide: prompt/RAG, fine-tune, or both — then expand to compare your reasoning.</p>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Case A — Legal contract clause classifier <span class="acc-arrow">▾</span></div><div class="acc-body">
+    <strong>Situation:</strong> Classify contract clauses into 40 categories (indemnification, termination, IP assignment, etc.) for a legal tech product. You have 3,000 labeled examples. Need to run on 50,000 documents/month at low latency and low cost.
+    <br><br><strong style="color:var(--green)">Reasoning:</strong> This is a strong fine-tuning candidate: well-defined, stable taxonomy (40 fixed categories), substantial labeled data (3,000 examples comfortably clears the LoRA threshold), and a clear cost/latency motivation for shrinking to a smaller fine-tuned model rather than paying frontier-model prices at 50K docs/month. Start with prompting + few-shot to validate the taxonomy is even learnable, then fine-tune once you've confirmed quality with a held-out test set.
+  </div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Case B — Customer support tone matching <span class="acc-arrow">▾</span></div><div class="acc-body">
+    <strong>Situation:</strong> You want AI-drafted support replies to sound exactly like your brand voice. You have 15 example replies written by your best support agent.
+    <br><br><strong style="color:var(--green)">Reasoning:</strong> 15 examples is far too few for fine-tuning (even API fine-tuning typically wants 50+, and quality degrades with too little diversity). This is a few-shot prompting problem: put 3-5 of the best examples directly in the system prompt, describe the tone explicitly, and iterate. Revisit fine-tuning only if you later collect hundreds of real examples and few-shot still isn't consistent enough.
+  </div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Case C — Internal codebase-aware code review bot <span class="acc-arrow">▾</span></div><div class="acc-body">
+    <strong>Situation:</strong> You want an AI reviewer that understands your company's specific architecture, internal libraries, and naming conventions across a 2M-line codebase.
+    <br><br><strong style="color:var(--green)">Reasoning:</strong> This is a RAG problem, not a fine-tuning problem. The knowledge needed (current code, conventions, architecture docs) changes constantly — fine-tuning bakes in a snapshot that goes stale immediately. Retrieve relevant files/docs per review and inject into context. Fine-tuning could help later purely for matching your team's review *style* (terse vs. verbose feedback), but the codebase knowledge itself should never be trained in — it should always be retrieved fresh.
+  </div></div>
 </div>`,
 
 'skills:responsible': () => `<div class="panel" id="panel-skills-responsible">
@@ -4333,6 +4401,11 @@ Return JSON: {"accuracy":N,"completeness":N,"clarity":N,"reasoning":"..."}</div>
     <li>Rollback plan tested — can you disable the AI feature within 15 minutes?</li>
     <li>Bias evaluation run — tested outputs across different demographic groups?</li>
   </ul>
+  <h2>The Regulatory Landscape</h2>
+  <p style="color:var(--muted2);margin-bottom:14px;">Responsible AI is no longer purely voluntary — regulation has teeth in major markets. You don't need to be a lawyer, but you need to know when to involve one.</p>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">EU AI Act — risk-tiered obligations <span class="acc-arrow">▾</span></div><div class="acc-body">The EU AI Act classifies systems by risk tier. <strong>Prohibited practices</strong> (manipulative AI, social scoring, certain biometric categorization) are already enforceable, with fines reaching into the tens of millions of euros or a percentage of global turnover. <strong>High-risk systems</strong> (hiring, credit scoring, law enforcement-adjacent use cases) face conformity assessment, documentation, and human-oversight requirements on a phased timeline. It applies to any company serving EU users, not just EU-based ones. If your feature touches hiring, lending, or biometric data, loop in legal/compliance before, not after, launch.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Sector-specific rules still apply <span class="acc-arrow">▾</span></div><div class="acc-body">AI doesn't exempt you from existing law. Healthcare AI still triggers HIPAA and (in the US) FDA software-as-a-medical-device review if it affects diagnosis or treatment. Lending and hiring AI still triggers anti-discrimination law (US ECOA, Title VII; many state-level automated-decision laws). "The model decided, not us" is not a defense.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Regulation changes faster than this course — verify before you rely on it <span class="acc-arrow">▾</span></div><div class="acc-body">Deadlines, fine amounts, and scope get amended frequently. Treat any specific date or figure you've memorized as a starting point for verification, not a final answer — check your jurisdiction's current guidance (or your legal team) before a real launch decision.</div></div>
   <div class="info-box green"><strong>For hardware/compliance domains:</strong> AI outputs that inform safety decisions (IEC 62368-1 interpretations, PCB spacing calls) should always be reviewed by a qualified engineer before being acted on. Document AI assistance in the engineering record.</div>
 </div>`,
 
@@ -4363,23 +4436,52 @@ Return JSON: {"accuracy":N,"completeness":N,"clarity":N,"reasoning":"..."}</div>
   <div class="breadcrumb">Skills › <span class="bc-accent">Professional Skills</span> › Cost &amp; Token Economics</div>
   <h1>Cost <span class="hl">&amp; Token Economics</span></h1>
   <p class="lead">Token costs are small at small scale and catastrophic at large scale. Understanding the economics helps you build AI features that are viable at production volume — and avoid surprises on the bill.</p>
+  <div class="info-box amber"><strong>Numbers go stale, ratios don't:</strong> Exact per-token prices change with every model release. What stays durable: output tokens always cost more than input tokens, the cheapest tier in a model family is always far cheaper than the flagship, and caching/batching discounts are always worth claiming. Check your provider's current pricing page before estimating a real budget — never trust a remembered number.</div>
   <h2>How Token Pricing Works</h2>
   <div class="card-grid">
-    <div class="card"><div class="card-icon">📥</div><div class="card-title">Input Tokens</div><div class="card-body">Everything you send: system prompt, history, retrieved context, tool results. Often 5-20x the output — the biggest lever to optimize.</div><span class="tag">prompt cost</span></div>
-    <div class="card"><div class="card-icon">📤</div><div class="card-title">Output Tokens</div><div class="card-body">Everything the model generates. Usually 3-5x more expensive per token than input. Keep outputs concise with format constraints.</div><span class="tag amber">generation cost</span></div>
-    <div class="card"><div class="card-icon">🧠</div><div class="card-title">Cache Hits</div><div class="card-body">Anthropic Prompt Caching: repeated system prompts cached at 90% discount. The single biggest cost reduction for high-traffic apps with stable system prompts.</div><span class="tag green">10% of full price</span></div>
-    <div class="card"><div class="card-icon">⚡</div><div class="card-title">Model Tier</div><div class="card-body">Haiku is roughly 25x cheaper than Opus for similar token counts. Route simple tasks to small models, complex reasoning to large ones.</div><span class="tag violet">routing</span></div>
+    <div class="card"><div class="card-icon">📥</div><div class="card-title">Input Tokens</div><div class="card-body">Everything you send: system prompt, history, retrieved context, tool results. Often the largest share of total tokens — the biggest lever to optimize.</div><span class="tag">prompt cost</span></div>
+    <div class="card"><div class="card-icon">📤</div><div class="card-title">Output Tokens</div><div class="card-body">Everything the model generates. Consistently several times more expensive per token than input across every major provider. Keep outputs concise with format constraints.</div><span class="tag amber">generation cost</span></div>
+    <div class="card"><div class="card-icon">🧠</div><div class="card-title">Cache Hits</div><div class="card-body">Anthropic Prompt Caching, OpenAI cached inputs, Gemini context caching: repeated prefix content (system prompt, tool defs, long documents) billed at a steep discount — commonly ~90% off — on a cache hit. The single biggest cost lever for high-traffic apps with stable prompts.</div><span class="tag green">~10% of full price</span></div>
+    <div class="card"><div class="card-icon">📦</div><div class="card-title">Batch Processing</div><div class="card-body">Async batch APIs (process within minutes-to-hours, not real-time) typically run at roughly half the price of synchronous calls. Use for evals, bulk extraction, offline summarization — anything that doesn't need an instant response.</div><span class="tag">~50% off</span></div>
+    <div class="card"><div class="card-icon">⚡</div><div class="card-title">Model Tier</div><div class="card-body">Every provider's small/fast tier (Haiku, GPT-5 mini/nano, Gemini Flash) costs a small fraction of their flagship reasoning tier. The exact multiple shifts with every release — what doesn't shift is that tier selection is your single highest-leverage cost decision.</div><span class="tag violet">routing</span></div>
   </div>
   <h2>Model Routing Strategy</h2>
   <table class="data-table">
     <tr><th>Task type</th><th>Model tier</th><th>Rationale</th></tr>
-    <tr><td>Intent classification, routing</td><td><span class="hl-green">Haiku / Flash</span></td><td>Simple classification; speed matters more than depth</td></tr>
-    <tr><td>Summarization, extraction</td><td><span class="hl-green">Haiku / Sonnet</span></td><td>Well-defined format; small models excel here</td></tr>
-    <tr><td>Customer chat, Q&A</td><td><span class="hl">Sonnet</span></td><td>Balance of quality, speed, and cost</td></tr>
-    <tr><td>Complex reasoning, planning</td><td><span class="hl-amber">Opus / o3</span></td><td>Justifies cost for hard problems; rarely the hot path</td></tr>
-    <tr><td>Novel architecture decisions</td><td><span class="hl-amber">Opus</span></td><td>Rare, high-value — absolute quality matters</td></tr>
+    <tr><td>Intent classification, routing</td><td><span class="hl-green">Smallest/fastest tier</span> (e.g. Haiku, GPT-5 nano, Flash)</td><td>Simple classification; speed matters more than depth</td></tr>
+    <tr><td>Summarization, extraction</td><td><span class="hl-green">Small-to-mid tier</span></td><td>Well-defined format; small models excel here</td></tr>
+    <tr><td>Customer chat, Q&amp;A</td><td><span class="hl">Mid tier</span> (e.g. Sonnet, GPT-5)</td><td>Balance of quality, speed, and cost</td></tr>
+    <tr><td>Complex reasoning, planning</td><td><span class="hl-amber">Flagship/thinking tier</span> (e.g. Opus, GPT-5 Thinking)</td><td>Justifies cost for hard problems; rarely the hot path</td></tr>
+    <tr><td>Novel architecture decisions</td><td><span class="hl-amber">Flagship tier</span></td><td>Rare, high-value — absolute quality matters more than cost</td></tr>
   </table>
-  <div class="info-box"><strong>Prompt Caching ROI:</strong> If your system prompt is 2,000 tokens and you handle 100,000 requests/month, caching saves 180M input tokens/month. At $3/M that's $540/month saved. Always enable prompt caching for stable system prompts.</div>
+  <div class="info-box"><strong>Prompt caching ROI, worked generically:</strong> Say your system prompt is 2,000 tokens, you handle 100,000 requests/month, and your input price is $P per million tokens. Uncached cost for that system prompt alone: 2,000 &times; 100,000 = 200M tokens &times; $P/M. With a 90% cache discount on repeat hits, you pay roughly $P/M on the first call and ~0.1 &times; $P/M on the rest — cutting that line item by ~90%. Plug in today's real $P for your model to get a real number; the 90% mechanic is what to remember, not the dollar figure.</div>
+  <h2>Try It Yourself — Cost Estimation Worksheet</h2>
+  <p style="color:var(--muted2);margin-bottom:14px;">Work through this for a feature you're planning or already shipped. Look up current per-token pricing for your model on the provider's live pricing page first — don't guess.</p>
+  <div class="code-block"><span class="code-label">// COST ESTIMATION WORKSHEET</span><span class="c">// Step 1 — Estimate tokens per request</span>
+Avg input tokens/request (system + history + context + tools): ______
+Avg output tokens/request:                                      ______
+
+<span class="c">// Step 2 — Look up current pricing (check the provider's pricing page TODAY)</span>
+Input price per million tokens ($/M):  ______
+Output price per million tokens ($/M): ______
+
+<span class="c">// Step 3 — Monthly volume</span>
+Expected requests/month: ______
+
+<span class="c">// Step 4 — Compute</span>
+Monthly input cost  = (input tokens  &times; requests &times; input price)  / 1,000,000
+Monthly output cost = (output tokens &times; requests &times; output price) / 1,000,000
+Total monthly cost  = input cost + output cost
+
+<span class="c">// Step 5 — Apply levers and re-compute</span>
+- Swap to a cheaper tier for routing/classification sub-steps: new total? ______
+- Enable prompt caching on the stable system prompt (~90% off cached portion): new total? ______
+- Move non-realtime steps (batch eval, offline extraction) to the batch API (~50% off): new total? ______
+
+<span class="c">// Step 6 — Sanity check</span>
+Does the final monthly cost fit your budget?  If not, which lever moved the needle most —
+model tier, caching, or batching? That's where to optimize first.</div>
+  <div class="info-box green"><strong>Why this worksheet matters more than memorized prices:</strong> Teams that skip this exercise discover their cost structure only after the bill arrives. Five minutes with real numbers from your provider's current pricing page, before you ship, catches a runaway-cost design (e.g. re-sending a full document on every turn) while it's still a one-line fix.</div>
 </div>`,
 
 'skills:debugging': () => `<div class="panel" id="panel-skills-debugging">
@@ -4418,6 +4520,34 @@ Return JSON: {"accuracy":N,"completeness":N,"clarity":N,"reasoning":"..."}</div>
    Every production bug becomes a test case.
    Run full test set before every deployment.</div>
   <div class="info-box green"><strong>Most common root cause:</strong> 70%+ of AI bugs trace back to the prompt — ambiguous instructions, missing context, or conflicting requirements. Check the prompt before assuming the model is broken.</div>
+  <h2>Try It Yourself — Diagnose a Broken Pipeline</h2>
+  <p style="color:var(--muted2);margin-bottom:14px;">Below is a real-looking support-ticket triage pipeline that's misbehaving in production. Work through the ISOLATE → BISECT steps yourself before expanding the diagnosis.</p>
+  <div class="code-block"><span class="code-label">// THE PIPELINE (Python, simplified)</span><span class="k">def</span> triage_ticket(ticket_text):
+    chunks = retrieve_similar_tickets(ticket_text, k=<span class="v">3</span>)
+    context = <span class="s">"\n"</span>.join(c.text <span class="k">for</span> c <span class="k">in</span> chunks)
+
+    prompt = <span class="s">f"""Classify this support ticket.
+
+Similar past tickets:
+&#36;{context}
+
+New ticket: &#36;{ticket_text}
+
+Return the category and priority."""</span>
+
+    response = llm.complete(prompt, temperature=<span class="v">0.9</span>, max_tokens=<span class="v">50</span>)
+    <span class="k">return</span> parse_json(response)  <span class="c"># this line throws ~15% of the time</span></div>
+  <div class="info-box amber"><strong>Symptom report from the team:</strong> "It worked great in testing. In production, parse_json() throws on roughly 1 in 7 tickets, and when we manually check the ones that DO parse, the priority field is inconsistent — the same ticket re-run twice sometimes gets 'high' and sometimes gets 'low'."</div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Reveal the diagnosis <span class="acc-arrow">▾</span></div><div class="acc-body">
+    <strong style="color:var(--accent)">Bug 1 — no output format enforcement:</strong> The prompt asks for "the category and priority" in prose, with no schema, no JSON instruction, and no tool-as-schema enforcement. The model is free to answer in whatever shape it picks, so <code class="inline">parse_json()</code> fails whenever it returns prose instead of JSON. <strong>Fix:</strong> force structured output via tool-use-as-schema (see the Output Control module) — don't rely on the model "just returning JSON" from prose instructions alone.
+    <br><br>
+    <strong style="color:var(--accent)">Bug 2 — temperature 0.9 on a classification task:</strong> Priority/category classification is a deterministic-style task, not a creative one. Temperature 0.9 means the same ticket can land in different categories on different runs purely from sampling randomness — exactly the inconsistency reported. <strong>Fix:</strong> set temperature to 0 for classification and extraction tasks.
+    <br><br>
+    <strong style="color:var(--accent)">Bug 3 — max_tokens=50 with no stop_sequence:</strong> 50 tokens may be too tight once the model is also asked to justify the priority, causing truncated (and therefore unparseable) JSON on longer responses. <strong>Fix:</strong> size max_tokens generously for the expected output and verify via your golden test set, or constrain the schema so the output is inherently short.
+    <br><br>
+    <strong style="color:var(--accent)">Bug 4 (subtler) — unvalidated retrieved context:</strong> The retrieved "similar past tickets" are concatenated into the prompt with no token budget check. If retrieval ever returns 3 unusually long tickets, the prompt balloons — worth instrumenting per the logging step in the debugging process above.
+  </div></div>
+  <div class="info-box"><strong>The meta-lesson:</strong> None of these four bugs would show up in a code review focused on Python correctness — the code runs without exceptions most of the time. This is why "is it the model, the prompt, or the code?" (the BISECT step) is the right first question for AI systems, not a traditional stack trace.</div>
 </div>`,
 
 'skills:scenarios': () => `<div class="panel" id="panel-skills-scenarios">
@@ -4478,6 +4608,39 @@ Return JSON: {"accuracy":N,"completeness":N,"clarity":N,"reasoning":"..."}</div>
       <li><strong>Track and publicize wins:</strong> When AI catches something — a missed edge case, a BOM inconsistency — document it. Real examples build credibility faster than arguments.</li>
       <li><strong>Invite skeptics to define guardrails:</strong> Ask your most skeptical engineer to write what the AI should never decide alone. Make those hard constraints in the system prompt. Skeptics who shape the system become advocates.</li>
     </ul>
+  </div></div>
+  <h2>Active Exercise — Rewrite It Yourself First</h2>
+  <p style="color:var(--muted2);margin-bottom:14px;">This one doesn't give you the answer immediately. Read the broken prompt, write your own fixed version on paper or in a scratch file, THEN expand to compare.</p>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">✍️ Scenario 6 — Rewrite This Broken Prompt <span class="acc-arrow">▾</span></div><div class="acc-body">
+    <strong style="color:var(--accent)">Situation:</strong> A teammate wrote this prompt for a tool that triages incoming bug reports into a ticket system. It's producing inconsistent, low-quality results in production.
+    <div class="code-block"><span class="code-label">// BEFORE — THE BROKEN PROMPT</span>"Look at this bug report and figure out what to do with it: &#36;{report}"</div>
+    <strong style="color:var(--amber)">Challenge:</strong> Before reading further, write your own improved version. Consider: What role should the model have? What's the exact output format the ticket system needs? What edge cases (duplicate reports, reports with no clear bug, reports in another language) should be handled explicitly? What constraints prevent it from doing something risky (e.g. auto-closing a ticket)?
+    <br><br><strong style="color:var(--green)">One reasonable rewrite — compare against yours:</strong>
+    <div class="code-block"><span class="code-label">// AFTER — A STRONGER VERSION</span>"You are a bug triage assistant for a software support team.
+
+Given the bug report below, return ONLY a JSON object with this shape:
+{"category": "ui|backend|performance|data|unclear",
+ "severity": "critical|high|medium|low",
+ "duplicate_suspected": true|false,
+ "summary": "one sentence, under 20 words"}
+
+Rules:
+- If the report does not describe a reproducible bug (e.g. it's a feature
+  request or a question), set category to "unclear" and severity to "low".
+- Never set severity to "critical" unless the report explicitly mentions
+  data loss, security, or a full outage. When in doubt, choose "high" and
+  let a human confirm critical status.
+- Do not invent details not present in the report.
+
+Bug report: &#36;{report}"</div>
+    <ul class="checklist" style="margin-top:10px;">
+      <li>Added a <strong>role</strong> (triage assistant) — anchors the model's behavior</li>
+      <li>Added an <strong>explicit JSON schema</strong> — the original gave no parseable structure at all</li>
+      <li>Added a <strong>negative constraint</strong> on "critical" — prevents over-escalation, a real production risk</li>
+      <li>Added an <strong>edge case rule</strong> for non-bug reports — the original would have forced a category onto things that aren't bugs</li>
+      <li>Added <strong>"do not invent details"</strong> — a lightweight hallucination guard for a low-stakes but easy-to-add safeguard</li>
+    </ul>
+    Did your rewrite catch the missing output format? The missing edge-case handling? The unconstrained severity escalation? Those three are the most common gaps engineers miss on a first pass.
   </div></div>
 </div>`,
 
