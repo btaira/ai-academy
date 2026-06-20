@@ -1555,6 +1555,8 @@ const COURSES = [
     { q: "What does 'docker compose up -d' do?", options: ["Builds images only","Starts all services defined in docker-compose.yml in detached mode (background) — creating networks and volumes as needed","Deletes all containers","Updates Docker itself"], correct: 1, explanation: "docker compose up -d starts all services defined in docker-compose.yml, creates any defined networks and volumes, and runs everything in the background (detached). It's the standard command to bring up a full multi-service local environment." },
     { q: "What is a dangling image and why should you prune them?", options: ["An image that is running","An untagged image layer left behind by rebuilds — they waste disk space and accumulate quickly during active development","A corrupted image","An image with no CMD"], correct: 1, explanation: "Dangling images are untagged, unreferenced layers left behind when you rebuild an image with the same tag. They don't serve any purpose but consume disk space. docker image prune (or docker system prune) removes them. During active development you can accumulate gigabytes of dangling images quickly." },
     { q: "When asking AI to generate a Dockerfile, what context produces the best result?", options: ["Just the programming language","The language/runtime, app type, build command, start command, which port it listens on, any required environment variables, and whether you need dev vs. production variants","Nothing — AI always knows","The file size of your app"], correct: 1, explanation: "AI-generated Dockerfiles improve dramatically with complete context: runtime + version, build commands, startup command, port, env var names (not values), and whether you want a dev hot-reload variant or a lean multi-stage production image. With this context it can generate a correct, optimized Dockerfile on the first try." },
+    { q: "What does a BuildKit cache mount (RUN --mount=type=cache) do that normal Docker layer caching does not?", options: ["It bakes the package cache permanently into the final image","It persists a package manager's download cache across separate docker build runs, without that cache ending up in the image, so reinstalls re-fetch only what changed", "It deletes the image after the build finishes","It replaces the need for a .dockerignore file"], correct: 1, explanation: "Normal layer caching is invalidated the moment package*.json changes at all, forcing a full reinstall. A cache mount (requires '# syntax=docker/dockerfile:1' and a target like /root/.npm) keeps the package manager's download cache warm across builds without baking it into the final image — so even a full reinstall is fast because packages are already downloaded." },
+    { q: "What is a key practical difference between Docker Scout and Trivy for vulnerability scanning?", options: ["They are identical tools with different names","Docker Scout is built into the Docker CLI with zero install but needs registry connectivity; Trivy is fully open-source, works offline, and also scans filesystems, IaC, and Kubernetes clusters — many teams use both","Trivy only works on Windows","Docker Scout cannot run in CI/CD pipelines"], correct: 1, explanation: "Docker Scout ships with the Docker CLI (docker scout cves myapp:latest) for an instant local check but requires connectivity. Trivy is open-source, works fully offline once its CVE database is cached, and scans well beyond images — filesystems, infrastructure-as-code, git repos, Kubernetes clusters. A common pattern: Scout for the fast local feedback loop, Trivy as the hard CI gate." },
   ],
 },
 
@@ -8930,6 +8932,23 @@ scratch
 Dockerfile*
 docker-compose*</div>
   <div class="info-box amber"><strong>Missing .dockerignore = slow builds + secrets risk.</strong> Without it, COPY . . copies node_modules (huge), .git history, and any .env files into the build context and potentially into the image. Always have a .dockerignore.</div>
+  <h2>BuildKit Cache Mounts — Speed Up Repeated Builds</h2>
+  <p>Multi-stage builds keep the final image small, but the <code class="inline">npm ci</code> / <code class="inline">pip install</code> layer still re-downloads every package whenever the lockfile changes. BuildKit's <code class="inline">--mount=type=cache</code> persists the package manager's own cache directory <em>across builds</em> — it never gets baked into the image, but it survives between <code class="inline">docker build</code> runs on the same machine or CI runner.</p>
+  <div class="code-block"><span class="code-label">// CACHE MOUNTS — REQUIRES THE syntax DIRECTIVE</span># syntax=docker/dockerfile:1
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+COPY package*.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+
+COPY . .
+RUN npm run build
+
+<span class="c"># Python equivalent — cache pip's download cache, not site-packages</span>
+<span class="c"># RUN --mount=type=cache,target=/root/.cache/pip \</span>
+<span class="c">#     pip install -r requirements.txt</span></div>
+  <div class="info-box green"><strong>Cache mounts vs. layer caching:</strong> Docker's normal layer cache is invalidated the moment package*.json changes at all — a one-line dependency bump triggers a full reinstall. A cache mount keeps the downloaded package <em>cache</em> (not node_modules itself) warm regardless of lockfile changes, so even a full reinstall only re-fetches what's actually new. Combine both: layer caching for "skip this step entirely," cache mounts for "make the step fast when it does run."</div>
 </div>`,
 
 'docker:compose': () => `<div class="panel" id="panel-docker-compose">
@@ -9154,9 +9173,9 @@ docker pull ghcr.io/ORG/APP:latest</div>
     <li><strong>Non-root user</strong> — create and switch to a system user before CMD. Never run as root.</li>
     <li><strong>Read-only filesystem</strong> — add --read-only flag; mount writable volumes only where needed</li>
     <li><strong>No secrets in images</strong> — never use ENV or ARG to bake in passwords or keys</li>
-    <li><strong>Pin base image versions</strong> — use node:20.11-alpine3.19 not node:latest</li>
+    <li><strong>Pin base image versions</strong> — use node:22.13-alpine3.21 not node:latest</li>
     <li><strong>Minimal base image</strong> — alpine or distroless; fewer packages = smaller attack surface</li>
-    <li><strong>Scan images for CVEs</strong> — integrate docker scout or Trivy into CI</li>
+    <li><strong>Scan images for CVEs</strong> — integrate Docker Scout or Trivy into CI</li>
     <li><strong>Drop Linux capabilities</strong> — --cap-drop ALL in compose and Kubernetes</li>
     <li><strong>.dockerignore</strong> — prevents .env, .git, and creds from entering the build context</li>
   </ul>
@@ -9187,6 +9206,15 @@ trivy image --severity HIGH,CRITICAL myapp:latest   <span class="c"># only show 
     image-ref: myapp:&#36;{{ github.sha }}
     severity: 'CRITICAL,HIGH'
     exit-code: '1'            <span class="c"># fail the build on critical CVEs</span></div>
+  <div class="code-block"><span class="code-label">// DOCKER SCOUT — BUILT INTO THE DOCKER CLI, NO INSTALL</span><span class="c"># Comes with Docker Desktop / Docker Engine — just run it</span>
+docker scout cves myapp:latest
+
+<span class="c"># Only fixable critical/high CVEs — cuts noise dramatically</span>
+docker scout cves --only-severity critical,high --only-fixed myapp:latest
+
+<span class="c"># Compare against the currently deployed tag before pushing a new one</span>
+docker scout compare myapp:&#36;{GIT_SHA} --to myapp:latest</div>
+  <div class="info-box"><strong>Trivy vs. Docker Scout — use both, for different jobs.</strong> Trivy is fully open-source, scans far beyond images (filesystems, IaC, git repos, Kubernetes), and works offline. Docker Scout ships in the Docker CLI with zero install and occasionally catches CVEs in language runtimes that Trivy's database misses, but needs registry connectivity. A common setup: Scout for the instant local check before you push, Trivy as the hard CI gate that blocks merges.</div>
   <div class="info-box amber"><strong>The AI security audit prompt:</strong> Paste your Dockerfile and ask "Audit this for security issues. Check for root user, baked-in secrets, unpinned versions, unnecessary packages, and missing .dockerignore. Rate each finding HIGH/MEDIUM/LOW and provide the fix." Run this prompt on every new Dockerfile before it goes to production.</div>
 </div>`,
 
@@ -9365,7 +9393,8 @@ echo ============================================</div>
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U &#36;{POSTGRES_USER}"]
-      interval: 10s; retries: 5
+      interval: 10s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -9432,7 +9461,7 @@ jobs:
 
       - name: Log in to registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: &#36;{{ env.REGISTRY }}
           username: &#36;{{ github.actor }}
@@ -9440,7 +9469,7 @@ jobs:
 
       - name: Extract metadata (tags and labels)
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: &#36;{{ env.REGISTRY }}/&#36;{{ env.IMAGE_NAME }}
           tags: |
@@ -9449,7 +9478,7 @@ jobs:
             type=raw,value=latest,enable=&#36;{{ github.ref == 'refs/heads/main' }}
 
       - name: Build image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: false              <span class="c"># build only first (for scan)</span>
@@ -9468,13 +9497,31 @@ jobs:
 
       - name: Push image
         if: github.event_name != 'pull_request'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
           tags: &#36;{{ steps.meta.outputs.tags }}
           cache-from: type=gha</div>
   <div class="info-box green"><strong>BuildKit layer caching:</strong> The cache-from/cache-to gha lines tell GitHub Actions to cache Docker build layers between runs. A full build that took 4 minutes becomes a 40-second cached rebuild when only source files changed. Always include this.</div>
+  <div class="info-box amber"><strong>Pin action versions, and keep them current.</strong> GitHub deprecates Node.js runtime versions on its hosted runners on a schedule — actions built on an unsupported Node runtime stop working without warning. As of 2026: <code class="inline">docker/login-action@v4</code>, <code class="inline">docker/metadata-action@v6</code>, <code class="inline">docker/build-push-action@v7</code>. Check the action's release page periodically rather than assuming a version from a tutorial is still current.</div>
+  <h2>Docker Scout as a CI Alternative</h2>
+  <p>Trivy is the most widely used open-source scanner and works everywhere, but if you're already in the Docker ecosystem, <strong>Docker Scout</strong> integrates directly with Docker Hub and the Docker CLI with no extra setup:</p>
+  <div class="code-block"><span class="code-label">// DOCKER SCOUT — BUILT INTO THE DOCKER CLI</span><span class="c"># Scan the most recently built image</span>
+docker scout cves myapp:latest
+
+<span class="c"># Only show high/critical, only ones with a fix available</span>
+docker scout cves --only-severity critical,high --only-fixed myapp:latest
+
+<span class="c"># In GitHub Actions:</span>
+- name: Docker Scout scan
+  uses: docker/scout-action@v1
+  with:
+    command: cves
+    image: &#36;{{ env.REGISTRY }}/&#36;{{ env.IMAGE_NAME }}:sha-&#36;{{ github.sha }}
+    only-severities: critical,high
+    exit-code: '1'</div>
+  <div class="info-box"><strong>Trivy vs. Docker Scout:</strong> Trivy also scans IaC files, filesystems, git repos, and Kubernetes clusters — broader reach, fully open-source, works offline once the CVE database is cached. Docker Scout is tightly integrated with Docker Hub/CLI and sometimes surfaces CVEs (e.g. in language runtimes) that Trivy's database misses, but it needs registry/API connectivity. Many teams run both: Scout for the fast local feedback loop, Trivy as the CI gate.</div>
 </div>`,
 
 'docker:maintain': () => `<div class="panel" id="panel-docker-maintain">
@@ -9485,8 +9532,9 @@ jobs:
   <div class="code-block"><span class="code-label">// MONTHLY UPDATE PROMPT</span>"Review my Dockerfile and docker-compose.yml for updates needed:
 
 1. Check if base image tags are outdated
-   Current: node:20.11-alpine3.19
-   Is there a newer patch version I should pin to?
+   Current: node:22.13-alpine3.21
+   Is there a newer patch version I should pin to, or has the
+   major version gone end-of-life (check Node's LTS release schedule)?
 
 2. Identify any packages installed with apt-get or apk that have
    known CVEs (I will scan with Trivy but flag obvious ones)
