@@ -39,6 +39,19 @@
   --teal:       #0F766E;
   --teal-dim:   rgba(15,118,110,0.1);
 
+  /* Code-block palette — the fixed palette above is tuned for light
+     backgrounds and fails contrast against the dark .code-block bg
+     (#050A14), so syntax highlighting gets its own WCAG AA-compliant
+     color key for that context. */
+  --code-text:    #CBD5E1;
+  --code-label:   #94A3B8;
+  --code-comment: #8896B3;
+  --code-keyword: #C792EA;
+  --code-string:  #9ECE6A;
+  --code-name:    #67E8F9;
+  --code-value:   #F0B86E;
+  --code-fn:      #5EEAD4;
+
   --mono:    'JetBrains Mono', monospace;
   --sans:    'Inter', sans-serif;
   --display: 'Space Grotesk', sans-serif;
@@ -379,21 +392,22 @@ h3 {
   margin: 14px 0;
   overflow-x: auto;
   white-space: pre;
+  color: var(--code-text);
 }
 .code-block .code-label {
   display: block;
   font-size: 9.5px;
-  color: var(--muted);
+  color: var(--code-label);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 12px;
 }
-.k  { color: var(--violet); }
-.s  { color: var(--green); }
-.n  { color: var(--cyan); }
-.c  { color: #3A4E72; }
-.v  { color: var(--amber); }
-.fn { color: var(--teal); }
+.k  { color: var(--code-keyword); }
+.s  { color: var(--code-string); }
+.n  { color: var(--code-name); }
+.c  { color: var(--code-comment); }
+.v  { color: var(--code-value); }
+.fn { color: var(--code-fn); }
 
 /* ═══════════════════════════════════════
    INFO BOXES
