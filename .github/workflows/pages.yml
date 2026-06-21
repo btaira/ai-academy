@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - claude/claude-md-docs-x8atlo
+      - master
   workflow_dispatch:
 
 permissions:
