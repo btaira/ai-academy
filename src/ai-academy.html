@@ -2527,6 +2527,8 @@ claude --mcp-server</div>
 ./.claude/mcp-servers.json                <span class="c"># project scope (git repo root)</span></div>
 
       <div class="info-box green"><strong>Pro tip:</strong> Use project-scoped servers (<code class="inline">--scope project</code>) for database and tool servers specific to a repo. Commit <code class="inline">.claude/mcp-servers.json</code> (without credentials) so teammates get the same server config automatically.</div>
+
+      <div class="info-box amber"><strong>No Connectors UI here:</strong> Claude Code has no Settings → Connectors panel — <code class="inline">claude mcp add</code> and <code class="inline">.mcp.json</code> are the only ways to add servers directly. If you're logged into Claude Code with the same Anthropic account used on claude.ai, any <strong>Connectors</strong> you added there (see the Claude.ai tab) sync automatically and appear in Claude Code's <code class="inline">/mcp</code> panel — but you can't add a new one from the CLI itself.</div>
     </div>
 
     <!-- ── 3. CLAUDE.AI ── -->
@@ -2544,11 +2546,10 @@ claude --mcp-server</div>
         <li>Free tier does not currently support external MCP connections</li>
       </ul>
 
-      <h2>Step 2 — Open Integration Settings</h2>
+      <h2>Step 2 — Open Connectors Settings</h2>
       <ul class="checklist">
-        <li>Go to <strong>claude.ai</strong> → click your avatar → <strong>Settings</strong></li>
-        <li>Select the <strong>Integrations</strong> tab in the left nav</li>
-        <li>Click <strong>Add Integration</strong></li>
+        <li>Go to <strong>claude.ai</strong> → click your avatar → <strong>Settings → Customize → Connectors</strong> (or <code class="inline">claude.ai/settings/connectors</code> directly)</li>
+        <li>Click <strong>Add custom connector</strong> and paste the remote MCP server URL — same <strong>Connectors</strong> feature covered in the Claude Desktop tab, just driven from the browser instead of a local config file</li>
       </ul>
 
       <h2>Step 3 — Connect a Remote Server</h2>
@@ -2560,15 +2561,16 @@ Auth:         OAuth 2.1 + PKCE (required for any internet-facing server)
 <span class="c">// The server must be publicly reachable over HTTPS</span>
 <span class="c">// localhost servers will NOT work from the browser</span></div>
 
-      <h2>Step 4 — Using First-Party Integrations</h2>
-      <p style="color:var(--muted2);margin-bottom:10px;">Claude.ai ships built-in integrations you can enable without any server config:</p>
+      <h2>Step 4 — Using Pre-Built Connectors</h2>
+      <p style="color:var(--muted2);margin-bottom:10px;">Anthropic's <strong>Connectors directory</strong> ships hundreds of pre-built, verified integrations you can enable without any server config:</p>
       <ul class="checklist">
         <li><strong style="color:var(--accent)">Web Search</strong> — built-in, enable in Settings → Features</li>
-        <li><strong style="color:var(--accent)">Google Drive</strong> — connect via OAuth in Integrations tab</li>
+        <li><strong style="color:var(--accent)">Google Drive</strong> — connect via OAuth from the Connectors tab</li>
         <li><strong style="color:var(--accent)">GitHub</strong> — connect via OAuth, grants repo read/write access</li>
         <li><strong style="color:var(--accent)">Notion</strong> — connect Notion workspace via OAuth</li>
         <li><strong style="color:var(--accent)">Jira</strong> — connect Atlassian account via OAuth</li>
       </ul>
+      <div class="info-box"><strong>Plan limits:</strong> Free plan gets 1 custom connector; Pro/Max/Team/Enterprise get full directory access. Connectors added here sync to the Claude mobile app automatically — and to Claude Code's <code class="inline">/mcp</code> panel if you're logged into the same Anthropic account (see the Claude Code tab).</div>
 
       <h2>Step 5 — Verify in a Conversation</h2>
       <ul class="checklist">
