@@ -148,17 +148,17 @@ quiz: [
 
 ## Current Courses
 Order follows the learner journey: model fundamentals → communicating with it → managing its inputs → grounding it in data → practical synthesis → connecting tools → autonomous agents → applying AI to software engineering practice → a specialized vertical.
-1. llm — LLM Fundamentals (15 modules)
-2. prompts — Prompt Engineering (13 modules)
-3. ctx — Context Engineering (13 modules)
-4. rag — RAG Deep Dive (13 modules)
-5. skills — AI Skills Training (16 modules)
-6. mcp — Model Context Protocol (15 modules)
-7. agents — Agentic AI Systems (15 modules)
-8. vibe — Managing Vibe-Coded Projects (14 modules)
-9. qa — QA Stack & GitHub Actions (13 modules)
-10. docker — Docker with AI (12 modules)
-11. hwai — AI for Hardware Engineers (12 modules)
+1. llm — LLM Fundamentals (16 modules)
+2. prompts — Prompt Engineering (14 modules)
+3. ctx — Context Engineering (14 modules)
+4. rag — RAG Deep Dive (14 modules)
+5. skills — AI Skills Training (17 modules)
+6. mcp — Model Context Protocol (16 modules)
+7. agents — Agentic AI Systems (16 modules)
+8. vibe — Managing Vibe-Coded Projects (15 modules)
+9. qa — QA Stack & GitHub Actions (14 modules)
+10. docker — Docker with AI (13 modules)
+11. hwai — AI for Hardware Engineers (13 modules)
 
 ## Accent Colors (do not reuse)
 mcp=#00D4FF · agents=#FFB347 · skills=#4EEEA8 · rag=#2DD4BF · prompts=#A78BFA

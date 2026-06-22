@@ -7353,6 +7353,7 @@ ollama run llama3.3            # interactive, fully offline
   <div class="card-grid">
     <div class="card"><div class="card-icon">🔧</div><div class="card-title"><a class="resource-link" href="https://docs.kicad.org/" target="_blank" rel="noopener noreferrer">KiCad Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">Reference for the open-source EDA tool many of this course's schematic-review use cases sit alongside.</div><span class="tag green">docs</span></div>
     <div class="card"><div class="card-icon">🔩</div><div class="card-title"><a class="resource-link" href="https://octopart.com/" target="_blank" rel="noopener noreferrer">Octopart<span class="ext-arrow">↗</span></a></div><div class="card-body">A parts-search engine commonly paired with AI sourcing assistants for this course's BOM Analysis workflows.</div><span class="tag green">tool</span></div>
+    <div class="card"><div class="card-icon">🛟</div><div class="card-title"><a class="resource-link" href="https://www.iec.ch/" target="_blank" rel="noopener noreferrer">IEC<span class="ext-arrow">↗</span></a></div><div class="card-body">The standards body behind IEC 61508 and the functional-safety discipline this course's safety-critical guardrails theme draws on.</div><span class="tag green">official</span></div>
     <div class="card"><div class="card-icon">📘</div><div class="card-title"><a class="resource-link" href="https://docs.anthropic.com/" target="_blank" rel="noopener noreferrer">Anthropic Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">Reference for the underlying Claude capabilities this course applies to hardware workflows.</div><span class="tag">official</span></div>
   </div>
   <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
@@ -8372,12 +8373,12 @@ git status                 <span class="c"># any unintended files staged?</span>
 'vibe:godeeper': () => `<div class="panel" id="panel-vibe-godeeper">
   <div class="breadcrumb">Vibe Coding › <span class="bc-accent">Practice</span> › Go Deeper</div>
   <h1>Go <span class="hl">Deeper</span></h1>
-  <p class="lead">Where the term came from, the tool this course is built around, and the engineering concept it's really about managing.</p>
+  <p class="lead">The AI-native coding tools this course's workflows are built around, and the engineering concept they're really about managing.</p>
   <div class="card-grid">
     <div class="card"><div class="card-icon">📘</div><div class="card-title"><a class="resource-link" href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener noreferrer">Claude Code Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">Official docs for the CLI agent this course's workflows assume.</div><span class="tag">official</span></div>
     <div class="card"><div class="card-icon">🍙</div><div class="card-title"><a class="resource-link" href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener noreferrer">anthropics/claude-code<span class="ext-arrow">↗</span></a></div><div class="card-body">Issues, releases, and discussion for Claude Code itself.</div><span class="tag violet">repo</span></div>
-    <div class="card"><div class="card-icon">🖱️</div><div class="card-title"><a class="resource-link" href="https://docs.cursor.com/" target="_blank" rel="noopener noreferrer">Cursor Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">Docs for one of the most widely used AI-native editors driving the vibe-coding workflow this course is named after.</div><span class="tag green">guide</span></div>
-    <div class="card"><div class="card-icon">📓</div><div class="card-title"><a class="resource-link" href="https://martinfowler.com/bliki/TechnicalDebt.html" target="_blank" rel="noopener noreferrer">Technical Debt — Martin Fowler<span class="ext-arrow">↗</span></a></div><div class="card-body">The foundational essay on the underlying problem this course's anti-bloat and refactoring-loop modules address.</div><span class="tag green">wiki</span></div>
+    <div class="card"><div class="card-icon">🖱️</div><div class="card-title"><a class="resource-link" href="https://docs.cursor.com/" target="_blank" rel="noopener noreferrer">Cursor Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">Docs for one of the most widely used AI-native editors driving the vibe-coding workflow this course is named after.</div><span class="tag green">docs</span></div>
+    <div class="card"><div class="card-icon">📓</div><div class="card-title"><a class="resource-link" href="https://martinfowler.com/bliki/TechnicalDebt.html" target="_blank" rel="noopener noreferrer">Technical Debt — Martin Fowler<span class="ext-arrow">↗</span></a></div><div class="card-body">The foundational essay on the underlying problem this course's anti-bloat and refactoring-loop modules address.</div><span class="tag green">essay</span></div>
   </div>
   <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
 </div>`,
@@ -10113,7 +10114,7 @@ function navigate(courseId, moduleId) {
   document.getElementById('topbar-course-badge').style.color = course.accentColor;
   document.getElementById('topbar-title').textContent = mod?.title || '';
   document.getElementById('topbar-module-badge').textContent =
-    mod?.badge ? `Module ${mod.badge} of ${totalMods - 2}` : '';
+    mod?.badge ? `Module ${mod.badge} of ${totalMods - 3}` : '';
 
   // Update progress
   updateProgress();
