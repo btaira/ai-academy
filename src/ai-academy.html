@@ -393,6 +393,33 @@ h3 {
   overflow-x: auto;
   white-space: pre;
   color: var(--code-text);
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.code-block:hover { border-color: var(--accent); }
+.code-block::after {
+  content: 'Click to copy';
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--code-label);
+  background: rgba(5,10,20,0.92);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.08);
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+.code-block:hover::after { opacity: 1; }
+.code-block.copied::after {
+  content: '✓ Copied';
+  color: var(--code-string);
+  opacity: 1;
 }
 .code-block .code-label {
   display: block;
@@ -9939,6 +9966,50 @@ function toggleAcc(header) {
   header.classList.toggle('open');
   header.nextElementSibling?.classList.toggle('open');
 }
+
+/* ════════════════════════════════════════════════════════════════
+   CODE BLOCK COPY-TO-CLIPBOARD
+════════════════════════════════════════════════════════════════ */
+function getCodeBlockText(block) {
+  let text = '';
+  block.childNodes.forEach(node => {
+    if (node.nodeType === 1 && node.classList.contains('code-label')) return;
+    text += node.textContent;
+  });
+  return text.replace(/^\n+/, '').replace(/\s+$/, '');
+}
+
+function fallbackCopyToClipboard(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopyToClipboard(text));
+  } else {
+    fallbackCopyToClipboard(text);
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const block = e.target.closest('.code-block');
+  if (!block) return;
+  const selection = window.getSelection();
+  if (selection && selection.toString().length > 0) return;
+  const text = getCodeBlockText(block);
+  if (!text) return;
+  copyToClipboard(text);
+  block.classList.add('copied');
+  clearTimeout(block._copyTimeout);
+  block._copyTimeout = setTimeout(() => block.classList.remove('copied'), 1400);
+});
 
 /* ════════════════════════════════════════════════════════════════
    BOOT
