@@ -1263,32 +1263,40 @@ const COURSES = [
   accentColor: '#F472B6',
   accentDim: 'rgba(244,114,182,0.10)',
   status: 'available',
-  description: 'How transformer language models actually work — from tokens and attention to training, context windows, and inference.',
-  moduleTags: ['Tokens', 'Attention', 'Training', 'Context', 'Inference'],
+  description: 'How transformer language models actually work — from talking to one and running it locally, to tokens, attention, quantization, training, and inference.',
+  moduleTags: ['Tokens', 'Attention', 'Sampling', 'Quantization', 'Local Models'],
   sections: [
     {
-      label: 'Building Blocks',
+      label: 'Getting Started',
       modules: [
-        { id: 'overview',    icon: '🗺', title: 'The Big Picture',      badge: '1' },
-        { id: 'tokens',      icon: '🔤', title: 'Tokenization',         badge: '2' },
-        { id: 'embeddings',  icon: '🧲', title: 'Embeddings & Vectors', badge: '3' },
+        { id: 'overview',    icon: '🗺', title: 'The Big Picture',         badge: '1' },
+        { id: 'params',      icon: '🎛', title: 'Generation Parameters',   badge: '2' },
+        { id: 'localllm',    icon: '💻', title: 'Running Models Locally',  badge: '3' },
       ]
     },
     {
-      label: 'The Transformer',
+      label: 'Under the Hood',
       modules: [
-        { id: 'attention',   icon: '👁', title: 'Attention',            badge: '4' },
-        { id: 'architecture',icon: '🏗', title: 'Architecture',         badge: '5' },
-        { id: 'context',     icon: '🪟', title: 'Context Windows',      badge: '6' },
+        { id: 'tokens',      icon: '🔤', title: 'Tokenization',         badge: '4' },
+        { id: 'embeddings',  icon: '🧲', title: 'Embeddings & Vectors', badge: '5' },
+        { id: 'attention',   icon: '👁', title: 'Attention',            badge: '6' },
+        { id: 'architecture',icon: '🏗', title: 'Architecture',         badge: '7' },
+        { id: 'context',     icon: '🪟', title: 'Context Windows',      badge: '8' },
       ]
     },
     {
-      label: 'Training & Inference',
+      label: 'Smaller & Faster',
       modules: [
-        { id: 'training',    icon: '🎓', title: 'How Models Learn',     badge: '7' },
-        { id: 'rlhf',        icon: '🎯', title: 'RLHF & Alignment',     badge: '8' },
-        { id: 'inference',   icon: '⚡', title: 'Inference & Sampling', badge: '9' },
-        { id: 'limits',      icon: '🚧', title: 'Limits & Failure Modes', badge: '10' },
+        { id: 'quantization',icon: '📉', title: 'Quantization',         badge: '9' },
+        { id: 'inference',   icon: '⚡', title: 'Inference Internals',  badge: '10' },
+      ]
+    },
+    {
+      label: 'Training & Alignment',
+      modules: [
+        { id: 'training',    icon: '🎓', title: 'How Models Learn',     badge: '11' },
+        { id: 'rlhf',        icon: '🎯', title: 'RLHF & Alignment',     badge: '12' },
+        { id: 'limits',      icon: '🚧', title: 'Limits & Failure Modes', badge: '13' },
       ]
     },
     {
@@ -1312,6 +1320,8 @@ const COURSES = [
     { q: "What problem do Grouped-Query Attention (GQA) and Multi-head Latent Attention (MLA) solve?", options: ["They make the model's vocabulary larger","They reduce the size of the KV cache needed during inference, compared to standard multi-head attention, enabling longer context and higher throughput", "They eliminate the need for positional encoding","They remove the need for a tokenizer"], correct: 1, explanation: "Standard multi-head attention gives every head its own Key/Value projections, which makes the KV cache large and expensive to store during generation. GQA (used in Llama, Mistral) shares K/V across groups of heads; MLA (used in DeepSeek) compresses K/V into a small latent vector. Both shrink the cache with minimal quality loss, which is why nearly all current production models use one of them instead of plain multi-head attention." },
     { q: "What is Direct Preference Optimization (DPO), and how does it differ from classic RLHF?", options: ["It removes the need for any preference data at all","It optimizes the model directly on pairs of preferred/rejected responses with a simple loss, skipping the separate reward model and the reinforcement-learning loop that classic RLHF requires", "It only works for image-generation models","It is a way to compress model weights"], correct: 1, explanation: "Classic RLHF trains a separate reward model from human preference rankings, then uses reinforcement learning (e.g. PPO) to optimize the LLM against that reward model — a complex, often unstable pipeline. DPO reframes the same preference data as a direct classification-style loss on the policy model itself, skipping the reward model and RL loop. It's simpler and more stable, and by the mid-2020s is widely used either standalone or alongside RLHF/RLAIF in multi-stage alignment pipelines." },
     { q: "What is speculative decoding, and why does it speed up inference?", options: ["It skips safety filters to generate faster","A small, fast 'draft' model proposes several next tokens, and the large target model verifies them all in one parallel pass, accepting matches for free and only falling back to normal generation on mismatches","It reduces the number of layers in the model permanently","It pre-computes every possible response in advance"], correct: 1, explanation: "Speculative decoding uses a cheap draft model (or a quantized self-speculative copy of the target model) to guess ahead several tokens, then has the expensive target model check all of them in a single forward pass instead of one token at a time. Accepted guesses are essentially free; only mismatches require a normal generation step. This can meaningfully speed up generation latency without changing the final output distribution." },
+    { q: "What does quantizing a model from FP16 to INT4 actually change?", options: ["It changes the model's architecture to have fewer layers","It stores each weight in fewer bits (e.g. 4 instead of 16), shrinking memory footprint and speeding up compute, usually with a small but non-zero quality cost", "It deletes weights the model doesn't need", "It retrains the model on a smaller dataset"], correct: 1, explanation: "Quantization reduces the numeric precision used to store (and sometimes compute) weights — e.g. 16-bit floats down to 4-bit integers. This roughly quarters memory footprint and speeds up memory-bound inference, at the cost of some rounding error that usually translates into a small, often acceptable, quality drop. It does not change the model's architecture or retrain it." },
+    { q: "What's the main practical limitation of running an LLM locally on consumer hardware (e.g. via Ollama or llama.cpp), compared to a frontier cloud API?", options: ["Local models cannot be used offline","Local models are restricted to a much smaller pool of model sizes/quality because consumer GPU VRAM (typically 8-24GB) caps how large (or how unquantized) a model can fit and run at usable speed","Local models cannot use a system prompt","Local inference is always faster than cloud inference"], correct: 1, explanation: "Frontier cloud models run on datacenter-grade GPUs with far more memory and compute than a laptop or desktop GPU. Local tools like Ollama and llama.cpp make running models on consumer hardware easy, but you're bounded by available VRAM/RAM — which is exactly why quantized (4-bit/8-bit) smaller models are the norm for local use, trading some quality for the ability to fit and run at all." },
   ],
 },
 
@@ -6284,7 +6294,7 @@ system=[{"type": "text", "text": LONG_SYSTEM_PROMPT,
 /* ─── LLM FUNDAMENTALS PANELS ──────────────────────────────────────────────────── */
 
 'llm:overview': () => `<div class="panel" id="panel-llm-overview">
-  <div class="breadcrumb">LLM Core › <span class="bc-accent">Building Blocks</span> › The Big Picture</div>
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Getting Started</span> › The Big Picture</div>
   <h1>The <span class="hl">Big Picture</span></h1>
   <p class="lead">A large language model is, at its core, a next-token predictor: given a sequence of text, it predicts what comes next. From that deceptively simple objective — repeated over trillions of words — emerges grammar, reasoning, knowledge, and the ability to follow instructions. This course demystifies how.</p>
   <div class="info-box"><strong>The whole model in one sentence:</strong> An LLM converts text into tokens, turns tokens into vectors, passes them through stacked transformer layers that let each token attend to every other, and outputs a probability distribution over the next token — then repeats.</div>
@@ -6305,18 +6315,20 @@ system=[{"type": "text", "text": LONG_SYSTEM_PROMPT,
       <div class="flow-node c-accent" style="text-align:center;min-width:88px;"><div class="node-eyebrow">repeat</div><div class="node-name" style="font-size:12px;">Output Text</div></div>
     </div>
   </div>
-  <h2>What We'll Cover</h2>
+  <h2>How This Course Flows</h2>
+  <p style="color:var(--muted2);margin-bottom:12px;">We start with what you can actually do with a model today — tune its output, run one on your own machine — before going underneath the hood. Internals build on each other in order, so by the time you reach training and alignment, every term has already been defined.</p>
   <div class="card-grid">
-    <div class="card"><div class="card-icon">🔤</div><div class="card-title">Tokens</div><div class="card-body">How text becomes the discrete units a model processes — and why this affects cost, context, and quirks.</div><span class="tag">input</span></div>
-    <div class="card"><div class="card-icon">🧲</div><div class="card-title">Embeddings</div><div class="card-body">How tokens become vectors that encode meaning in high-dimensional space.</div><span class="tag amber">representation</span></div>
-    <div class="card"><div class="card-icon">👁</div><div class="card-title">Attention</div><div class="card-body">The mechanism that lets the model weigh relationships between all tokens — the core breakthrough.</div><span class="tag violet">mechanism</span></div>
-    <div class="card"><div class="card-icon">🎓</div><div class="card-title">Training</div><div class="card-body">How pre-training, fine-tuning, and RLHF turn raw text into a helpful assistant.</div><span class="tag green">learning</span></div>
+    <div class="card"><div class="card-icon">🎛</div><div class="card-title">Generation Parameters</div><div class="card-body">Temperature, top-p, top-k, and the other knobs every API and local tool exposes — useful from day one.</div><span class="tag">getting started</span></div>
+    <div class="card"><div class="card-icon">💻</div><div class="card-title">Running Models Locally</div><div class="card-body">Ollama, llama.cpp, and what it takes to run a model on your own GPU instead of an API.</div><span class="tag amber">getting started</span></div>
+    <div class="card"><div class="card-icon">🔤</div><div class="card-title">Tokens, Embeddings, Attention</div><div class="card-body">How text becomes vectors, and the mechanism that lets every token weigh every other — the core internals.</div><span class="tag violet">under the hood</span></div>
+    <div class="card"><div class="card-icon">📉</div><div class="card-title">Quantization &amp; Inference</div><div class="card-body">How models get smaller and faster — the same idea that makes local models possible, applied at scale.</div><span class="tag green">smaller &amp; faster</span></div>
+    <div class="card"><div class="card-icon">🎓</div><div class="card-title">Training &amp; Alignment</div><div class="card-body">How pre-training, fine-tuning, and RLHF turn raw text prediction into a helpful assistant — and where it still breaks.</div><span class="tag">training</span></div>
   </div>
   <div class="info-box green"><strong>Why this matters for builders:</strong> Understanding the machinery explains the behavior — why models hallucinate, why context windows have limits, why tokenization causes odd failures, why temperature changes output. This knowledge makes you far more effective at prompting, RAG, and debugging.</div>
 </div>`,
 
 'llm:tokens': () => `<div class="panel" id="panel-llm-tokens">
-  <div class="breadcrumb">LLM Core › <span class="bc-accent">Building Blocks</span> › Tokenization</div>
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Under the Hood</span> › Tokenization</div>
   <h1><span class="hl">Tokenization</span></h1>
   <p class="lead">Models don't see text as letters or words — they see tokens. A tokenizer splits text into a vocabulary of sub-word pieces, the atomic units the model reads and generates. This single design choice has surprisingly wide effects.</p>
   <div class="info-box"><strong>Key fact:</strong> A token is typically a word or a fragment of one. In English, roughly 1 token ≈ 0.75 words, or about 4 characters. "Unbelievable" might split into "un", "believ", "able". Common words are single tokens; rare words fragment.</div>
@@ -6366,7 +6378,7 @@ print(enc.decode(ids[:3]))   <span class="c"># round-trip any slice back to text
 </div>`,
 
 'llm:embeddings': () => `<div class="panel" id="panel-llm-embeddings">
-  <div class="breadcrumb">LLM Core › <span class="bc-accent">Building Blocks</span> › Embeddings &amp; Vectors</div>
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Under the Hood</span> › Embeddings &amp; Vectors</div>
   <h1>Embeddings <span class="hl">&amp; Vectors</span></h1>
   <p class="lead">Once text is tokenized, each token is converted into a vector — a long list of numbers — that represents its meaning. These embeddings are how a model turns discrete symbols into something it can do math on. Meaning becomes geometry.</p>
   <div class="info-box"><strong>The core idea:</strong> Every token maps to a point in high-dimensional space (hundreds to thousands of dimensions). Tokens with similar meanings sit near each other. The model learns these positions during training — they're not hand-assigned.</div>
@@ -6395,7 +6407,7 @@ vec("king") - vec("man") + vec("woman")  ~=  vec("queen")
 </div>`,
 
 'llm:attention': () => `<div class="panel" id="panel-llm-attention">
-  <div class="breadcrumb">LLM Core › <span class="bc-accent">The Transformer</span> › Attention</div>
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Under the Hood</span> › Attention</div>
   <h1><span class="hl">Attention</span></h1>
   <p class="lead">Attention is the mechanism that made modern LLMs possible. It lets every token look at every other token and decide how much each one matters for understanding it. This is how a model resolves "it" to the right noun, or connects a verb to its distant subject.</p>
   <div class="info-box"><strong>The 2017 breakthrough:</strong> The paper "Attention Is All You Need" introduced the transformer, replacing slow sequential processing with attention that processes all tokens in parallel while modeling their relationships. Every major LLM since is a descendant.</div>
@@ -6468,7 +6480,7 @@ output = 0.46*[2,5] + 0.17*[0,1] + 0.37*[4,1]
 </div>`,
 
 'llm:architecture': () => `<div class="panel" id="panel-llm-architecture">
-  <div class="breadcrumb">LLM Core › <span class="bc-accent">The Transformer</span> › Architecture</div>
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Under the Hood</span> › Architecture</div>
   <h1>Transformer <span class="hl">Architecture</span></h1>
   <p class="lead">A transformer stacks the same building block — an attention layer plus a feed-forward network — dozens or hundreds of times. Tokens flow up through these layers, their representations refined at each step, until the top layer predicts the next token.</p>
   <h2>The Anatomy of a Layer</h2>
@@ -6518,7 +6530,7 @@ layers, roughly comparable footprint), but the router picks only
 </div>`,
 
 'llm:context': () => `<div class="panel" id="panel-llm-context">
-  <div class="breadcrumb">LLM Core › <span class="bc-accent">The Transformer</span> › Context Windows</div>
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Under the Hood</span> › Context Windows</div>
   <h1>Context <span class="hl">Windows</span></h1>
   <p class="lead">The context window is the maximum amount of text — measured in tokens — a model can consider at once. It's the model's working memory: everything it can "see" when generating the next token, including your prompt, the conversation, and its own output so far.</p>
   <div class="info-box"><strong>Hard boundary:</strong> Everything must fit — system prompt + conversation history + retrieved context + the response being generated. Exceed the window and the oldest content must be dropped or compressed. The model has no memory beyond it.</div>
@@ -6545,7 +6557,7 @@ layers, roughly comparable footprint), but the router picks only
 </div>`,
 
 'llm:training': () => `<div class="panel" id="panel-llm-training">
-  <div class="breadcrumb">LLM Core › <span class="bc-accent">Training &amp; Inference</span> › How Models Learn</div>
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Training &amp; Alignment</span> › How Models Learn</div>
   <h1>How Models <span class="hl">Learn</span></h1>
   <p class="lead">A capable assistant is built in stages. First, massive self-supervised pre-training teaches language and knowledge. Then fine-tuning shapes that raw capability into something helpful, instruction-following, and aligned. Understanding the stages explains both the model's powers and its limits.</p>
   <h2>The Training Pipeline</h2>
@@ -6576,7 +6588,7 @@ Target:   "Paris"
 </div>`,
 
 'llm:rlhf': () => `<div class="panel" id="panel-llm-rlhf">
-  <div class="breadcrumb">LLM Core › <span class="bc-accent">Training &amp; Inference</span> › RLHF &amp; Alignment</div>
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Training &amp; Alignment</span> › RLHF &amp; Alignment</div>
   <h1>RLHF <span class="hl">&amp; Alignment</span></h1>
   <p class="lead">A pre-trained, instruction-tuned model is capable but not necessarily helpful, honest, or safe in the way people want. Alignment — most famously via RLHF (Reinforcement Learning from Human Feedback) — closes that gap, shaping the model's behavior to match human preferences.</p>
   <div class="info-box"><strong>The gap alignment closes:</strong> A raw model might give a technically-correct-but-useless answer, ramble, confidently state falsehoods, or comply with harmful requests. Alignment teaches it to be genuinely helpful, to hedge appropriately, and to decline harmful asks.</div>
@@ -6605,25 +6617,33 @@ Target:   "Paris"
   <div class="info-box green"><strong>Why "helpful, honest, harmless" recurs:</strong> These three goals (often called HHH) are the north star of alignment. Much of what makes a model pleasant and safe to use — versus a raw next-token predictor — comes from this stage.</div>
 </div>`,
 
-'llm:inference': () => `<div class="panel" id="panel-llm-inference">
-  <div class="breadcrumb">LLM Core › <span class="bc-accent">Training &amp; Inference</span> › Inference &amp; Sampling</div>
-  <h1>Inference <span class="hl">&amp; Sampling</span></h1>
-  <p class="lead">Inference is the model in action: generating text one token at a time. At each step it produces a probability distribution over the entire vocabulary, then samples one token from it. The sampling strategy — controlled by parameters like temperature — shapes whether output is focused or creative.</p>
-  <h2>Autoregressive Generation</h2>
-  <div class="code-block"><span class="code-label">// ONE TOKEN AT A TIME</span>Prompt: "The eFuse protects against"
-
-step 1 -> distribution over vocab -> sample -> "over"
-step 2 -> "The eFuse protects against over" -> sample -> "current"
-step 3 -> "...against overcurrent" -> sample -> " conditions"
-...continues until a stop token or max length...
-
-<span class="c"># Each generated token is appended and fed back in.</span>
-<span class="c"># This loop is why generation latency scales with output length.</span></div>
-  <h2>The Sampling Parameters</h2>
-  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Temperature — randomness control <span class="acc-arrow">▾</span></div><div class="acc-body">Scales the probability distribution before sampling. Temperature 0 = always pick the most likely token (deterministic, focused). Higher temperature flattens the distribution, making less-likely tokens more probable (diverse, creative). 0 for facts/code/extraction; 0.7-1.0 for creative writing.</div></div>
+'llm:params': () => `<div class="panel" id="panel-llm-params">
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Getting Started</span> › Generation Parameters</div>
+  <h1>Generation <span class="hl">Parameters</span></h1>
+  <p class="lead">Every time you call a model, you're choosing how it samples its next token. These are the knobs every API and local tool exposes — learn them once and they transfer everywhere, from ChatGPT's API to Ollama to llama.cpp.</p>
+  <div class="info-box"><strong>Why this comes early:</strong> You don't need to understand transformer internals to use these effectively — you just need to know what each one does to the output. The internals (KV cache, speculative decoding) come later, in Inference Internals.</div>
+  <h2>The Core Parameters</h2>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Temperature — randomness control <span class="acc-arrow">▾</span></div><div class="acc-body">Scales the probability distribution before sampling. Temperature 0 = always pick the most likely token (deterministic, focused). Higher temperature flattens the distribution, making less-likely tokens more probable (diverse, creative). 0 for facts/code/extraction; 0.7-1.0 for creative writing. Most APIs cap it around 2.0.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Top-p (nucleus sampling) <span class="acc-arrow">▾</span></div><div class="acc-body">Only sample from the smallest set of tokens whose probabilities sum to p (e.g. 0.9). This dynamically limits choices to the plausible set, cutting off the long tail of unlikely tokens. A common default is 0.9-0.95.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Top-k <span class="acc-arrow">▾</span></div><div class="acc-body">Only consider the k most likely tokens at each step. Simpler than top-p but less adaptive (k is fixed regardless of how peaked the distribution is). Often used together with or instead of top-p.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Min-p <span class="acc-arrow">▾</span></div><div class="acc-body">Keeps only tokens with probability at least <code class="inline">min_p</code> times the top token's probability. Scales with how confident the model is at each step — at a confident step the cutoff is strict, at an uncertain step it's lenient. Increasingly popular in local-inference tools (llama.cpp, Ollama) as a top-p alternative.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Frequency &amp; presence penalty <span class="acc-arrow">▾</span></div><div class="acc-body">Frequency penalty reduces the probability of tokens proportional to how often they've already appeared in the output — fights repetitive loops. Presence penalty applies a flat penalty the moment a token has appeared at all, regardless of count — pushes toward new topics/words rather than just fewer repeats.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Repetition penalty <span class="acc-arrow">▾</span></div><div class="acc-body">Common in local-inference tools (llama.cpp, Ollama, Hugging Face <code class="inline">transformers</code>) as a single multiplicative penalty on previously-seen tokens — a simpler cousin of frequency/presence penalty. Values around 1.1-1.3 are typical; 1.0 disables it.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Max tokens &amp; stop sequences <span class="acc-arrow">▾</span></div><div class="acc-body">Max tokens caps output length (and cost). Stop sequences are strings that immediately halt generation when produced — useful for enforcing structure (stop after a closing brace) or preventing run-on output.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Seed <span class="acc-arrow">▾</span></div><div class="acc-body">Fixes the random number generator used for sampling. Same seed + same prompt + same parameters gives (close to) reproducible output — useful for debugging and evaluation, though exact determinism still isn't guaranteed across hardware/batching changes.</div></div>
+  <h2>Setting Them in Practice</h2>
+  <div class="code-block"><span class="code-label">// SAME PARAMETERS, EVERY PROVIDER USES THIS SHAPE</span>{
+  <span class="n">"model"</span>: <span class="s">"any-chat-model"</span>,
+  <span class="n">"messages"</span>: [{ <span class="n">"role"</span>: <span class="s">"user"</span>, <span class="n">"content"</span>: <span class="s">"Explain overcurrent protection"</span> }],
+  <span class="n">"temperature"</span>: <span class="v">0.2</span>,
+  <span class="n">"top_p"</span>: <span class="v">0.9</span>,
+  <span class="n">"max_tokens"</span>: <span class="v">500</span>,
+  <span class="n">"stop"</span>: [<span class="s">"\\n\\n"</span>],
+  <span class="n">"seed"</span>: <span class="v">42</span>
+}
+
+<span class="c">// Local tools expose the same knobs — e.g. Ollama:</span>
+ollama run llama3.1 <span class="c">--temperature 0.2 --top-p 0.9</span></div>
   <h2>Hands-On: Compute Temperature &amp; Top-p Yourself</h2>
   <p style="color:var(--muted2);margin-bottom:12px;">Work through this by hand to see exactly what temperature and top-p do to a real distribution. Suppose the model's raw next-token logits, after softmax at temperature 1, give these probabilities:</p>
   <div class="code-block"><span class="code-label">// STARTING DISTRIBUTION (temperature = 1)</span>token:  "current"  "voltage"  "circuit"  "banana"  "..."
@@ -6646,14 +6666,6 @@ prob:    0.50       0.30        0.15       0.04      0.01
 <span class="c">// -> only "current" (0.50) and "voltage" (cum 0.80 >= 0.75) survive.</span>
 <span class="c">// Notice: lowering p tightens the nucleus even with temperature fixed.</span></div>
   <div class="info-box amber"><strong>Try it for real:</strong> Call any chat completion API with the same prompt and <code class="inline">temperature: 0</code>, <code class="inline">logprobs: true</code> (or the closest equivalent) to see the actual top alternative tokens and their probabilities at each step — then re-run at <code class="inline">temperature: 1.2</code> and compare how much the output changes.</div>
-  <h2>The KV Cache</h2>
-  <div class="info-box violet"><strong>Why generation stays fast:</strong> Naively, generating each new token would recompute attention over all prior tokens. The <span class="hl">KV cache</span> stores the key and value vectors of already-processed tokens, so each new token only computes its own — turning quadratic recomputation into a manageable cost. The trade-off: the cache grows with context length and consumes significant memory — which is exactly why GQA, MQA, and MLA (covered in the Attention module) exist: they shrink what has to be cached per token.</div>
-  <h2>Speeding Up Inference Further</h2>
-  <div class="card-grid">
-    <div class="card"><div class="card-icon">🎲</div><div class="card-title">Speculative Decoding</div><div class="card-body">A small, fast "draft" model guesses several tokens ahead; the large target model verifies them in a single parallel pass and accepts the ones that match what it would have generated anyway. Verified tokens are free — only mismatches require a normal full step. Modern variants even make the draft model a quantized copy of the target model itself (self-speculative decoding), reporting 2x+ speedups with little quality loss.</div><span class="tag">latency</span></div>
-    <div class="card"><div class="card-icon">📉</div><div class="card-title">Quantization</div><div class="card-body">Storing weights (and sometimes the KV cache) in lower precision — 8-bit or 4-bit instead of 16/32-bit floats — shrinks memory footprint and speeds up compute, usually with a small, often negligible, quality cost. Combining 4-bit weight quantization with a quantized KV cache compounds the savings, which is why it's now common in both research and production serving stacks.</div><span class="tag amber">memory</span></div>
-    <div class="card"><div class="card-icon">📦</div><div class="card-title">Batching</div><div class="card-body">Serving many requests together lets the GPU do more useful matrix-multiply work per memory load. Continuous batching (dynamically adding new requests to an in-flight batch rather than waiting for a fixed batch to finish) is standard in production inference servers.</div><span class="tag violet">throughput</span></div>
-  </div>
   <h2>Why Outputs Vary</h2>
   <ul class="checklist">
     <li>At temperature &gt; 0, sampling introduces randomness — the same prompt can give different outputs</li>
@@ -6662,8 +6674,115 @@ prob:    0.50       0.30        0.15       0.04      0.01
   </ul>
 </div>`,
 
+'llm:localllm': () => `<div class="panel" id="panel-llm-localllm">
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Getting Started</span> › Running Models Locally</div>
+  <h1>Running Models <span class="hl">Locally</span></h1>
+  <p class="lead">Every model so far in this course can also run entirely on your own machine — no API, no internet, no per-token bill. The trade-off is capability: a laptop GPU can't host a frontier-scale model, so local models are usually smaller and quantized.</p>
+  <h2>Why Run Locally</h2>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">🔒</div><div class="card-title">Privacy</div><div class="card-body">Nothing leaves your machine — relevant for sensitive code, internal docs, or regulated data.</div><span class="tag green">privacy</span></div>
+    <div class="card"><div class="card-icon">💵</div><div class="card-title">Cost</div><div class="card-body">No per-token billing. Fixed cost is your hardware (or none, if you already own a capable GPU).</div><span class="tag amber">cost</span></div>
+    <div class="card"><div class="card-icon">📡</div><div class="card-title">Offline</div><div class="card-body">Works with no network connection — air-gapped environments, travel, unreliable connectivity.</div><span class="tag">offline</span></div>
+    <div class="card"><div class="card-icon">🎛</div><div class="card-title">Control</div><div class="card-body">Full control over the model version, quantization level, and system prompt — nothing changes under you between sessions.</div><span class="tag violet">control</span></div>
+  </div>
+  <h2>The Tools</h2>
+  <table class="data-table">
+    <tr><th>Tool</th><th>What it is</th><th>Best for</th></tr>
+    <tr><td><span class="hl">Ollama</span></td><td>CLI + local server, one-line model pulls, OpenAI-compatible API</td><td>Fastest path from zero to a running local model</td></tr>
+    <tr><td><span class="hl-amber">llama.cpp</span></td><td>The underlying C++ inference engine most local tools are built on</td><td>Maximum control, runs on almost anything (CPU-only included)</td></tr>
+    <tr><td><span class="hl-green">LM Studio</span></td><td>Desktop GUI app over llama.cpp — model browser, chat UI, local API server</td><td>Non-CLI users who want a point-and-click experience</td></tr>
+    <tr><td><span class="hl-violet">vLLM</span></td><td>High-throughput serving engine for self-hosting at scale (continuous batching, multi-GPU)</td><td>Self-hosting for many concurrent users, not a single laptop</td></tr>
+  </table>
+  <h2>Quick Start: Ollama in 3 Commands</h2>
+  <div class="code-block"><span class="code-label">// macOS / Linux / Windows (WSL)</span><span class="c">// 1. Install</span>
+curl -fsSL https://ollama.com/install.sh | sh
+
+<span class="c">// 2. Pull and run a quantized model (downloads automatically)</span>
+ollama run llama3.1:8b
+
+<span class="c">// 3. Use it through the same OpenAI-compatible API shape as a cloud model</span>
+curl http://localhost:11434/v1/chat/completions \\
+  -d <span class="s">'{"model":"llama3.1:8b","messages":[{"role":"user","content":"hi"}]}'</span></div>
+  <h2>Will It Fit? The VRAM Rule of Thumb</h2>
+  <div class="info-box amber"><strong>Rough sizing:</strong> A model needs approximately <code class="inline">params × bytes-per-weight</code> of memory, plus overhead for the KV cache and activations. An 8B-parameter model at FP16 (2 bytes/weight) needs ~16GB just for weights; the same model 4-bit quantized needs ~4-5GB — which is why quantization (next module) is what makes running a capable model on consumer hardware possible at all.</div>
+  <table class="data-table">
+    <tr><th>Model size</th><th>FP16 (~2 bytes/param)</th><th>4-bit quantized (~0.5 bytes/param)</th></tr>
+    <tr><td>7-8B</td><td>~16GB VRAM</td><td>~5GB VRAM — fits most gaming GPUs</td></tr>
+    <tr><td>13-14B</td><td>~28GB VRAM</td><td>~8GB VRAM</td></tr>
+    <tr><td>70B</td><td>~140GB VRAM (multi-GPU)</td><td>~40GB VRAM</td></tr>
+  </table>
+  <h2>Model Formats You'll See</h2>
+  <ul class="checklist">
+    <li><strong style="color:var(--accent)">GGUF</strong> — the format used by llama.cpp/Ollama/LM Studio; a single file bundling weights + metadata, with the quantization level baked into the filename (e.g. <code class="inline">Q4_K_M</code>)</li>
+    <li><strong style="color:var(--accent)">safetensors</strong> — Hugging Face's standard weight format, typically full/half precision, used as the source models get quantized from</li>
+  </ul>
+  <div class="info-box green"><strong>Realistic expectations:</strong> A quantized 7-8B local model is good for drafting, summarizing, simple coding tasks, and offline experimentation — it will not match a frontier cloud model's reasoning depth or knowledge breadth. Match the tool to the task: local for privacy/offline/cost-sensitive work, cloud frontier models for your hardest problems.</div>
+</div>`,
+
+'llm:quantization': () => `<div class="panel" id="panel-llm-quantization">
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Smaller &amp; Faster</span> › Quantization</div>
+  <h1><span class="hl">Quantization</span></h1>
+  <p class="lead">A trained model's weights are just numbers. Quantization stores those numbers in fewer bits — trading a small amount of precision for large savings in memory and compute. It's the single biggest reason a model trained on a datacenter can run on a laptop.</p>
+  <div class="info-box"><strong>The core idea:</strong> A 7B-parameter model at FP16 (2 bytes per weight) is ~14GB. Quantized to 4-bit (~0.5 bytes per weight), it's ~3.5-4GB — roughly a 4x reduction — for a quality cost that's often barely measurable on everyday tasks.</div>
+  <h2>Precision Formats</h2>
+  <table class="data-table">
+    <tr><th>Format</th><th>Bits/weight</th><th>Typical use</th></tr>
+    <tr><td><span class="hl">FP32</span></td><td>32</td><td>Training (rarely used for inference — too large/slow)</td></tr>
+    <tr><td><span class="hl-amber">FP16 / BF16</span></td><td>16</td><td>Default inference precision for most hosted models</td></tr>
+    <tr><td><span class="hl-green">INT8 / FP8</span></td><td>8</td><td>Common middle ground — small quality loss, ~2x smaller than FP16</td></tr>
+    <tr><td><span class="hl-violet">INT4</span></td><td>4</td><td>The standard for local/consumer-hardware inference (Ollama, llama.cpp defaults)</td></tr>
+  </table>
+  <h2>How Quantization Is Actually Done</h2>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Post-training quantization (PTQ) <span class="acc-arrow">▾</span></div><div class="acc-body">Take an already-trained model and round its weights to lower precision after the fact, usually calibrated against a small sample dataset to minimize the error introduced. No retraining required — this is what GGUF, GPTQ, and AWQ all do, and what you get when you <code class="inline">ollama pull</code> a model.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">GPTQ <span class="acc-arrow">▾</span></div><div class="acc-body">A PTQ method that quantizes layer-by-layer, solving a small optimization problem per layer to minimize the error its rounding introduces. Popular for GPU inference; produces 4-bit models that closely track FP16 quality on most benchmarks.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">AWQ (Activation-aware Weight Quantization) <span class="acc-arrow">▾</span></div><div class="acc-body">Identifies which weights matter most based on the activations they multiply, and protects those from heavy quantization while compressing the rest harder. Often slightly better quality than plain GPTQ at the same bit width.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">GGUF quantization levels <span class="acc-arrow">▾</span></div><div class="acc-body">llama.cpp's format ships many named variants at the same bit width with different quality/size trade-offs — e.g. <code class="inline">Q4_0</code>, <code class="inline">Q4_K_M</code>, <code class="inline">Q4_K_S</code>. The <code class="inline">K_M</code> ("medium") variants are the common default: they keep certain sensitive layers at higher precision while compressing the rest, for better quality than uniform quantization at a similar file size.</div></div>
+  <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">Quantization-aware training (QAT) <span class="acc-arrow">▾</span></div><div class="acc-body">Simulates low-precision rounding during training itself, so the model learns weights that are robust to quantization. More expensive (requires training compute) but typically preserves more quality at very low bit widths than PTQ alone.</div></div>
+  <h2>What You Trade Away</h2>
+  <ul class="checklist">
+    <li>Quality loss is small and roughly monotonic — 8-bit is nearly lossless, 4-bit is usually fine, below 4-bit (2-3 bit) degrades noticeably except on the largest models</li>
+    <li>Heavily quantized models are more prone to subtle errors on precise tasks (exact math, code that must compile) — verify output more carefully than you would with full precision</li>
+    <li>The KV cache can also be quantized for further memory savings, compounding with weight quantization</li>
+  </ul>
+  <h2>Picking a Quantization Level</h2>
+  <div class="code-block"><span class="code-label">// OLLAMA — THE TAG IS THE QUANTIZATION LEVEL</span>ollama pull llama3.1:8b           <span class="c"># defaults to a 4-bit (Q4_K_M) GGUF</span>
+ollama pull llama3.1:8b-q8_0      <span class="c"># 8-bit — bigger, closer to full quality</span>
+ollama pull llama3.1:8b-fp16      <span class="c"># full precision — needs much more VRAM</span></div>
+  <div class="info-box green"><strong>Rule of thumb:</strong> Start with the default 4-bit quantization (Q4_K_M / AWQ-int4) — it's the sweet spot nearly every local-inference tool defaults to. Only step up to 8-bit if you notice quality issues on your specific task, and only step down to 2-3 bit if memory is the hard constraint and some quality loss is acceptable.</div>
+</div>`,
+
+'llm:inference': () => `<div class="panel" id="panel-llm-inference">
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Smaller &amp; Faster</span> › Inference Internals</div>
+  <h1>Inference <span class="hl">Internals</span></h1>
+  <p class="lead">You already know what the generation parameters do. This module is about what happens underneath them — why generation is autoregressive, why it's memory-bound, and what production inference servers do to make it fast at scale.</p>
+  <h2>Autoregressive Generation</h2>
+  <div class="code-block"><span class="code-label">// ONE TOKEN AT A TIME</span>Prompt: "The eFuse protects against"
+
+step 1 -> distribution over vocab -> sample -> "over"
+step 2 -> "The eFuse protects against over" -> sample -> "current"
+step 3 -> "...against overcurrent" -> sample -> " conditions"
+...continues until a stop token or max length...
+
+<span class="c"># Each generated token is appended and fed back in.</span>
+<span class="c"># This loop is why generation latency scales with output length.</span></div>
+  <h2>The KV Cache</h2>
+  <div class="info-box violet"><strong>Why generation stays fast:</strong> Naively, generating each new token would recompute attention over all prior tokens. The <span class="hl">KV cache</span> stores the key and value vectors of already-processed tokens, so each new token only computes its own — turning quadratic recomputation into a manageable cost. The trade-off: the cache grows with context length and consumes significant memory — which is exactly why GQA, MQA, and MLA (covered in the Attention module) exist: they shrink what has to be cached per token, and why the KV cache itself can be quantized (previous module) for further savings.</div>
+  <h2>Speeding Up Inference Further</h2>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">🎲</div><div class="card-title">Speculative Decoding</div><div class="card-body">A small, fast "draft" model guesses several tokens ahead; the large target model verifies them in a single parallel pass and accepts the ones that match what it would have generated anyway. Verified tokens are free — only mismatches require a normal full step. Modern variants even make the draft model a quantized copy of the target model itself (self-speculative decoding), reporting 2x+ speedups with little quality loss.</div><span class="tag">latency</span></div>
+    <div class="card"><div class="card-icon">📦</div><div class="card-title">Batching</div><div class="card-body">Serving many requests together lets the GPU do more useful matrix-multiply work per memory load. Continuous batching (dynamically adding new requests to an in-flight batch rather than waiting for a fixed batch to finish) is standard in production inference servers.</div><span class="tag violet">throughput</span></div>
+    <div class="card"><div class="card-icon">📉</div><div class="card-title">Quantization</div><div class="card-body">Covered in depth in the previous module — lower-precision weights (and KV cache) shrink memory footprint and speed up the memory-bound parts of inference.</div><span class="tag amber">memory</span></div>
+  </div>
+  <h2>Why Outputs Vary Run to Run</h2>
+  <ul class="checklist">
+    <li>At temperature &gt; 0 (Generation Parameters module), sampling introduces randomness — the same prompt can give different outputs</li>
+    <li>Temperature 0 is near-deterministic but not always perfectly reproducible across hardware/batching</li>
+    <li>This is by design — it's what enables creativity and diversity, but it's why you must evaluate over many samples</li>
+  </ul>
+</div>`,
+
 'llm:limits': () => `<div class="panel" id="panel-llm-limits">
-  <div class="breadcrumb">LLM Core › <span class="bc-accent">Training &amp; Inference</span> › Limits &amp; Failure Modes</div>
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Training &amp; Alignment</span> › Limits &amp; Failure Modes</div>
   <h1>Limits <span class="hl">&amp; Failure Modes</span></h1>
   <p class="lead">Understanding how LLMs work reveals why they fail in characteristic ways. These aren't random bugs — they're direct consequences of the architecture and training. Knowing them makes you a sharper, safer user and builder.</p>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">🌀 Hallucination <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Why:</strong> The model generates the most plausible continuation, not the verified-true one. It has no built-in fact-checker — when it lacks knowledge, it produces confident-sounding text anyway. <strong>Mitigation:</strong> Ground answers in retrieved sources (RAG), ask for citations, verify factual claims, use lower temperature for factual tasks.</div></div>
@@ -6679,7 +6798,7 @@ prob:    0.50       0.30        0.15       0.04      0.01
 'llm:quiz': () => `<div class="panel" id="panel-llm-quiz">
   <div class="breadcrumb">LLM Core › <span class="bc-accent">Training</span> › Knowledge Check</div>
   <h1>Knowledge <span class="hl">Check</span></h1>
-  <p class="lead">Test your understanding of LLM fundamentals — tokens, attention, the transformer, training, RLHF, and inference.</p>
+  <p class="lead">Test your understanding of LLM fundamentals — generation parameters, local models, tokens, attention, the transformer, quantization, training, RLHF, and inference.</p>
   <div id="quiz-container-llm"></div>
   <div class="quiz-controls">
     <button class="btn btn-primary" id="quiz-next-llm" onclick="quizNext('llm')" style="display:none">Next &rarr;</button>
@@ -6697,7 +6816,10 @@ prob:    0.50       0.30        0.15       0.04      0.01
     <div class="cheat-card"><h3>Tokens</h3><ul class="checklist"><li>~0.75 words per token (English)</li><li>Cost &amp; context measured in tokens</li><li>Numbers/letters tokenize awkwardly</li><li>BPE, SentencePiece, WordPiece</li></ul></div>
     <div class="cheat-card"><h3>Attention</h3><ul class="checklist"><li>Every token attends to every other</li><li><span class="hl">Q</span>uery · <span class="hl">K</span>ey → weights → <span class="hl">V</span>alue</li><li>Multi-head = many relationship types</li><li>GQA / MLA shrink the KV cache</li><li>N-squared cost → context limits</li></ul></div>
     <div class="cheat-card"><h3>Training Stages</h3><ul class="checklist"><li><span class="hl">Pre-training</span> — next-token prediction</li><li><span class="hl">SFT</span> — instruction following</li><li><span class="hl">RLHF / DPO / RLAIF</span> — preferences</li><li>Constitutional AI — principled critique</li></ul></div>
-    <div class="cheat-card"><h3>Inference</h3><ul class="checklist"><li><span class="hl">Temperature</span> — 0 focused, 1 creative</li><li><span class="hl">Top-p / Top-k</span> — limit token pool</li><li>KV cache — speeds generation</li><li>Speculative decoding / quantization — go faster</li></ul></div>
+    <div class="cheat-card"><h3>Generation Params</h3><ul class="checklist"><li><span class="hl">Temperature</span> — 0 focused, 1 creative</li><li><span class="hl">Top-p / Top-k / Min-p</span> — limit token pool</li><li>Frequency/presence/repetition penalty — fight loops</li><li>Seed — reproducibility</li></ul></div>
+    <div class="cheat-card"><h3>Quantization</h3><ul class="checklist"><li>FP16 → INT8 → INT4 — fewer bits, smaller, faster</li><li>4-bit (Q4_K_M / AWQ / GPTQ) is the local default</li><li>~4x smaller than FP16, usually small quality cost</li><li>GGUF (llama.cpp) · safetensors (HF source)</li></ul></div>
+    <div class="cheat-card"><h3>Local Models</h3><ul class="checklist"><li>Ollama / llama.cpp / LM Studio — run on your own GPU</li><li>VRAM ≈ params × bytes-per-weight + overhead</li><li>Private, offline, no per-token cost</li><li>Smaller/quantized → less capable than frontier cloud</li></ul></div>
+    <div class="cheat-card"><h3>Inference Internals</h3><ul class="checklist"><li>Autoregressive — one token at a time, fed back in</li><li>KV cache — speeds generation</li><li>Speculative decoding / batching — go faster at scale</li></ul></div>
     <div class="cheat-card"><h3>Why It Fails</h3><ul class="checklist"><li>Hallucination — plausible ≠ true</li><li>Knowledge cutoff — frozen weights</li><li>Math/counting — token-level blindness</li><li>Lost in the middle — context position</li></ul></div>
   </div>
 </div>`,
