@@ -147,17 +147,18 @@ quiz: [
 - Create new files outside the defined directory structure without asking
 
 ## Current Courses
-1. mcp — Model Context Protocol (15 modules)
-2. agents — Agentic AI Systems (15 modules)
-3. skills — AI Skills Training (16 modules)
+Order follows the learner journey: model fundamentals → communicating with it → managing its inputs → grounding it in data → practical synthesis → connecting tools → autonomous agents → applying AI to software engineering practice → a specialized vertical.
+1. llm — LLM Fundamentals (15 modules)
+2. prompts — Prompt Engineering (13 modules)
+3. ctx — Context Engineering (13 modules)
 4. rag — RAG Deep Dive (13 modules)
-5. prompts — Prompt Engineering (13 modules)
-6. llm — LLM Fundamentals (15 modules)
-7. hwai — AI for Hardware Engineers (12 modules)
-8. ctx — Context Engineering (13 modules)
-9. vibe — Managing Vibe-Coded Projects (14 modules)
-10. qa — QA Stack & GitHub Actions (13 modules)
-11. docker — Docker with AI (12 modules)
+5. skills — AI Skills Training (16 modules)
+6. mcp — Model Context Protocol (15 modules)
+7. agents — Agentic AI Systems (15 modules)
+8. vibe — Managing Vibe-Coded Projects (14 modules)
+9. qa — QA Stack & GitHub Actions (13 modules)
+10. docker — Docker with AI (12 modules)
+11. hwai — AI for Hardware Engineers (12 modules)
 
 ## Accent Colors (do not reuse)
 mcp=#00D4FF · agents=#FFB347 · skills=#4EEEA8 · rag=#2DD4BF · prompts=#A78BFA

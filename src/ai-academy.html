@@ -914,7 +914,337 @@ code.inline {
 const COURSES = [
 
 /* ──────────────────────────────────────────────────────────────
-   COURSE 1: MODEL CONTEXT PROTOCOL
+   COURSE 1: LLM FUNDAMENTALS
+────────────────────────────────────────────────────────────── */
+{
+  id: 'llm',
+  title: 'LLM Core',
+  longTitle: 'LLM Fundamentals',
+  icon: '🧠',
+  accentClass: 'ca-llm',
+  accentColor: '#F472B6',
+  accentDim: 'rgba(244,114,182,0.10)',
+  status: 'available',
+  description: 'How transformer language models actually work — from talking to one and running it locally, to tokens, attention, quantization, training, and inference.',
+  moduleTags: ['Tokens', 'Attention', 'Sampling', 'Quantization', 'Local Models'],
+  sections: [
+    {
+      label: 'Getting Started',
+      modules: [
+        { id: 'overview',    icon: '🗺', title: 'The Big Picture',         badge: '1' },
+        { id: 'params',      icon: '🎛', title: 'Generation Parameters',   badge: '2' },
+        { id: 'localllm',    icon: '💻', title: 'Running Models Locally',  badge: '3' },
+      ]
+    },
+    {
+      label: 'Under the Hood',
+      modules: [
+        { id: 'tokens',      icon: '🔤', title: 'Tokenization',         badge: '4' },
+        { id: 'embeddings',  icon: '🧲', title: 'Embeddings & Vectors', badge: '5' },
+        { id: 'attention',   icon: '👁', title: 'Attention',            badge: '6' },
+        { id: 'architecture',icon: '🏗', title: 'Architecture',         badge: '7' },
+        { id: 'context',     icon: '🪟', title: 'Context Windows',      badge: '8' },
+      ]
+    },
+    {
+      label: 'Smaller & Faster',
+      modules: [
+        { id: 'quantization',icon: '📉', title: 'Quantization',         badge: '9' },
+        { id: 'inference',   icon: '⚡', title: 'Inference Internals',  badge: '10' },
+      ]
+    },
+    {
+      label: 'Training & Alignment',
+      modules: [
+        { id: 'training',    icon: '🎓', title: 'How Models Learn',     badge: '11' },
+        { id: 'rlhf',        icon: '🎯', title: 'RLHF & Alignment',     badge: '12' },
+        { id: 'limits',      icon: '🚧', title: 'Limits & Failure Modes', badge: '13' },
+      ]
+    },
+    {
+      label: 'Training',
+      modules: [
+        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
+        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
+      ]
+    }
+  ],
+  quiz: [
+    { q: "What is a token in the context of an LLM?", options: ["A single character","A chunk of text (often a word or sub-word piece) that is the basic unit the model processes","A complete sentence","An API authentication key"], correct: 1, explanation: "A token is the basic unit an LLM processes — typically a word or sub-word fragment. Common words may be one token; rare words split into several. English averages roughly 0.75 words per token. Models read and generate text token by token." },
+    { q: "What is the core innovation of the attention mechanism?", options: ["It makes models train faster","It lets the model weigh the relevance of every other token when processing each token, capturing long-range relationships","It reduces the model's memory usage","It encrypts the input"], correct: 1, explanation: "Attention lets each token 'look at' and weigh the relevance of all other tokens in the context when computing its representation. This captures long-range dependencies and relationships between words regardless of distance — the breakthrough that made transformers so powerful." },
+    { q: "What does the 'context window' refer to?", options: ["The model's training dataset","The maximum number of tokens the model can process at once (input + output)","The user interface window","The time window for an API request"], correct: 1, explanation: "The context window is the maximum number of tokens a model can attend to in a single forward pass — including the system prompt, conversation history, retrieved context, and the generated output. Exceed it and earlier content must be truncated or compressed." },
+    { q: "What happens during the pre-training phase of an LLM?", options: ["The model is taught to follow instructions","The model learns language patterns by predicting the next token across a massive text corpus","Human raters score the model's outputs","The model is connected to tools"], correct: 1, explanation: "Pre-training is self-supervised next-token prediction over a massive corpus. The model learns grammar, facts, reasoning patterns, and world knowledge purely by predicting what comes next. This produces a 'base model' that is knowledgeable but not yet aligned to follow instructions." },
+    { q: "What is RLHF and what problem does it solve?", options: ["A faster training algorithm","Reinforcement Learning from Human Feedback — aligns model behavior with human preferences for helpfulness and safety","A compression technique","A way to add new knowledge after training"], correct: 1, explanation: "RLHF (Reinforcement Learning from Human Feedback) fine-tunes a pre-trained model using human preference data. Humans rank model outputs; a reward model learns these preferences; the LLM is optimized against it. This is how raw base models become helpful, harmless, instruction-following assistants." },
+    { q: "Why are LLM outputs probabilistic rather than deterministic by default?", options: ["Because of hardware errors","Because the model samples the next token from a probability distribution, and sampling introduces randomness (controlled by temperature)","Because the internet changes","Because of network latency"], correct: 1, explanation: "At each step the model produces a probability distribution over possible next tokens. Sampling from this distribution (rather than always taking the most likely token) introduces controlled randomness. Temperature 0 makes it deterministic (always pick the top token); higher temperatures increase diversity." },
+    { q: "Why do LLMs hallucinate?", options: ["They are programmed to lie","They generate the most statistically plausible continuation, which isn't always factually true — they have no built-in truth verification","Their training data is encrypted","They run out of memory"], correct: 1, explanation: "LLMs predict plausible token sequences based on patterns, not verified facts. When the model lacks specific knowledge, it generates text that 'sounds right' statistically but may be false. There's no inherent fact-checking — which is why grounding (RAG) and verification matter for factual tasks." },
+    { q: "What is the KV cache and why does it matter?", options: ["A database of API keys","A cache of computed key/value attention tensors that avoids recomputing them for prior tokens during generation, dramatically speeding up inference","A backup of the model weights","A cache of user conversations"], correct: 1, explanation: "During generation, the model would otherwise recompute attention for all prior tokens at every step. The KV cache stores the key and value tensors for already-processed tokens, so only the new token needs computation. This is essential for efficient inference but consumes memory that grows with context length." },
+    { q: "What does a Mixture of Experts (MoE) architecture do?", options: ["Trains several entirely separate models and votes between them","Splits the feed-forward layers into many specialized sub-networks ('experts') and routes each token to only a few of them, so the model has huge total capacity but activates only a fraction per token","Runs the same model on multiple GPUs for redundancy","Compresses the model weights to a smaller file size"], correct: 1, explanation: "MoE models (DeepSeek-V3, Mixtral, and most current frontier models) have many expert FFN sub-networks but a learned router sends each token to only a handful of them. DeepSeek-V3 has 671B total parameters but activates only about 37B per token — near-frontier quality at a fraction of the per-token compute of an equivalently capable dense model." },
+    { q: "What problem do Grouped-Query Attention (GQA) and Multi-head Latent Attention (MLA) solve?", options: ["They make the model's vocabulary larger","They reduce the size of the KV cache needed during inference, compared to standard multi-head attention, enabling longer context and higher throughput", "They eliminate the need for positional encoding","They remove the need for a tokenizer"], correct: 1, explanation: "Standard multi-head attention gives every head its own Key/Value projections, which makes the KV cache large and expensive to store during generation. GQA (used in Llama, Mistral) shares K/V across groups of heads; MLA (used in DeepSeek) compresses K/V into a small latent vector. Both shrink the cache with minimal quality loss, which is why nearly all current production models use one of them instead of plain multi-head attention." },
+    { q: "What is Direct Preference Optimization (DPO), and how does it differ from classic RLHF?", options: ["It removes the need for any preference data at all","It optimizes the model directly on pairs of preferred/rejected responses with a simple loss, skipping the separate reward model and the reinforcement-learning loop that classic RLHF requires", "It only works for image-generation models","It is a way to compress model weights"], correct: 1, explanation: "Classic RLHF trains a separate reward model from human preference rankings, then uses reinforcement learning (e.g. PPO) to optimize the LLM against that reward model — a complex, often unstable pipeline. DPO reframes the same preference data as a direct classification-style loss on the policy model itself, skipping the reward model and RL loop. It's simpler and more stable, and by the mid-2020s is widely used either standalone or alongside RLHF/RLAIF in multi-stage alignment pipelines." },
+    { q: "What is speculative decoding, and why does it speed up inference?", options: ["It skips safety filters to generate faster","A small, fast 'draft' model proposes several next tokens, and the large target model verifies them all in one parallel pass, accepting matches for free and only falling back to normal generation on mismatches","It reduces the number of layers in the model permanently","It pre-computes every possible response in advance"], correct: 1, explanation: "Speculative decoding uses a cheap draft model (or a quantized self-speculative copy of the target model) to guess ahead several tokens, then has the expensive target model check all of them in a single forward pass instead of one token at a time. Accepted guesses are essentially free; only mismatches require a normal generation step. This can meaningfully speed up generation latency without changing the final output distribution." },
+    { q: "What does quantizing a model from FP16 to INT4 actually change?", options: ["It changes the model's architecture to have fewer layers","It stores each weight in fewer bits (e.g. 4 instead of 16), shrinking memory footprint and speeding up compute, usually with a small but non-zero quality cost", "It deletes weights the model doesn't need", "It retrains the model on a smaller dataset"], correct: 1, explanation: "Quantization reduces the numeric precision used to store (and sometimes compute) weights — e.g. 16-bit floats down to 4-bit integers. This roughly quarters memory footprint and speeds up memory-bound inference, at the cost of some rounding error that usually translates into a small, often acceptable, quality drop. It does not change the model's architecture or retrain it." },
+    { q: "What's the main practical limitation of running an LLM locally on consumer hardware (e.g. via Ollama or llama.cpp), compared to a frontier cloud API?", options: ["Local models cannot be used offline","Local models are restricted to a much smaller pool of model sizes/quality because consumer GPU VRAM (typically 8-24GB) caps how large (or how unquantized) a model can fit and run at usable speed","Local models cannot use a system prompt","Local inference is always faster than cloud inference"], correct: 1, explanation: "Frontier cloud models run on datacenter-grade GPUs with far more memory and compute than a laptop or desktop GPU. Local tools like Ollama and llama.cpp make running models on consumer hardware easy, but you're bounded by available VRAM/RAM — which is exactly why quantized (4-bit/8-bit) smaller models are the norm for local use, trading some quality for the ability to fit and run at all." },
+  ],
+},
+
+/* ──────────────────────────────────────────────────────────────
+   COURSE 2: PROMPT ENGINEERING
+────────────────────────────────────────────────────────────── */
+{
+  id: 'prompts',
+  title: 'Prompting',
+  longTitle: 'Prompt Engineering',
+  icon: '✍️',
+  accentClass: 'ca-prompts',
+  accentColor: '#A78BFA',
+  accentDim: 'rgba(167,139,250,0.10)',
+  status: 'available',
+  description: 'Master the craft of instructing LLMs precisely — from zero-shot foundations to advanced reasoning and prompt optimization techniques.',
+  moduleTags: ['Zero-shot', 'Few-shot', 'CoT', 'System prompts', 'Optimization'],
+  sections: [
+    {
+      label: 'Fundamentals',
+      modules: [
+        { id: 'basics',      icon: '📝', title: 'Prompt Anatomy',       badge: '1' },
+        { id: 'system',      icon: '⚙️', title: 'System Prompts',       badge: '2' },
+        { id: 'shots',       icon: '🎯', title: 'Zero & Few-Shot',      badge: '3' },
+      ]
+    },
+    {
+      label: 'Reasoning Techniques',
+      modules: [
+        { id: 'cot',         icon: '💡', title: 'Chain of Thought',     badge: '4' },
+        { id: 'advanced',    icon: '🌳', title: 'Advanced Reasoning',   badge: '5' },
+        { id: 'decompose',   icon: '🧩', title: 'Decomposition',        badge: '6' },
+      ]
+    },
+    {
+      label: 'Mastery',
+      modules: [
+        { id: 'structured',  icon: '📐', title: 'Structured Output',    badge: '7' },
+        { id: 'injection',   icon: '🛡', title: 'Injection Defense',    badge: '8' },
+        { id: 'optimize',    icon: '🔬', title: 'Prompt Optimization',  badge: '9' },
+        { id: 'antipatterns',icon: '⚠️', title: 'Anti-Patterns',        badge: '10' },
+      ]
+    },
+    {
+      label: 'Training',
+      modules: [
+        { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',    badge: '11' },
+        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
+        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
+      ]
+    }
+  ],
+  quiz: [
+    { q: "What is the highest-leverage component of most prompts?", options: ["The greeting","Specificity — clear, detailed task description with explicit success criteria","Using ALL CAPS for emphasis","The length of the prompt"], correct: 1, explanation: "Specificity is consistently the highest-leverage prompt improvement. A precise task description with explicit constraints, format requirements, and success criteria outperforms vague prompts even on the same model. Vagueness forces the model to guess your intent." },
+    { q: "What role does a system prompt serve?", options: ["It's the user's first message","A privileged instruction that sets the model's role, rules, and behavior for the entire conversation","A hidden message that bypasses safety","A debugging log"], correct: 1, explanation: "The system prompt (role: 'system') is a privileged message that persists across the conversation, defining the model's persona, behavioral rules, constraints, and context. It carries more weight than user messages and is where you define who the model is." },
+    { q: "When is few-shot prompting most valuable over zero-shot?", options: ["When you want shorter responses","When the task has an unusual format or domain-specific pattern that examples can demonstrate","When using a larger model","Few-shot is always better"], correct: 1, explanation: "Few-shot shines when the desired output has an unusual format, specific style, or domain pattern that's hard to describe but easy to demonstrate. Examples teach by showing. For common tasks the model already knows, zero-shot often suffices and saves tokens." },
+    { q: "What does chain-of-thought (CoT) prompting improve, and how?", options: ["Response speed by skipping steps","Accuracy on multi-step problems by making the model reason explicitly before answering","Token efficiency by being concise","Output formatting consistency"], correct: 1, explanation: "CoT instructs the model to reason step-by-step before giving a final answer. By 'thinking out loud,' the model breaks complex problems into tractable steps, dramatically improving accuracy on math, logic, planning, and debugging tasks. The classic trigger: 'Let's think step by step.'" },
+    { q: "On a current frontier model with native extended thinking enabled, what is true about prompted chain-of-thought ('let's think step by step')?", options: ["It's required on every single prompt or the model cannot reason at all","It's often redundant — the model already reasons internally in a separate thinking phase before producing its visible answer","It permanently disables the model's reasoning ability","It only works if you also lower the temperature to 0"], correct: 1, explanation: "Native extended/reasoning modes perform multi-step reasoning in an internal phase before the visible response. Explicitly asking such a model to 'think step by step' in the prompt frequently adds little, since the reasoning is already happening — prompted CoT remains valuable mainly for non-reasoning models, visible-reasoning requirements, or below a reasoning model's minimum thinking budget." },
+    { q: "What is self-consistency in prompting?", options: ["Using the same prompt template every time","Sampling multiple reasoning paths and taking the majority answer to improve reliability","Making the model agree with the user","Checking the prompt for typos"], correct: 1, explanation: "Self-consistency samples multiple independent CoT reasoning paths (at higher temperature) for the same question, then takes the majority-vote answer. Because correct reasoning tends to converge while errors diverge, this improves accuracy on problems with a definitive answer — at the cost of more inference calls." },
+    { q: "What is the strongest guarantee available for getting schema-conformant structured output from a model today?", options: ["Asking nicely in the prompt and hoping","A 'JSON mode' flag, which guarantees valid JSON syntax but not your specific schema","Native structured-output / strict schema mode, which uses grammar-constrained decoding so the model cannot emit a token sequence violating your JSON Schema","Setting temperature to 0"], correct: 2, explanation: "Native structured-output modes (strict schema enforcement, including for tool-call arguments) constrain decoding at the token level so the response is guaranteed to match your JSON Schema's types, enums, and required fields. This is a stronger guarantee than JSON mode, which only ensures syntactically valid JSON — you still need to describe your schema in the prompt and validate it yourself. Schema conformance still doesn't guarantee the values are semantically correct, so validation logic remains necessary." },
+    { q: "What is prompt decomposition?", options: ["Removing words to shorten the prompt","Breaking a complex task into a sequence of smaller, focused sub-prompts","Translating the prompt to another language","Compressing the prompt with abbreviations"], correct: 1, explanation: "Decomposition splits a complex task into a chain of simpler sub-prompts, each handling one focused step. Rather than asking the model to do everything at once (which splits its attention and degrades quality), each sub-prompt gets full focus. The outputs chain together." },
+    { q: "Which is a defense against prompt injection?", options: ["Using a higher temperature","Structurally separating trusted instructions from untrusted content (e.g., with XML tags) and instructing the model never to follow instructions in untrusted sections","Making prompts longer","Using more few-shot examples"], correct: 1, explanation: "A key defense is structural separation: wrap untrusted content (user input, web pages, tool results) in clearly delimited sections (XML tags work well) and explicitly instruct the model to treat that content as data, never as instructions to follow. Combined with input filtering and output constraints." },
+    { q: "In production LLM applications, where does prompt injection most often actually occur?", options: ["Only when a user directly types 'ignore your instructions' in chat","Through indirect injection in the retrieval/tool pipeline — e.g. a fetched web page, document, or tool result containing hidden instructions","Only in image inputs, never in text","It cannot occur if you disable the system prompt"], correct: 1, explanation: "While direct injection (a user typing malicious instructions) is the simplest case to picture, the most exploited path in real systems is indirect injection: an agent retrieves external content (a web page, document, API/tool response) that contains hidden instructions the model then follows. Any tool call that brings untrusted content into context is an injection surface, regardless of whether a human ever reviews that content." },
+  ],
+},
+
+/* ──────────────────────────────────────────────────────────────
+   COURSE 3: CONTEXT ENGINEERING
+────────────────────────────────────────────────────────────── */
+{
+  id: 'ctx',
+  title: 'Context Eng',
+  longTitle: 'Context Engineering',
+  icon: '🪟',
+  accentClass: 'ca-ctx',
+  accentColor: '#38BDF8',
+  accentDim: 'rgba(56,189,248,0.10)',
+  status: 'available',
+  description: 'The discipline of deciding what goes into the model\u2019s context window \u2014 budgeting tokens, ordering, compression, memory, and retrieval to maximize quality.',
+  moduleTags: ['Token Budget', 'Ordering', 'Compression', 'Memory', 'Failure Modes'],
+  sections: [
+    {
+      label: 'Foundations',
+      modules: [
+        { id: 'what',        icon: '🗺', title: 'What & Why',           badge: '1' },
+        { id: 'budget',      icon: '💰', title: 'The Token Budget',     badge: '2' },
+        { id: 'anatomy',     icon: '🧬', title: 'Anatomy of Context',   badge: '3' },
+      ]
+    },
+    {
+      label: 'Core Techniques',
+      modules: [
+        { id: 'ordering',    icon: '📊', title: 'Ordering & Position',  badge: '4' },
+        { id: 'compression', icon: '🗜', title: 'Compression',          badge: '5' },
+        { id: 'memory',      icon: '💾', title: 'Memory Systems',       badge: '6' },
+        { id: 'retrieval',   icon: '🔍', title: 'Just-in-Time Retrieval', badge: '7' },
+      ]
+    },
+    {
+      label: 'Advanced',
+      modules: [
+        { id: 'agents',      icon: '🤖', title: 'Context for Agents',   badge: '8' },
+        { id: 'failures',    icon: '⚠️', title: 'Failure Modes',        badge: '9' },
+        { id: 'measure',     icon: '📏', title: 'Measuring & Tuning',   badge: '10' },
+      ]
+    },
+    {
+      label: 'Training',
+      modules: [
+        { id: 'patterns',    icon: '🧩', title: 'Pattern Library',      badge: '11' },
+        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
+        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
+      ]
+    }
+  ],
+  quiz: [
+    { q: "What is the central problem context engineering solves?", options: ["Making the model train faster","Deciding what information to place in a finite, attention-limited context window to maximize output quality","Reducing the number of model parameters","Encrypting the prompt"], correct: 1, explanation: "Context engineering is the discipline of curating exactly what enters the context window \u2014 and in what order and form \u2014 because the window is finite, every token costs money and attention, and more context is not automatically better." },
+    { q: "Why isn't 'just put everything in the context window' a good strategy, even with large windows?", options: ["It's always cheaper to use less","Cost and latency scale with tokens, and models attend unevenly \u2014 irrelevant content dilutes attention and degrades quality (context rot)","Large windows don't exist","The model will refuse"], correct: 1, explanation: "Even when content fits, every token adds cost and latency, and irrelevant material competes for the model's attention. Performance can actually degrade as the window fills with low-signal content \u2014 a phenomenon often called context rot. Curation beats accumulation." },
+    { q: "What is the 'lost in the middle' effect?", options: ["The model forgets its system prompt","Models recall information at the beginning and end of the context more reliably than content buried in the middle","The middle layers of the network are unused","A bug in tokenization"], correct: 1, explanation: "LLMs exhibit a U-shaped attention bias: content at the start and end of the context is recalled more reliably than content in the middle. Place the most critical instructions and information at the edges, not the center, of a long context." },
+    { q: "What is rolling summarization used for?", options: ["Making the model's answers shorter","Compressing older conversation turns into a compact summary to free context space while preserving key information","Summarizing the system prompt","Translating the conversation"], correct: 1, explanation: "As a conversation grows past a threshold, rolling summarization condenses the oldest turns into a short summary (often 10:1 compression), which replaces the verbose originals \u2014 freeing tokens while retaining the essential thread." },
+    { q: "In a long-running agent, what is the fastest-growing and most volatile part of the context?", options: ["The system prompt","Accumulated tool-call results and observations","The user's name","The temperature setting"], correct: 1, explanation: "Tool results accumulate with every step of an agent loop and can balloon quickly. Managing them \u2014 via compression, selective retention, or external storage \u2014 is the central context-engineering challenge in agentic systems." },
+    { q: "What is the difference between context (working memory) and external memory?", options: ["They are the same thing","Context is the finite in-window working memory for the current turn; external memory is persistent storage (files, vector DBs) the model retrieves from on demand","External memory is faster","Context never changes"], correct: 1, explanation: "Context is transient working memory \u2014 what the model sees right now, bounded by the window. External memory persists across turns and sessions; relevant pieces are retrieved into context just-in-time. Good context engineering moves information fluidly between the two." },
+    { q: "What is 'just-in-time' retrieval in context engineering?", options: ["Loading all data at startup","Pulling only the specific information needed for the current step into context, rather than pre-loading everything","Caching the entire database","Retrieving data after the model responds"], correct: 1, explanation: "Just-in-time retrieval keeps the context lean by fetching only what each step needs, when it needs it \u2014 mirroring how a person opens the one reference they need rather than spreading every document on the desk at once." },
+    { q: "What is context offloading?", options: ["Deleting the conversation","Moving bulky information out of the context window into external storage (files, notes, scratchpads) and pulling it back only when needed","Sending context to another model","Compressing the model weights"], correct: 1, explanation: "Offloading writes detailed information to an external store \u2014 a file, a scratchpad, a structured note \u2014 and keeps only a reference or summary in context. The model retrieves the full detail on demand, keeping the working window focused." },
+    { q: "What did Chroma's 2025 'Context Rot' study find when testing 18 frontier models (including GPT-4.1, Claude 4, and Gemini 2.5) on long-context tasks?", options: ["Performance is constant as long as content fits within the window","Reliability declines continuously as input length grows \u2014 even on simple retrieval tasks, and well before the window is full","Only open-weight models show degradation","Longer context always improves accuracy"], correct: 1, explanation: "The study found degradation is a continuous slope, not a cliff at the context limit \u2014 a model with a 200K window can show meaningful quality loss by 50K tokens. This is empirical evidence that 'it fits in the window' is not the same as 'the model will use it well.'" },
+    { q: "As of 2026, why is it misleading to say 'the context window' as if it were one fixed number across all frontier models?", options: ["All major models now have exactly the same window size","Window sizes vary widely by family and tier \u2014 Claude models are commonly ~200K while GPT-5.x and Gemini 3.x reach the high hundreds-of-thousands to low millions of tokens","Context windows were deprecated in favor of unlimited memory","Token counts no longer apply to modern models"], correct: 1, explanation: "Context window size is model- and tier-specific and changes with nearly every release. Treating it as a universal constant leads to budgets that are wrong for whichever model you're actually calling \u2014 always check the specific model's documented limit." },
+    { q: "What does Anthropic's native context-editing feature (the clear_tool_uses strategy) do?", options: ["Deletes the system prompt once the conversation gets long","Automatically clears older tool-call results once input tokens cross a configured threshold, while keeping a placeholder so the model still knows the action occurred","Rewrites the user's original question","Switches the model to a smaller context window"], correct: 1, explanation: "Context editing is a server-side primitive: you configure a token trigger and how many recent tool results to keep verbatim, and the API automatically clears older, bulkier tool outputs \u2014 implementing the 'compact tool results' pattern without custom code. Pairing it with the memory tool lets the model save important details before they're cleared." },
+  ],
+},
+
+/* ──────────────────────────────────────────────────────────────
+   COURSE 4: RAG DEEP DIVE
+────────────────────────────────────────────────────────────── */
+{
+  id: 'rag',
+  title: 'RAG',
+  longTitle: 'RAG Deep Dive',
+  icon: '🔍',
+  accentClass: 'ca-rag',
+  accentColor: '#2DD4BF',
+  accentDim: 'rgba(45,212,191,0.10)',
+  status: 'available',
+  description: 'Ground LLMs in real-world knowledge with embeddings, vector search, chunking, reranking, and production retrieval pipelines.',
+  moduleTags: ['Embeddings', 'Vector DBs', 'Chunking', 'Reranking', 'Evaluation'],
+  sections: [
+    {
+      label: 'Foundations',
+      modules: [
+        { id: 'why',         icon: '🎯', title: 'Why RAG?',             badge: '1' },
+        { id: 'pipeline',    icon: '🔄', title: 'The RAG Pipeline',     badge: '2' },
+        { id: 'embeddings',  icon: '🧲', title: 'Embeddings',           badge: '3' },
+      ]
+    },
+    {
+      label: 'Retrieval Engine',
+      modules: [
+        { id: 'chunking',    icon: '✂️', title: 'Chunking Strategies',  badge: '4' },
+        { id: 'vectordbs',   icon: '🗄', title: 'Vector Databases',     badge: '5' },
+        { id: 'hybrid',      icon: '🔀', title: 'Hybrid Search',        badge: '6' },
+        { id: 'reranking',   icon: '🎚', title: 'Reranking',            badge: '7' },
+      ]
+    },
+    {
+      label: 'Production',
+      modules: [
+        { id: 'advanced',    icon: '🚀', title: 'Advanced Patterns',    badge: '8' },
+        { id: 'rageval',     icon: '📊', title: 'Evaluating RAG',       badge: '9' },
+        { id: 'ragprod',     icon: '🏭', title: 'Production Ops',       badge: '10' },
+      ]
+    },
+    {
+      label: 'Training',
+      modules: [
+        { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',    badge: '11' },
+        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
+        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
+      ]
+    }
+  ],
+  quiz: [
+    { q: "In a RAG system, what is the single biggest factor limiting answer quality?", options: ["The size of the LLM","Retrieval quality — if the right chunks aren't retrieved, the LLM can't answer correctly","The temperature setting","The number of tokens in the prompt"], correct: 1, explanation: "RAG quality is gated by retrieval. A powerful LLM cannot answer from context it never received. If the relevant chunks aren't retrieved, generation fails regardless of model quality. Retrieval is the bottleneck to optimize first." },
+    { q: "What is an embedding in the context of RAG?", options: ["A compressed version of a document","A dense vector representation of text that captures semantic meaning","A pointer to a database row","An encrypted form of the source text"], correct: 1, explanation: "An embedding is a dense numeric vector (typically 256–3072 dimensions) that represents the semantic meaning of text. Similar meanings produce nearby vectors, enabling semantic similarity search via distance metrics like cosine similarity." },
+    { q: "Why does naive fixed-size character chunking often hurt RAG quality?", options: ["It uses too much storage","It can split sentences or ideas mid-thought, breaking semantic coherence","It is too slow to compute","It requires a GPU"], correct: 1, explanation: "Fixed-size chunking (e.g., every 500 characters) can cut through the middle of a sentence, table, or logical unit — producing chunks that lack coherent meaning. Semantic chunking (by paragraph, section, or sentence boundary) preserves meaning and improves retrieval." },
+    { q: "What does a reranker add to a RAG pipeline?", options: ["It generates the final answer","It re-scores retrieved candidates with a more accurate (but slower) model to reorder them by true relevance","It compresses the retrieved chunks","It translates chunks to the query language"], correct: 1, explanation: "A reranker (typically a cross-encoder) takes the top-N candidates from fast vector search and re-scores each against the query with much higher accuracy. It reorders so the most relevant chunks appear first, dramatically reducing false positives in the final context." },
+    { q: "What is hybrid search in RAG?", options: ["Searching across multiple languages","Combining dense vector search with sparse keyword search (e.g., BM25) for better recall","Using two different LLMs","Searching both the cloud and local storage"], correct: 1, explanation: "Hybrid search combines semantic (dense vector) search with lexical (sparse, keyword-based like BM25) search. Vector search captures meaning; keyword search catches exact terms, names, and codes. Together they outperform either alone — especially for technical content with specific identifiers." },
+    { q: "What is 'chunk overlap' and why is it used?", options: ["Storing the same chunk twice for redundancy","Including some text from the end of one chunk at the start of the next, to avoid losing context at boundaries","Merging duplicate chunks","Overlapping multiple vector databases"], correct: 1, explanation: "Chunk overlap (typically 10–20%) repeats some text between consecutive chunks. This ensures that an idea spanning a chunk boundary appears complete in at least one chunk, preventing context loss when a key sentence gets split across the boundary." },
+    { q: "What problem does 'query rewriting' solve in RAG?", options: ["It makes queries shorter to save tokens","It transforms a vague or conversational user query into one or more search-optimized queries that retrieve better","It translates queries to SQL","It removes profanity from queries"], correct: 1, explanation: "User queries are often vague, conversational, or context-dependent ('what about the second one?'). Query rewriting uses an LLM to expand, clarify, or decompose the query into search-optimized forms — improving retrieval recall, especially for multi-turn conversations." },
+    { q: "Which metric specifically measures whether the LLM's answer is grounded in the retrieved context?", options: ["Latency","Faithfulness (groundedness) — whether claims in the answer are supported by retrieved chunks","Token count","Embedding dimension"], correct: 1, explanation: "Faithfulness (or groundedness) measures whether the generated answer's claims are actually supported by the retrieved context, rather than hallucinated. It's distinct from answer relevance and retrieval recall — a complete RAG evaluation measures all three." },
+    { q: "In Reciprocal Rank Fusion (RRF), what happens to a document that ranks well in BOTH the vector search and the keyword search results?", options: ["It gets removed as a duplicate","Its scores from both lists are summed, pushing it toward the top of the fused ranking","Only its better rank is kept, the other is discarded","It is penalized for appearing twice"], correct: 1, explanation: "RRF computes 1/(k + rank) for a document in each result list and sums those values across lists. A document appearing high in both the vector and keyword results accumulates a larger combined score than one that only appears in a single list, so it rises to the top of the fused ranking." },
+    { q: "What problem does 'late chunking' specifically address that standard chunk-then-embed approaches struggle with?", options: ["Storage costs of large vector databases","Loss of meaning from pronouns and cross-references that point to information in a different chunk", "Slow embedding API latency","Incompatibility between embedding models"], correct: 1, explanation: "Late chunking embeds the full document first with a long-context model, then pools token embeddings into chunks — so each chunk's vector retains context from elsewhere in the document. This specifically helps when a chunk contains a pronoun or reference (e.g. 'it trips at 12A') whose antecedent ('the eFuse') lives in an earlier, separately-chunked sentence." },
+  ],
+},
+
+/* ──────────────────────────────────────────────────────────────
+   COURSE 5: AI SKILLS TRAINING
+────────────────────────────────────────────────────────────── */
+{
+  id: 'skills',
+  title: 'Skills',
+  longTitle: 'AI Skills Training',
+  icon: '🎓',
+  accentClass: 'ca-skills',
+  accentColor: '#4EEEA8',
+  accentDim: 'rgba(78,238,168,0.08)',
+  status: 'available',
+  description: 'Build practical AI skills: prompting, evaluation, tool design, workflow automation, and responsible deployment.',
+  moduleTags: ['Prompting', 'Evaluation', 'Tool Design', 'Automation', 'Ethics'],
+  sections: [
+    {
+      label: 'Core Skills',
+      modules: [
+        { id: 'prompting',   icon: '✍️', title: 'Effective Prompting',    badge: '1' },
+        { id: 'context',     icon: '📐', title: 'Context Engineering',    badge: '2' },
+        { id: 'output',      icon: '🎯', title: 'Output Control',         badge: '3' },
+        { id: 'evaluation',  icon: '📊', title: 'Evaluating AI Output',   badge: '4' },
+      ]
+    },
+    {
+      label: 'Builder Skills',
+      modules: [
+        { id: 'tooldesign',  icon: '🔧', title: 'Tool & API Design',      badge: '5' },
+        { id: 'workflows',   icon: '🔄', title: 'Workflow Automation',    badge: '6' },
+        { id: 'rag',         icon: '🔍', title: 'RAG Fundamentals',       badge: '7' },
+        { id: 'finetuning',  icon: '🧬', title: 'Fine-Tuning Basics',     badge: '8' },
+      ]
+    },
+    {
+      label: 'Professional Skills',
+      modules: [
+        { id: 'responsible', icon: '🛡', title: 'Responsible AI Use',     badge: '9'  },
+        { id: 'collab',      icon: '🤝', title: 'Human-AI Collaboration', badge: '10' },
+        { id: 'cost',        icon: '💰', title: 'Cost & Token Economics',  badge: '11' },
+        { id: 'debugging',   icon: '🐛', title: 'Debugging AI Systems',   badge: '12' },
+      ]
+    },
+    {
+      label: 'Skills Lab',
+      modules: [
+        { id: 'scenarios',   icon: '🧪', title: 'Scenario Exercises',     badge: '13' },
+        { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',      badge: '14' },
+        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',        badge: ''   },
+        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',        badge: ''   },
+      ]
+    }
+  ],
+  quiz: [
+    { q: "What is the single most impactful thing you can do to improve AI output quality?", options: ["Use a bigger model","Be more specific and detailed in your prompt","Increase the temperature setting","Add more examples to the training data"], correct: 1, explanation: "Specificity is the highest-leverage prompt improvement. A clear, detailed prompt with explicit constraints, format requirements, and context consistently outperforms vague prompts even on smaller models." },
+    { q: "What is 'prompt injection' in the context of AI applications?", options: ["Automatically improving prompts with AI","Malicious input that overrides the system prompt or hijacks the model's behavior","Adding too many instructions to a system prompt","Using templates to generate prompts programmatically"], correct: 1, explanation: "Prompt injection attacks embed instructions in user input or external content (web pages, files, tool results) that attempt to override the system prompt and redirect the model's behavior. A key threat in agentic systems." },
+    { q: "Which metric best measures whether an RAG system is retrieving the right chunks?", options: ["BLEU score","Retrieval recall — what fraction of relevant chunks were actually retrieved","Perplexity","Token count of retrieved context"], correct: 1, explanation: "Retrieval recall measures whether the relevant information was actually retrieved. High-quality generation from poor retrieval is impossible — retrieval quality is the gating factor in RAG system performance." },
+    { q: "What is 'temperature' in LLM inference, and when should you set it to 0?", options: ["Processing speed — set to 0 for maximum speed","A sampling parameter controlling output randomness — set to 0 for deterministic, factual tasks","Memory usage — set to 0 to reduce RAM consumption","The model's confidence score — set to 0 for uncertain outputs"], correct: 1, explanation: "Temperature controls output randomness. Temperature 0 makes the model deterministic (always picks the highest-probability token) — ideal for factual Q&A, code generation, data extraction. Higher temperatures suit creative tasks." },
+    { q: "What is the key difference between few-shot and zero-shot prompting?", options: ["Few-shot uses a larger model","Zero-shot includes no examples; few-shot includes 2–10 worked examples in the prompt","Few-shot requires fine-tuning first","Zero-shot is always better than few-shot"], correct: 1, explanation: "Zero-shot relies on the model's trained knowledge alone. Few-shot provides input-output examples that demonstrate the desired format or behavior. Few-shot is especially powerful for unusual formats or domain-specific tasks." },
+    { q: "What is 'hallucination' in LLMs and what's the most reliable mitigation?", options: ["The model generating code instead of text — mitigation: use a code-specific model","The model generating plausible but false statements — mitigation: ground outputs in retrieved evidence (RAG)","The model repeating itself — mitigation: increase diversity penalty","The model being too verbose — mitigation: reduce max_tokens"], correct: 1, explanation: "Hallucination is confident generation of false information. The most reliable mitigation is grounding: force the model to answer only from retrieved, verified sources (RAG) rather than from parametric memory alone." },
+    { q: "When designing a tool for an AI agent, what makes the 'description' field most important?", options: ["It affects the tool's execution speed","The model reads the description to decide WHEN and WHETHER to call the tool — a poor description causes missed or incorrect calls","It determines access permissions for the tool","It is only shown to human developers, not the model"], correct: 1, explanation: "The model cannot see your tool's implementation — only its name, description, and parameter schema. The description is how the model decides when to use the tool. Include: what it does, when to use it, and when NOT to use it." },
+    { q: "What does 'context window utilization' mean in practice for long AI workflows?", options: ["How many GPU cores are being used","How much of the model's available context window is currently filled with tokens — affects cost, speed, and behavior near the limit","The percentage of time the model spends in attention computation","How often the model accesses external memory"], correct: 1, explanation: "Context window utilization tracks how much of the token budget is consumed. Near 100% utilization degrades performance (the model loses track of earlier content), increases latency, and raises cost. Long workflows require active context management." },
+    { q: "What is 'chain-of-thought' prompting and what does it improve?", options: ["Linking multiple API calls together","Instructing the model to show its reasoning step-by-step before giving a final answer — improves accuracy on multi-step problems","Chaining multiple models together in sequence","Storing conversation history across sessions"], correct: 1, explanation: "CoT prompting instructs the model to reason explicitly before answering. This consistently improves accuracy on tasks requiring multiple steps: math, logic, planning, code debugging. The classic trigger is 'Let's think step by step.'" },
+    { q: "What is the 'system prompt' in a chat LLM API call?", options: ["A hidden instruction that overrides the model's training","A special message (usually the first) that sets the model's role, behavior rules, and context for the entire conversation","A technical parameter that controls model temperature","The user's first message in the conversation"], correct: 1, explanation: "The system prompt is a privileged message (role: 'system') that persists across the conversation and sets the model's persona, rules, constraints, and context. It's where you define who the model is and how it should behave." },
+  ],
+},
+
+/* ──────────────────────────────────────────────────────────────
+   COURSE 6: MODEL CONTEXT PROTOCOL
 ────────────────────────────────────────────────────────────── */
 {
   id: 'mcp',
@@ -985,7 +1315,7 @@ const COURSES = [
 },
 
 /* ──────────────────────────────────────────────────────────────
-   COURSE 2: AGENTIC AI
+   COURSE 7: AGENTIC AI
 ────────────────────────────────────────────────────────────── */
 {
   id: 'agents',
@@ -1060,399 +1390,7 @@ const COURSES = [
 },
 
 /* ──────────────────────────────────────────────────────────────
-   COURSE 3: AI SKILLS TRAINING
-────────────────────────────────────────────────────────────── */
-{
-  id: 'skills',
-  title: 'Skills',
-  longTitle: 'AI Skills Training',
-  icon: '🎓',
-  accentClass: 'ca-skills',
-  accentColor: '#4EEEA8',
-  accentDim: 'rgba(78,238,168,0.08)',
-  status: 'available',
-  description: 'Build practical AI skills: prompting, evaluation, tool design, workflow automation, and responsible deployment.',
-  moduleTags: ['Prompting', 'Evaluation', 'Tool Design', 'Automation', 'Ethics'],
-  sections: [
-    {
-      label: 'Core Skills',
-      modules: [
-        { id: 'prompting',   icon: '✍️', title: 'Effective Prompting',    badge: '1' },
-        { id: 'context',     icon: '📐', title: 'Context Engineering',    badge: '2' },
-        { id: 'output',      icon: '🎯', title: 'Output Control',         badge: '3' },
-        { id: 'evaluation',  icon: '📊', title: 'Evaluating AI Output',   badge: '4' },
-      ]
-    },
-    {
-      label: 'Builder Skills',
-      modules: [
-        { id: 'tooldesign',  icon: '🔧', title: 'Tool & API Design',      badge: '5' },
-        { id: 'workflows',   icon: '🔄', title: 'Workflow Automation',    badge: '6' },
-        { id: 'rag',         icon: '🔍', title: 'RAG Fundamentals',       badge: '7' },
-        { id: 'finetuning',  icon: '🧬', title: 'Fine-Tuning Basics',     badge: '8' },
-      ]
-    },
-    {
-      label: 'Professional Skills',
-      modules: [
-        { id: 'responsible', icon: '🛡', title: 'Responsible AI Use',     badge: '9'  },
-        { id: 'collab',      icon: '🤝', title: 'Human-AI Collaboration', badge: '10' },
-        { id: 'cost',        icon: '💰', title: 'Cost & Token Economics',  badge: '11' },
-        { id: 'debugging',   icon: '🐛', title: 'Debugging AI Systems',   badge: '12' },
-      ]
-    },
-    {
-      label: 'Skills Lab',
-      modules: [
-        { id: 'scenarios',   icon: '🧪', title: 'Scenario Exercises',     badge: '13' },
-        { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',      badge: '14' },
-        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',        badge: ''   },
-        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',        badge: ''   },
-      ]
-    }
-  ],
-  quiz: [
-    { q: "What is the single most impactful thing you can do to improve AI output quality?", options: ["Use a bigger model","Be more specific and detailed in your prompt","Increase the temperature setting","Add more examples to the training data"], correct: 1, explanation: "Specificity is the highest-leverage prompt improvement. A clear, detailed prompt with explicit constraints, format requirements, and context consistently outperforms vague prompts even on smaller models." },
-    { q: "What is 'prompt injection' in the context of AI applications?", options: ["Automatically improving prompts with AI","Malicious input that overrides the system prompt or hijacks the model's behavior","Adding too many instructions to a system prompt","Using templates to generate prompts programmatically"], correct: 1, explanation: "Prompt injection attacks embed instructions in user input or external content (web pages, files, tool results) that attempt to override the system prompt and redirect the model's behavior. A key threat in agentic systems." },
-    { q: "Which metric best measures whether an RAG system is retrieving the right chunks?", options: ["BLEU score","Retrieval recall — what fraction of relevant chunks were actually retrieved","Perplexity","Token count of retrieved context"], correct: 1, explanation: "Retrieval recall measures whether the relevant information was actually retrieved. High-quality generation from poor retrieval is impossible — retrieval quality is the gating factor in RAG system performance." },
-    { q: "What is 'temperature' in LLM inference, and when should you set it to 0?", options: ["Processing speed — set to 0 for maximum speed","A sampling parameter controlling output randomness — set to 0 for deterministic, factual tasks","Memory usage — set to 0 to reduce RAM consumption","The model's confidence score — set to 0 for uncertain outputs"], correct: 1, explanation: "Temperature controls output randomness. Temperature 0 makes the model deterministic (always picks the highest-probability token) — ideal for factual Q&A, code generation, data extraction. Higher temperatures suit creative tasks." },
-    { q: "What is the key difference between few-shot and zero-shot prompting?", options: ["Few-shot uses a larger model","Zero-shot includes no examples; few-shot includes 2–10 worked examples in the prompt","Few-shot requires fine-tuning first","Zero-shot is always better than few-shot"], correct: 1, explanation: "Zero-shot relies on the model's trained knowledge alone. Few-shot provides input-output examples that demonstrate the desired format or behavior. Few-shot is especially powerful for unusual formats or domain-specific tasks." },
-    { q: "What is 'hallucination' in LLMs and what's the most reliable mitigation?", options: ["The model generating code instead of text — mitigation: use a code-specific model","The model generating plausible but false statements — mitigation: ground outputs in retrieved evidence (RAG)","The model repeating itself — mitigation: increase diversity penalty","The model being too verbose — mitigation: reduce max_tokens"], correct: 1, explanation: "Hallucination is confident generation of false information. The most reliable mitigation is grounding: force the model to answer only from retrieved, verified sources (RAG) rather than from parametric memory alone." },
-    { q: "When designing a tool for an AI agent, what makes the 'description' field most important?", options: ["It affects the tool's execution speed","The model reads the description to decide WHEN and WHETHER to call the tool — a poor description causes missed or incorrect calls","It determines access permissions for the tool","It is only shown to human developers, not the model"], correct: 1, explanation: "The model cannot see your tool's implementation — only its name, description, and parameter schema. The description is how the model decides when to use the tool. Include: what it does, when to use it, and when NOT to use it." },
-    { q: "What does 'context window utilization' mean in practice for long AI workflows?", options: ["How many GPU cores are being used","How much of the model's available context window is currently filled with tokens — affects cost, speed, and behavior near the limit","The percentage of time the model spends in attention computation","How often the model accesses external memory"], correct: 1, explanation: "Context window utilization tracks how much of the token budget is consumed. Near 100% utilization degrades performance (the model loses track of earlier content), increases latency, and raises cost. Long workflows require active context management." },
-    { q: "What is 'chain-of-thought' prompting and what does it improve?", options: ["Linking multiple API calls together","Instructing the model to show its reasoning step-by-step before giving a final answer — improves accuracy on multi-step problems","Chaining multiple models together in sequence","Storing conversation history across sessions"], correct: 1, explanation: "CoT prompting instructs the model to reason explicitly before answering. This consistently improves accuracy on tasks requiring multiple steps: math, logic, planning, code debugging. The classic trigger is 'Let's think step by step.'" },
-    { q: "What is the 'system prompt' in a chat LLM API call?", options: ["A hidden instruction that overrides the model's training","A special message (usually the first) that sets the model's role, behavior rules, and context for the entire conversation","A technical parameter that controls model temperature","The user's first message in the conversation"], correct: 1, explanation: "The system prompt is a privileged message (role: 'system') that persists across the conversation and sets the model's persona, rules, constraints, and context. It's where you define who the model is and how it should behave." },
-  ],
-},
-
-/* ──────────────────────────────────────────────────────────────
-   COURSE 4: RAG DEEP DIVE
-────────────────────────────────────────────────────────────── */
-{
-  id: 'rag',
-  title: 'RAG',
-  longTitle: 'RAG Deep Dive',
-  icon: '🔍',
-  accentClass: 'ca-rag',
-  accentColor: '#2DD4BF',
-  accentDim: 'rgba(45,212,191,0.10)',
-  status: 'available',
-  description: 'Ground LLMs in real-world knowledge with embeddings, vector search, chunking, reranking, and production retrieval pipelines.',
-  moduleTags: ['Embeddings', 'Vector DBs', 'Chunking', 'Reranking', 'Evaluation'],
-  sections: [
-    {
-      label: 'Foundations',
-      modules: [
-        { id: 'why',         icon: '🎯', title: 'Why RAG?',             badge: '1' },
-        { id: 'pipeline',    icon: '🔄', title: 'The RAG Pipeline',     badge: '2' },
-        { id: 'embeddings',  icon: '🧲', title: 'Embeddings',           badge: '3' },
-      ]
-    },
-    {
-      label: 'Retrieval Engine',
-      modules: [
-        { id: 'chunking',    icon: '✂️', title: 'Chunking Strategies',  badge: '4' },
-        { id: 'vectordbs',   icon: '🗄', title: 'Vector Databases',     badge: '5' },
-        { id: 'hybrid',      icon: '🔀', title: 'Hybrid Search',        badge: '6' },
-        { id: 'reranking',   icon: '🎚', title: 'Reranking',            badge: '7' },
-      ]
-    },
-    {
-      label: 'Production',
-      modules: [
-        { id: 'advanced',    icon: '🚀', title: 'Advanced Patterns',    badge: '8' },
-        { id: 'rageval',     icon: '📊', title: 'Evaluating RAG',       badge: '9' },
-        { id: 'ragprod',     icon: '🏭', title: 'Production Ops',       badge: '10' },
-      ]
-    },
-    {
-      label: 'Training',
-      modules: [
-        { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',    badge: '11' },
-        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
-        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
-      ]
-    }
-  ],
-  quiz: [
-    { q: "In a RAG system, what is the single biggest factor limiting answer quality?", options: ["The size of the LLM","Retrieval quality — if the right chunks aren't retrieved, the LLM can't answer correctly","The temperature setting","The number of tokens in the prompt"], correct: 1, explanation: "RAG quality is gated by retrieval. A powerful LLM cannot answer from context it never received. If the relevant chunks aren't retrieved, generation fails regardless of model quality. Retrieval is the bottleneck to optimize first." },
-    { q: "What is an embedding in the context of RAG?", options: ["A compressed version of a document","A dense vector representation of text that captures semantic meaning","A pointer to a database row","An encrypted form of the source text"], correct: 1, explanation: "An embedding is a dense numeric vector (typically 256–3072 dimensions) that represents the semantic meaning of text. Similar meanings produce nearby vectors, enabling semantic similarity search via distance metrics like cosine similarity." },
-    { q: "Why does naive fixed-size character chunking often hurt RAG quality?", options: ["It uses too much storage","It can split sentences or ideas mid-thought, breaking semantic coherence","It is too slow to compute","It requires a GPU"], correct: 1, explanation: "Fixed-size chunking (e.g., every 500 characters) can cut through the middle of a sentence, table, or logical unit — producing chunks that lack coherent meaning. Semantic chunking (by paragraph, section, or sentence boundary) preserves meaning and improves retrieval." },
-    { q: "What does a reranker add to a RAG pipeline?", options: ["It generates the final answer","It re-scores retrieved candidates with a more accurate (but slower) model to reorder them by true relevance","It compresses the retrieved chunks","It translates chunks to the query language"], correct: 1, explanation: "A reranker (typically a cross-encoder) takes the top-N candidates from fast vector search and re-scores each against the query with much higher accuracy. It reorders so the most relevant chunks appear first, dramatically reducing false positives in the final context." },
-    { q: "What is hybrid search in RAG?", options: ["Searching across multiple languages","Combining dense vector search with sparse keyword search (e.g., BM25) for better recall","Using two different LLMs","Searching both the cloud and local storage"], correct: 1, explanation: "Hybrid search combines semantic (dense vector) search with lexical (sparse, keyword-based like BM25) search. Vector search captures meaning; keyword search catches exact terms, names, and codes. Together they outperform either alone — especially for technical content with specific identifiers." },
-    { q: "What is 'chunk overlap' and why is it used?", options: ["Storing the same chunk twice for redundancy","Including some text from the end of one chunk at the start of the next, to avoid losing context at boundaries","Merging duplicate chunks","Overlapping multiple vector databases"], correct: 1, explanation: "Chunk overlap (typically 10–20%) repeats some text between consecutive chunks. This ensures that an idea spanning a chunk boundary appears complete in at least one chunk, preventing context loss when a key sentence gets split across the boundary." },
-    { q: "What problem does 'query rewriting' solve in RAG?", options: ["It makes queries shorter to save tokens","It transforms a vague or conversational user query into one or more search-optimized queries that retrieve better","It translates queries to SQL","It removes profanity from queries"], correct: 1, explanation: "User queries are often vague, conversational, or context-dependent ('what about the second one?'). Query rewriting uses an LLM to expand, clarify, or decompose the query into search-optimized forms — improving retrieval recall, especially for multi-turn conversations." },
-    { q: "Which metric specifically measures whether the LLM's answer is grounded in the retrieved context?", options: ["Latency","Faithfulness (groundedness) — whether claims in the answer are supported by retrieved chunks","Token count","Embedding dimension"], correct: 1, explanation: "Faithfulness (or groundedness) measures whether the generated answer's claims are actually supported by the retrieved context, rather than hallucinated. It's distinct from answer relevance and retrieval recall — a complete RAG evaluation measures all three." },
-    { q: "In Reciprocal Rank Fusion (RRF), what happens to a document that ranks well in BOTH the vector search and the keyword search results?", options: ["It gets removed as a duplicate","Its scores from both lists are summed, pushing it toward the top of the fused ranking","Only its better rank is kept, the other is discarded","It is penalized for appearing twice"], correct: 1, explanation: "RRF computes 1/(k + rank) for a document in each result list and sums those values across lists. A document appearing high in both the vector and keyword results accumulates a larger combined score than one that only appears in a single list, so it rises to the top of the fused ranking." },
-    { q: "What problem does 'late chunking' specifically address that standard chunk-then-embed approaches struggle with?", options: ["Storage costs of large vector databases","Loss of meaning from pronouns and cross-references that point to information in a different chunk", "Slow embedding API latency","Incompatibility between embedding models"], correct: 1, explanation: "Late chunking embeds the full document first with a long-context model, then pools token embeddings into chunks — so each chunk's vector retains context from elsewhere in the document. This specifically helps when a chunk contains a pronoun or reference (e.g. 'it trips at 12A') whose antecedent ('the eFuse') lives in an earlier, separately-chunked sentence." },
-  ],
-},
-
-/* ──────────────────────────────────────────────────────────────
-   COURSE 5: PROMPT ENGINEERING
-────────────────────────────────────────────────────────────── */
-{
-  id: 'prompts',
-  title: 'Prompting',
-  longTitle: 'Prompt Engineering',
-  icon: '✍️',
-  accentClass: 'ca-prompts',
-  accentColor: '#A78BFA',
-  accentDim: 'rgba(167,139,250,0.10)',
-  status: 'available',
-  description: 'Master the craft of instructing LLMs precisely — from zero-shot foundations to advanced reasoning and prompt optimization techniques.',
-  moduleTags: ['Zero-shot', 'Few-shot', 'CoT', 'System prompts', 'Optimization'],
-  sections: [
-    {
-      label: 'Fundamentals',
-      modules: [
-        { id: 'basics',      icon: '📝', title: 'Prompt Anatomy',       badge: '1' },
-        { id: 'system',      icon: '⚙️', title: 'System Prompts',       badge: '2' },
-        { id: 'shots',       icon: '🎯', title: 'Zero & Few-Shot',      badge: '3' },
-      ]
-    },
-    {
-      label: 'Reasoning Techniques',
-      modules: [
-        { id: 'cot',         icon: '💡', title: 'Chain of Thought',     badge: '4' },
-        { id: 'advanced',    icon: '🌳', title: 'Advanced Reasoning',   badge: '5' },
-        { id: 'decompose',   icon: '🧩', title: 'Decomposition',        badge: '6' },
-      ]
-    },
-    {
-      label: 'Mastery',
-      modules: [
-        { id: 'structured',  icon: '📐', title: 'Structured Output',    badge: '7' },
-        { id: 'injection',   icon: '🛡', title: 'Injection Defense',    badge: '8' },
-        { id: 'optimize',    icon: '🔬', title: 'Prompt Optimization',  badge: '9' },
-        { id: 'antipatterns',icon: '⚠️', title: 'Anti-Patterns',        badge: '10' },
-      ]
-    },
-    {
-      label: 'Training',
-      modules: [
-        { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',    badge: '11' },
-        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
-        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
-      ]
-    }
-  ],
-  quiz: [
-    { q: "What is the highest-leverage component of most prompts?", options: ["The greeting","Specificity — clear, detailed task description with explicit success criteria","Using ALL CAPS for emphasis","The length of the prompt"], correct: 1, explanation: "Specificity is consistently the highest-leverage prompt improvement. A precise task description with explicit constraints, format requirements, and success criteria outperforms vague prompts even on the same model. Vagueness forces the model to guess your intent." },
-    { q: "What role does a system prompt serve?", options: ["It's the user's first message","A privileged instruction that sets the model's role, rules, and behavior for the entire conversation","A hidden message that bypasses safety","A debugging log"], correct: 1, explanation: "The system prompt (role: 'system') is a privileged message that persists across the conversation, defining the model's persona, behavioral rules, constraints, and context. It carries more weight than user messages and is where you define who the model is." },
-    { q: "When is few-shot prompting most valuable over zero-shot?", options: ["When you want shorter responses","When the task has an unusual format or domain-specific pattern that examples can demonstrate","When using a larger model","Few-shot is always better"], correct: 1, explanation: "Few-shot shines when the desired output has an unusual format, specific style, or domain pattern that's hard to describe but easy to demonstrate. Examples teach by showing. For common tasks the model already knows, zero-shot often suffices and saves tokens." },
-    { q: "What does chain-of-thought (CoT) prompting improve, and how?", options: ["Response speed by skipping steps","Accuracy on multi-step problems by making the model reason explicitly before answering","Token efficiency by being concise","Output formatting consistency"], correct: 1, explanation: "CoT instructs the model to reason step-by-step before giving a final answer. By 'thinking out loud,' the model breaks complex problems into tractable steps, dramatically improving accuracy on math, logic, planning, and debugging tasks. The classic trigger: 'Let's think step by step.'" },
-    { q: "On a current frontier model with native extended thinking enabled, what is true about prompted chain-of-thought ('let's think step by step')?", options: ["It's required on every single prompt or the model cannot reason at all","It's often redundant — the model already reasons internally in a separate thinking phase before producing its visible answer","It permanently disables the model's reasoning ability","It only works if you also lower the temperature to 0"], correct: 1, explanation: "Native extended/reasoning modes perform multi-step reasoning in an internal phase before the visible response. Explicitly asking such a model to 'think step by step' in the prompt frequently adds little, since the reasoning is already happening — prompted CoT remains valuable mainly for non-reasoning models, visible-reasoning requirements, or below a reasoning model's minimum thinking budget." },
-    { q: "What is self-consistency in prompting?", options: ["Using the same prompt template every time","Sampling multiple reasoning paths and taking the majority answer to improve reliability","Making the model agree with the user","Checking the prompt for typos"], correct: 1, explanation: "Self-consistency samples multiple independent CoT reasoning paths (at higher temperature) for the same question, then takes the majority-vote answer. Because correct reasoning tends to converge while errors diverge, this improves accuracy on problems with a definitive answer — at the cost of more inference calls." },
-    { q: "What is the strongest guarantee available for getting schema-conformant structured output from a model today?", options: ["Asking nicely in the prompt and hoping","A 'JSON mode' flag, which guarantees valid JSON syntax but not your specific schema","Native structured-output / strict schema mode, which uses grammar-constrained decoding so the model cannot emit a token sequence violating your JSON Schema","Setting temperature to 0"], correct: 2, explanation: "Native structured-output modes (strict schema enforcement, including for tool-call arguments) constrain decoding at the token level so the response is guaranteed to match your JSON Schema's types, enums, and required fields. This is a stronger guarantee than JSON mode, which only ensures syntactically valid JSON — you still need to describe your schema in the prompt and validate it yourself. Schema conformance still doesn't guarantee the values are semantically correct, so validation logic remains necessary." },
-    { q: "What is prompt decomposition?", options: ["Removing words to shorten the prompt","Breaking a complex task into a sequence of smaller, focused sub-prompts","Translating the prompt to another language","Compressing the prompt with abbreviations"], correct: 1, explanation: "Decomposition splits a complex task into a chain of simpler sub-prompts, each handling one focused step. Rather than asking the model to do everything at once (which splits its attention and degrades quality), each sub-prompt gets full focus. The outputs chain together." },
-    { q: "Which is a defense against prompt injection?", options: ["Using a higher temperature","Structurally separating trusted instructions from untrusted content (e.g., with XML tags) and instructing the model never to follow instructions in untrusted sections","Making prompts longer","Using more few-shot examples"], correct: 1, explanation: "A key defense is structural separation: wrap untrusted content (user input, web pages, tool results) in clearly delimited sections (XML tags work well) and explicitly instruct the model to treat that content as data, never as instructions to follow. Combined with input filtering and output constraints." },
-    { q: "In production LLM applications, where does prompt injection most often actually occur?", options: ["Only when a user directly types 'ignore your instructions' in chat","Through indirect injection in the retrieval/tool pipeline — e.g. a fetched web page, document, or tool result containing hidden instructions","Only in image inputs, never in text","It cannot occur if you disable the system prompt"], correct: 1, explanation: "While direct injection (a user typing malicious instructions) is the simplest case to picture, the most exploited path in real systems is indirect injection: an agent retrieves external content (a web page, document, API/tool response) that contains hidden instructions the model then follows. Any tool call that brings untrusted content into context is an injection surface, regardless of whether a human ever reviews that content." },
-  ],
-},
-
-/* ──────────────────────────────────────────────────────────────
-   COURSE 6: LLM FUNDAMENTALS
-────────────────────────────────────────────────────────────── */
-{
-  id: 'llm',
-  title: 'LLM Core',
-  longTitle: 'LLM Fundamentals',
-  icon: '🧠',
-  accentClass: 'ca-llm',
-  accentColor: '#F472B6',
-  accentDim: 'rgba(244,114,182,0.10)',
-  status: 'available',
-  description: 'How transformer language models actually work — from talking to one and running it locally, to tokens, attention, quantization, training, and inference.',
-  moduleTags: ['Tokens', 'Attention', 'Sampling', 'Quantization', 'Local Models'],
-  sections: [
-    {
-      label: 'Getting Started',
-      modules: [
-        { id: 'overview',    icon: '🗺', title: 'The Big Picture',         badge: '1' },
-        { id: 'params',      icon: '🎛', title: 'Generation Parameters',   badge: '2' },
-        { id: 'localllm',    icon: '💻', title: 'Running Models Locally',  badge: '3' },
-      ]
-    },
-    {
-      label: 'Under the Hood',
-      modules: [
-        { id: 'tokens',      icon: '🔤', title: 'Tokenization',         badge: '4' },
-        { id: 'embeddings',  icon: '🧲', title: 'Embeddings & Vectors', badge: '5' },
-        { id: 'attention',   icon: '👁', title: 'Attention',            badge: '6' },
-        { id: 'architecture',icon: '🏗', title: 'Architecture',         badge: '7' },
-        { id: 'context',     icon: '🪟', title: 'Context Windows',      badge: '8' },
-      ]
-    },
-    {
-      label: 'Smaller & Faster',
-      modules: [
-        { id: 'quantization',icon: '📉', title: 'Quantization',         badge: '9' },
-        { id: 'inference',   icon: '⚡', title: 'Inference Internals',  badge: '10' },
-      ]
-    },
-    {
-      label: 'Training & Alignment',
-      modules: [
-        { id: 'training',    icon: '🎓', title: 'How Models Learn',     badge: '11' },
-        { id: 'rlhf',        icon: '🎯', title: 'RLHF & Alignment',     badge: '12' },
-        { id: 'limits',      icon: '🚧', title: 'Limits & Failure Modes', badge: '13' },
-      ]
-    },
-    {
-      label: 'Training',
-      modules: [
-        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
-        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
-      ]
-    }
-  ],
-  quiz: [
-    { q: "What is a token in the context of an LLM?", options: ["A single character","A chunk of text (often a word or sub-word piece) that is the basic unit the model processes","A complete sentence","An API authentication key"], correct: 1, explanation: "A token is the basic unit an LLM processes — typically a word or sub-word fragment. Common words may be one token; rare words split into several. English averages roughly 0.75 words per token. Models read and generate text token by token." },
-    { q: "What is the core innovation of the attention mechanism?", options: ["It makes models train faster","It lets the model weigh the relevance of every other token when processing each token, capturing long-range relationships","It reduces the model's memory usage","It encrypts the input"], correct: 1, explanation: "Attention lets each token 'look at' and weigh the relevance of all other tokens in the context when computing its representation. This captures long-range dependencies and relationships between words regardless of distance — the breakthrough that made transformers so powerful." },
-    { q: "What does the 'context window' refer to?", options: ["The model's training dataset","The maximum number of tokens the model can process at once (input + output)","The user interface window","The time window for an API request"], correct: 1, explanation: "The context window is the maximum number of tokens a model can attend to in a single forward pass — including the system prompt, conversation history, retrieved context, and the generated output. Exceed it and earlier content must be truncated or compressed." },
-    { q: "What happens during the pre-training phase of an LLM?", options: ["The model is taught to follow instructions","The model learns language patterns by predicting the next token across a massive text corpus","Human raters score the model's outputs","The model is connected to tools"], correct: 1, explanation: "Pre-training is self-supervised next-token prediction over a massive corpus. The model learns grammar, facts, reasoning patterns, and world knowledge purely by predicting what comes next. This produces a 'base model' that is knowledgeable but not yet aligned to follow instructions." },
-    { q: "What is RLHF and what problem does it solve?", options: ["A faster training algorithm","Reinforcement Learning from Human Feedback — aligns model behavior with human preferences for helpfulness and safety","A compression technique","A way to add new knowledge after training"], correct: 1, explanation: "RLHF (Reinforcement Learning from Human Feedback) fine-tunes a pre-trained model using human preference data. Humans rank model outputs; a reward model learns these preferences; the LLM is optimized against it. This is how raw base models become helpful, harmless, instruction-following assistants." },
-    { q: "Why are LLM outputs probabilistic rather than deterministic by default?", options: ["Because of hardware errors","Because the model samples the next token from a probability distribution, and sampling introduces randomness (controlled by temperature)","Because the internet changes","Because of network latency"], correct: 1, explanation: "At each step the model produces a probability distribution over possible next tokens. Sampling from this distribution (rather than always taking the most likely token) introduces controlled randomness. Temperature 0 makes it deterministic (always pick the top token); higher temperatures increase diversity." },
-    { q: "Why do LLMs hallucinate?", options: ["They are programmed to lie","They generate the most statistically plausible continuation, which isn't always factually true — they have no built-in truth verification","Their training data is encrypted","They run out of memory"], correct: 1, explanation: "LLMs predict plausible token sequences based on patterns, not verified facts. When the model lacks specific knowledge, it generates text that 'sounds right' statistically but may be false. There's no inherent fact-checking — which is why grounding (RAG) and verification matter for factual tasks." },
-    { q: "What is the KV cache and why does it matter?", options: ["A database of API keys","A cache of computed key/value attention tensors that avoids recomputing them for prior tokens during generation, dramatically speeding up inference","A backup of the model weights","A cache of user conversations"], correct: 1, explanation: "During generation, the model would otherwise recompute attention for all prior tokens at every step. The KV cache stores the key and value tensors for already-processed tokens, so only the new token needs computation. This is essential for efficient inference but consumes memory that grows with context length." },
-    { q: "What does a Mixture of Experts (MoE) architecture do?", options: ["Trains several entirely separate models and votes between them","Splits the feed-forward layers into many specialized sub-networks ('experts') and routes each token to only a few of them, so the model has huge total capacity but activates only a fraction per token","Runs the same model on multiple GPUs for redundancy","Compresses the model weights to a smaller file size"], correct: 1, explanation: "MoE models (DeepSeek-V3, Mixtral, and most current frontier models) have many expert FFN sub-networks but a learned router sends each token to only a handful of them. DeepSeek-V3 has 671B total parameters but activates only about 37B per token — near-frontier quality at a fraction of the per-token compute of an equivalently capable dense model." },
-    { q: "What problem do Grouped-Query Attention (GQA) and Multi-head Latent Attention (MLA) solve?", options: ["They make the model's vocabulary larger","They reduce the size of the KV cache needed during inference, compared to standard multi-head attention, enabling longer context and higher throughput", "They eliminate the need for positional encoding","They remove the need for a tokenizer"], correct: 1, explanation: "Standard multi-head attention gives every head its own Key/Value projections, which makes the KV cache large and expensive to store during generation. GQA (used in Llama, Mistral) shares K/V across groups of heads; MLA (used in DeepSeek) compresses K/V into a small latent vector. Both shrink the cache with minimal quality loss, which is why nearly all current production models use one of them instead of plain multi-head attention." },
-    { q: "What is Direct Preference Optimization (DPO), and how does it differ from classic RLHF?", options: ["It removes the need for any preference data at all","It optimizes the model directly on pairs of preferred/rejected responses with a simple loss, skipping the separate reward model and the reinforcement-learning loop that classic RLHF requires", "It only works for image-generation models","It is a way to compress model weights"], correct: 1, explanation: "Classic RLHF trains a separate reward model from human preference rankings, then uses reinforcement learning (e.g. PPO) to optimize the LLM against that reward model — a complex, often unstable pipeline. DPO reframes the same preference data as a direct classification-style loss on the policy model itself, skipping the reward model and RL loop. It's simpler and more stable, and by the mid-2020s is widely used either standalone or alongside RLHF/RLAIF in multi-stage alignment pipelines." },
-    { q: "What is speculative decoding, and why does it speed up inference?", options: ["It skips safety filters to generate faster","A small, fast 'draft' model proposes several next tokens, and the large target model verifies them all in one parallel pass, accepting matches for free and only falling back to normal generation on mismatches","It reduces the number of layers in the model permanently","It pre-computes every possible response in advance"], correct: 1, explanation: "Speculative decoding uses a cheap draft model (or a quantized self-speculative copy of the target model) to guess ahead several tokens, then has the expensive target model check all of them in a single forward pass instead of one token at a time. Accepted guesses are essentially free; only mismatches require a normal generation step. This can meaningfully speed up generation latency without changing the final output distribution." },
-    { q: "What does quantizing a model from FP16 to INT4 actually change?", options: ["It changes the model's architecture to have fewer layers","It stores each weight in fewer bits (e.g. 4 instead of 16), shrinking memory footprint and speeding up compute, usually with a small but non-zero quality cost", "It deletes weights the model doesn't need", "It retrains the model on a smaller dataset"], correct: 1, explanation: "Quantization reduces the numeric precision used to store (and sometimes compute) weights — e.g. 16-bit floats down to 4-bit integers. This roughly quarters memory footprint and speeds up memory-bound inference, at the cost of some rounding error that usually translates into a small, often acceptable, quality drop. It does not change the model's architecture or retrain it." },
-    { q: "What's the main practical limitation of running an LLM locally on consumer hardware (e.g. via Ollama or llama.cpp), compared to a frontier cloud API?", options: ["Local models cannot be used offline","Local models are restricted to a much smaller pool of model sizes/quality because consumer GPU VRAM (typically 8-24GB) caps how large (or how unquantized) a model can fit and run at usable speed","Local models cannot use a system prompt","Local inference is always faster than cloud inference"], correct: 1, explanation: "Frontier cloud models run on datacenter-grade GPUs with far more memory and compute than a laptop or desktop GPU. Local tools like Ollama and llama.cpp make running models on consumer hardware easy, but you're bounded by available VRAM/RAM — which is exactly why quantized (4-bit/8-bit) smaller models are the norm for local use, trading some quality for the ability to fit and run at all." },
-  ],
-},
-
-/* ──────────────────────────────────────────────────────────────
-   COURSE 7: AI FOR HARDWARE ENGINEERS
-────────────────────────────────────────────────────────────── */
-{
-  id: 'hwai',
-  title: 'HW + AI',
-  longTitle: 'AI for Hardware Engineers',
-  icon: '🔌',
-  accentClass: 'ca-hwai',
-  accentColor: '#FB923C',
-  accentDim: 'rgba(251,146,60,0.10)',
-  status: 'available',
-  description: 'Apply AI to hardware engineering: schematic review, compliance interpretation, BOM analysis, documentation, and test data — with safety-critical guardrails.',
-  moduleTags: ['Compliance', 'Schematic Review', 'BOM', 'Test Data', 'Documentation'],
-  sections: [
-    {
-      label: 'Orientation',
-      modules: [
-        { id: 'intro',       icon: '🗺', title: 'AI in the HW Lab',     badge: '1' },
-        { id: 'guardrails',  icon: '🛡', title: 'Safety Guardrails',    badge: '2' },
-      ]
-    },
-    {
-      label: 'Design & Review',
-      modules: [
-        { id: 'schematic',   icon: '📐', title: 'Schematic & PCB Review', badge: '3' },
-        { id: 'compliance',  icon: '📋', title: 'Compliance Interpretation', badge: '4' },
-        { id: 'bom',         icon: '📦', title: 'BOM & Component Analysis', badge: '5' },
-      ]
-    },
-    {
-      label: 'Data & Docs',
-      modules: [
-        { id: 'testdata',    icon: '📊', title: 'Test Data Analysis',   badge: '6' },
-        { id: 'docs',        icon: '📝', title: 'Documentation',        badge: '7' },
-        { id: 'datasheets',  icon: '🔎', title: 'Datasheet Q&A (RAG)',  badge: '8' },
-      ]
-    },
-    {
-      label: 'Deployment',
-      modules: [
-        { id: 'workflow',    icon: '🔄', title: 'Team Workflows',       badge: '9' },
-        { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',    badge: '10' },
-        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
-        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
-      ]
-    }
-  ],
-  quiz: [
-    { q: "When using AI to interpret a safety standard like IEC 62368-1, what is the essential guardrail?", options: ["Always trust the AI's interpretation if it cites a clause","A qualified engineer must verify every AI interpretation against the actual standard before it informs a compliance decision","Only use AI for standards written after 2020","Never write down that AI was used"], correct: 1, explanation: "AI can accelerate finding and summarizing relevant clauses, but compliance decisions carry legal and safety weight. A qualified engineer must always verify AI interpretations against the authoritative standard text. AI is a research accelerator, not a compliance authority. Document its use in the engineering record." },
-    { q: "Why is RAG (retrieval-augmented generation) particularly valuable for datasheet and standards Q&A?", options: ["It makes the AI faster","It grounds answers in the actual document text and provides citations, reducing hallucination of specs that don't exist","It translates datasheets automatically","It reduces token costs to zero"], correct: 1, explanation: "Datasheets and standards contain precise, specific values that an LLM may misremember or fabricate from parametric memory. RAG retrieves the actual document text and grounds answers in it with citations — letting an engineer verify the source. This is far safer than asking an LLM to recall specs from memory." },
-    { q: "What is an appropriate first AI use case when introducing it to a skeptical hardware team?", options: ["Letting AI approve final PCB layouts autonomously","Low-stakes, high-volume tasks like drafting documentation or summarizing test logs, where errors are caught easily and value is immediate","Replacing the compliance engineer","Auto-generating safety certifications"], correct: 1, explanation: "Start where errors are low-cost and easily caught, and time savings are immediate — documentation drafts, test log summaries, datasheet lookups. This builds trust and demonstrates value without risking safety-critical decisions. Expand to higher-stakes uses only after the team trusts the tooling." },
-    { q: "When using AI to analyze a BOM (Bill of Materials), what should you always verify independently?", options: ["The font of the output","Critical specifications like voltage ratings, tolerances, and compliance markings — against authoritative sources, not the AI's claim","Only the part count","Nothing — AI is reliable for BOMs"], correct: 1, explanation: "AI can speed up BOM analysis (flagging EOL parts, finding alternates, spotting inconsistencies), but any safety- or compliance-critical spec — voltage rating, creepage/clearance implications, certification marks — must be verified against the authoritative datasheet or standard. Treat AI output as a flag to investigate, not a final answer." },
-    { q: "What is the safest way to use AI for schematic review?", options: ["Let AI redesign the schematic automatically","Use AI to flag potential issues for an engineer to investigate, always showing its reasoning and the rule it's applying","Trust AI to catch all errors so humans don't need to review","Only use AI on schematics that don't matter"], correct: 1, explanation: "AI excels at surfacing candidate issues — missing pull-ups, spacing concerns, unconnected nets — for human investigation. It should always show its reasoning and the specific rule or standard it's applying, so the engineer can verify. The engineer remains the decision-maker; AI is a second set of eyes, not a replacement." },
-    { q: "Why should sensitive design data (proprietary schematics, unreleased specs) be handled carefully with AI tools?", options: ["It slows down the AI","Data sent to third-party model APIs may be logged or retained; use enterprise agreements, zero-retention endpoints, or local models for sensitive IP","It makes the output less accurate","There is no concern"], correct: 1, explanation: "Proprietary hardware IP sent to a public model API may be logged, retained, or used per the provider's terms. For sensitive data, use enterprise agreements with zero-retention/no-training guarantees, or run local open-weight models (Ollama) so nothing leaves your infrastructure. Always check your organization's data policy first." },
-    { q: "What is a realistic, high-value AI application for environmental stress test data?", options: ["Replacing the test chamber","Summarizing trends, flagging anomalies, and drafting the analysis section of a report — with the engineer verifying conclusions","Deciding pass/fail autonomously for certification","Deleting outlier data automatically"], correct: 1, explanation: "AI can rapidly summarize large test datasets, surface trends and anomalies across temperature/humidity cycles, and draft report narratives — saving significant engineer time. But pass/fail and certification conclusions must be made by a qualified engineer reviewing the actual data; AI assists the analysis, it doesn't own the verdict." },
-    { q: "How should AI assistance be reflected in formal engineering records?", options: ["It should never be mentioned","Document AI use as you would any tool or reference — noting that outputs were engineer-reviewed — to maintain traceability and accountability","Claim the engineer did everything manually","Only mention it if asked by an auditor"], correct: 1, explanation: "Just as you document the use of a reference handbook, calculator, or simulation tool, AI assistance should be noted in the engineering record — with the key fact that a qualified engineer reviewed and verified the outputs. This maintains traceability, accountability, and audit-readiness in regulated environments." },
-    { q: "Current multimodal AI models reviewing a schematic image are generally MOST reliable at which task?", options: ["Measuring exact trace widths and clearances from the image","Identifying component types and recognizing standard topologies (e.g. a buck converter or op-amp gain stage)","Computing the exact currents and voltages throughout the circuit","Reading dense reference-designator text at small sizes with perfect accuracy"], correct: 1, explanation: "Vision-capable models are comparatively strong at component/topology recognition, but weak at precise visual measurement, fine print, and multi-step numerical/symbolic reasoning from an image. Any specific number or measurement an AI reports from a schematic image should be independently verified against the source file, not trusted as a measurement." },
-    { q: "A compliance question requires combining a spec from two different datasheets to reach a conclusion. What should a well-built datasheet RAG answer do?", options: ["Average the two values and present a single confident number","Clearly separate what each source actually supports and flag what neither document addresses, rather than blending them into one unverifiable claim", "Ignore the second datasheet to keep the answer simple", "Decline to answer any question involving more than one document"], correct: 1, explanation: "The value of grounded RAG over plain LLM chat is precisely this: it should distinguish per-source facts from any inference layered on top, and explicitly flag gaps where the cited documents don't actually connect the way the question assumes. Silently synthesizing a confident answer across sources that don't support it is the failure mode citations are meant to prevent." },
-  ],
-},
-
-/* ──────────────────────────────────────────────────────────────
-   COURSE 8: CONTEXT ENGINEERING
-────────────────────────────────────────────────────────────── */
-{
-  id: 'ctx',
-  title: 'Context Eng',
-  longTitle: 'Context Engineering',
-  icon: '🪟',
-  accentClass: 'ca-ctx',
-  accentColor: '#38BDF8',
-  accentDim: 'rgba(56,189,248,0.10)',
-  status: 'available',
-  description: 'The discipline of deciding what goes into the model\u2019s context window \u2014 budgeting tokens, ordering, compression, memory, and retrieval to maximize quality.',
-  moduleTags: ['Token Budget', 'Ordering', 'Compression', 'Memory', 'Failure Modes'],
-  sections: [
-    {
-      label: 'Foundations',
-      modules: [
-        { id: 'what',        icon: '🗺', title: 'What & Why',           badge: '1' },
-        { id: 'budget',      icon: '💰', title: 'The Token Budget',     badge: '2' },
-        { id: 'anatomy',     icon: '🧬', title: 'Anatomy of Context',   badge: '3' },
-      ]
-    },
-    {
-      label: 'Core Techniques',
-      modules: [
-        { id: 'ordering',    icon: '📊', title: 'Ordering & Position',  badge: '4' },
-        { id: 'compression', icon: '🗜', title: 'Compression',          badge: '5' },
-        { id: 'memory',      icon: '💾', title: 'Memory Systems',       badge: '6' },
-        { id: 'retrieval',   icon: '🔍', title: 'Just-in-Time Retrieval', badge: '7' },
-      ]
-    },
-    {
-      label: 'Advanced',
-      modules: [
-        { id: 'agents',      icon: '🤖', title: 'Context for Agents',   badge: '8' },
-        { id: 'failures',    icon: '⚠️', title: 'Failure Modes',        badge: '9' },
-        { id: 'measure',     icon: '📏', title: 'Measuring & Tuning',   badge: '10' },
-      ]
-    },
-    {
-      label: 'Training',
-      modules: [
-        { id: 'patterns',    icon: '🧩', title: 'Pattern Library',      badge: '11' },
-        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
-        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
-      ]
-    }
-  ],
-  quiz: [
-    { q: "What is the central problem context engineering solves?", options: ["Making the model train faster","Deciding what information to place in a finite, attention-limited context window to maximize output quality","Reducing the number of model parameters","Encrypting the prompt"], correct: 1, explanation: "Context engineering is the discipline of curating exactly what enters the context window \u2014 and in what order and form \u2014 because the window is finite, every token costs money and attention, and more context is not automatically better." },
-    { q: "Why isn't 'just put everything in the context window' a good strategy, even with large windows?", options: ["It's always cheaper to use less","Cost and latency scale with tokens, and models attend unevenly \u2014 irrelevant content dilutes attention and degrades quality (context rot)","Large windows don't exist","The model will refuse"], correct: 1, explanation: "Even when content fits, every token adds cost and latency, and irrelevant material competes for the model's attention. Performance can actually degrade as the window fills with low-signal content \u2014 a phenomenon often called context rot. Curation beats accumulation." },
-    { q: "What is the 'lost in the middle' effect?", options: ["The model forgets its system prompt","Models recall information at the beginning and end of the context more reliably than content buried in the middle","The middle layers of the network are unused","A bug in tokenization"], correct: 1, explanation: "LLMs exhibit a U-shaped attention bias: content at the start and end of the context is recalled more reliably than content in the middle. Place the most critical instructions and information at the edges, not the center, of a long context." },
-    { q: "What is rolling summarization used for?", options: ["Making the model's answers shorter","Compressing older conversation turns into a compact summary to free context space while preserving key information","Summarizing the system prompt","Translating the conversation"], correct: 1, explanation: "As a conversation grows past a threshold, rolling summarization condenses the oldest turns into a short summary (often 10:1 compression), which replaces the verbose originals \u2014 freeing tokens while retaining the essential thread." },
-    { q: "In a long-running agent, what is the fastest-growing and most volatile part of the context?", options: ["The system prompt","Accumulated tool-call results and observations","The user's name","The temperature setting"], correct: 1, explanation: "Tool results accumulate with every step of an agent loop and can balloon quickly. Managing them \u2014 via compression, selective retention, or external storage \u2014 is the central context-engineering challenge in agentic systems." },
-    { q: "What is the difference between context (working memory) and external memory?", options: ["They are the same thing","Context is the finite in-window working memory for the current turn; external memory is persistent storage (files, vector DBs) the model retrieves from on demand","External memory is faster","Context never changes"], correct: 1, explanation: "Context is transient working memory \u2014 what the model sees right now, bounded by the window. External memory persists across turns and sessions; relevant pieces are retrieved into context just-in-time. Good context engineering moves information fluidly between the two." },
-    { q: "What is 'just-in-time' retrieval in context engineering?", options: ["Loading all data at startup","Pulling only the specific information needed for the current step into context, rather than pre-loading everything","Caching the entire database","Retrieving data after the model responds"], correct: 1, explanation: "Just-in-time retrieval keeps the context lean by fetching only what each step needs, when it needs it \u2014 mirroring how a person opens the one reference they need rather than spreading every document on the desk at once." },
-    { q: "What is context offloading?", options: ["Deleting the conversation","Moving bulky information out of the context window into external storage (files, notes, scratchpads) and pulling it back only when needed","Sending context to another model","Compressing the model weights"], correct: 1, explanation: "Offloading writes detailed information to an external store \u2014 a file, a scratchpad, a structured note \u2014 and keeps only a reference or summary in context. The model retrieves the full detail on demand, keeping the working window focused." },
-    { q: "What did Chroma's 2025 'Context Rot' study find when testing 18 frontier models (including GPT-4.1, Claude 4, and Gemini 2.5) on long-context tasks?", options: ["Performance is constant as long as content fits within the window","Reliability declines continuously as input length grows \u2014 even on simple retrieval tasks, and well before the window is full","Only open-weight models show degradation","Longer context always improves accuracy"], correct: 1, explanation: "The study found degradation is a continuous slope, not a cliff at the context limit \u2014 a model with a 200K window can show meaningful quality loss by 50K tokens. This is empirical evidence that 'it fits in the window' is not the same as 'the model will use it well.'" },
-    { q: "As of 2026, why is it misleading to say 'the context window' as if it were one fixed number across all frontier models?", options: ["All major models now have exactly the same window size","Window sizes vary widely by family and tier \u2014 Claude models are commonly ~200K while GPT-5.x and Gemini 3.x reach the high hundreds-of-thousands to low millions of tokens","Context windows were deprecated in favor of unlimited memory","Token counts no longer apply to modern models"], correct: 1, explanation: "Context window size is model- and tier-specific and changes with nearly every release. Treating it as a universal constant leads to budgets that are wrong for whichever model you're actually calling \u2014 always check the specific model's documented limit." },
-    { q: "What does Anthropic's native context-editing feature (the clear_tool_uses strategy) do?", options: ["Deletes the system prompt once the conversation gets long","Automatically clears older tool-call results once input tokens cross a configured threshold, while keeping a placeholder so the model still knows the action occurred","Rewrites the user's original question","Switches the model to a smaller context window"], correct: 1, explanation: "Context editing is a server-side primitive: you configure a token trigger and how many recent tool results to keep verbatim, and the API automatically clears older, bulkier tool outputs \u2014 implementing the 'compact tool results' pattern without custom code. Pairing it with the memory tool lets the model save important details before they're cleared." },
-  ],
-},
-
-/* ──────────────────────────────────────────────────────────────
-   COURSE 9: VIBE CODING \u2014 MANAGING LLM PROJECTS
+   COURSE 8: VIBE CODING \u2014 MANAGING LLM PROJECTS
 ────────────────────────────────────────────────────────────── */
 {
   id: 'vibe',
@@ -1517,7 +1455,7 @@ const COURSES = [
 },
 
 /* ──────────────────────────────────────────────────────────────
-   COURSE 10: QA STACK & GITHUB ACTIONS
+   COURSE 9: QA STACK & GITHUB ACTIONS
 ────────────────────────────────────────────────────────────── */
 {
   id: 'qa',
@@ -1570,7 +1508,7 @@ const COURSES = [
 },
 
 /* ──────────────────────────────────────────────────────────────
-   COURSE 11: DOCKER WITH AI
+   COURSE 10: DOCKER WITH AI
 ────────────────────────────────────────────────────────────── */
 {
   id: 'docker',
@@ -1616,6 +1554,68 @@ const COURSES = [
     { q: "When asking AI to generate a Dockerfile, what context produces the best result?", options: ["Just the programming language","The language/runtime, app type, build command, start command, which port it listens on, any required environment variables, and whether you need dev vs. production variants","Nothing — AI always knows","The file size of your app"], correct: 1, explanation: "AI-generated Dockerfiles improve dramatically with complete context: runtime + version, build commands, startup command, port, env var names (not values), and whether you want a dev hot-reload variant or a lean multi-stage production image. With this context it can generate a correct, optimized Dockerfile on the first try." },
     { q: "What does a BuildKit cache mount (RUN --mount=type=cache) do that normal Docker layer caching does not?", options: ["It bakes the package cache permanently into the final image","It persists a package manager's download cache across separate docker build runs, without that cache ending up in the image, so reinstalls re-fetch only what changed", "It deletes the image after the build finishes","It replaces the need for a .dockerignore file"], correct: 1, explanation: "Normal layer caching is invalidated the moment package*.json changes at all, forcing a full reinstall. A cache mount (requires '# syntax=docker/dockerfile:1' and a target like /root/.npm) keeps the package manager's download cache warm across builds without baking it into the final image — so even a full reinstall is fast because packages are already downloaded." },
     { q: "What is a key practical difference between Docker Scout and Trivy for vulnerability scanning?", options: ["They are identical tools with different names","Docker Scout is built into the Docker CLI with zero install but needs registry connectivity; Trivy is fully open-source, works offline, and also scans filesystems, IaC, and Kubernetes clusters — many teams use both","Trivy only works on Windows","Docker Scout cannot run in CI/CD pipelines"], correct: 1, explanation: "Docker Scout ships with the Docker CLI (docker scout cves myapp:latest) for an instant local check but requires connectivity. Trivy is open-source, works fully offline once its CVE database is cached, and scans well beyond images — filesystems, infrastructure-as-code, git repos, Kubernetes clusters. A common pattern: Scout for the fast local feedback loop, Trivy as the hard CI gate." },
+  ],
+},
+
+/* ──────────────────────────────────────────────────────────────
+   COURSE 11: AI FOR HARDWARE ENGINEERS
+────────────────────────────────────────────────────────────── */
+{
+  id: 'hwai',
+  title: 'HW + AI',
+  longTitle: 'AI for Hardware Engineers',
+  icon: '🔌',
+  accentClass: 'ca-hwai',
+  accentColor: '#FB923C',
+  accentDim: 'rgba(251,146,60,0.10)',
+  status: 'available',
+  description: 'Apply AI to hardware engineering: schematic review, compliance interpretation, BOM analysis, documentation, and test data — with safety-critical guardrails.',
+  moduleTags: ['Compliance', 'Schematic Review', 'BOM', 'Test Data', 'Documentation'],
+  sections: [
+    {
+      label: 'Orientation',
+      modules: [
+        { id: 'intro',       icon: '🗺', title: 'AI in the HW Lab',     badge: '1' },
+        { id: 'guardrails',  icon: '🛡', title: 'Safety Guardrails',    badge: '2' },
+      ]
+    },
+    {
+      label: 'Design & Review',
+      modules: [
+        { id: 'schematic',   icon: '📐', title: 'Schematic & PCB Review', badge: '3' },
+        { id: 'compliance',  icon: '📋', title: 'Compliance Interpretation', badge: '4' },
+        { id: 'bom',         icon: '📦', title: 'BOM & Component Analysis', badge: '5' },
+      ]
+    },
+    {
+      label: 'Data & Docs',
+      modules: [
+        { id: 'testdata',    icon: '📊', title: 'Test Data Analysis',   badge: '6' },
+        { id: 'docs',        icon: '📝', title: 'Documentation',        badge: '7' },
+        { id: 'datasheets',  icon: '🔎', title: 'Datasheet Q&A (RAG)',  badge: '8' },
+      ]
+    },
+    {
+      label: 'Deployment',
+      modules: [
+        { id: 'workflow',    icon: '🔄', title: 'Team Workflows',       badge: '9' },
+        { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',    badge: '10' },
+        { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
+        { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
+      ]
+    }
+  ],
+  quiz: [
+    { q: "When using AI to interpret a safety standard like IEC 62368-1, what is the essential guardrail?", options: ["Always trust the AI's interpretation if it cites a clause","A qualified engineer must verify every AI interpretation against the actual standard before it informs a compliance decision","Only use AI for standards written after 2020","Never write down that AI was used"], correct: 1, explanation: "AI can accelerate finding and summarizing relevant clauses, but compliance decisions carry legal and safety weight. A qualified engineer must always verify AI interpretations against the authoritative standard text. AI is a research accelerator, not a compliance authority. Document its use in the engineering record." },
+    { q: "Why is RAG (retrieval-augmented generation) particularly valuable for datasheet and standards Q&A?", options: ["It makes the AI faster","It grounds answers in the actual document text and provides citations, reducing hallucination of specs that don't exist","It translates datasheets automatically","It reduces token costs to zero"], correct: 1, explanation: "Datasheets and standards contain precise, specific values that an LLM may misremember or fabricate from parametric memory. RAG retrieves the actual document text and grounds answers in it with citations — letting an engineer verify the source. This is far safer than asking an LLM to recall specs from memory." },
+    { q: "What is an appropriate first AI use case when introducing it to a skeptical hardware team?", options: ["Letting AI approve final PCB layouts autonomously","Low-stakes, high-volume tasks like drafting documentation or summarizing test logs, where errors are caught easily and value is immediate","Replacing the compliance engineer","Auto-generating safety certifications"], correct: 1, explanation: "Start where errors are low-cost and easily caught, and time savings are immediate — documentation drafts, test log summaries, datasheet lookups. This builds trust and demonstrates value without risking safety-critical decisions. Expand to higher-stakes uses only after the team trusts the tooling." },
+    { q: "When using AI to analyze a BOM (Bill of Materials), what should you always verify independently?", options: ["The font of the output","Critical specifications like voltage ratings, tolerances, and compliance markings — against authoritative sources, not the AI's claim","Only the part count","Nothing — AI is reliable for BOMs"], correct: 1, explanation: "AI can speed up BOM analysis (flagging EOL parts, finding alternates, spotting inconsistencies), but any safety- or compliance-critical spec — voltage rating, creepage/clearance implications, certification marks — must be verified against the authoritative datasheet or standard. Treat AI output as a flag to investigate, not a final answer." },
+    { q: "What is the safest way to use AI for schematic review?", options: ["Let AI redesign the schematic automatically","Use AI to flag potential issues for an engineer to investigate, always showing its reasoning and the rule it's applying","Trust AI to catch all errors so humans don't need to review","Only use AI on schematics that don't matter"], correct: 1, explanation: "AI excels at surfacing candidate issues — missing pull-ups, spacing concerns, unconnected nets — for human investigation. It should always show its reasoning and the specific rule or standard it's applying, so the engineer can verify. The engineer remains the decision-maker; AI is a second set of eyes, not a replacement." },
+    { q: "Why should sensitive design data (proprietary schematics, unreleased specs) be handled carefully with AI tools?", options: ["It slows down the AI","Data sent to third-party model APIs may be logged or retained; use enterprise agreements, zero-retention endpoints, or local models for sensitive IP","It makes the output less accurate","There is no concern"], correct: 1, explanation: "Proprietary hardware IP sent to a public model API may be logged, retained, or used per the provider's terms. For sensitive data, use enterprise agreements with zero-retention/no-training guarantees, or run local open-weight models (Ollama) so nothing leaves your infrastructure. Always check your organization's data policy first." },
+    { q: "What is a realistic, high-value AI application for environmental stress test data?", options: ["Replacing the test chamber","Summarizing trends, flagging anomalies, and drafting the analysis section of a report — with the engineer verifying conclusions","Deciding pass/fail autonomously for certification","Deleting outlier data automatically"], correct: 1, explanation: "AI can rapidly summarize large test datasets, surface trends and anomalies across temperature/humidity cycles, and draft report narratives — saving significant engineer time. But pass/fail and certification conclusions must be made by a qualified engineer reviewing the actual data; AI assists the analysis, it doesn't own the verdict." },
+    { q: "How should AI assistance be reflected in formal engineering records?", options: ["It should never be mentioned","Document AI use as you would any tool or reference — noting that outputs were engineer-reviewed — to maintain traceability and accountability","Claim the engineer did everything manually","Only mention it if asked by an auditor"], correct: 1, explanation: "Just as you document the use of a reference handbook, calculator, or simulation tool, AI assistance should be noted in the engineering record — with the key fact that a qualified engineer reviewed and verified the outputs. This maintains traceability, accountability, and audit-readiness in regulated environments." },
+    { q: "Current multimodal AI models reviewing a schematic image are generally MOST reliable at which task?", options: ["Measuring exact trace widths and clearances from the image","Identifying component types and recognizing standard topologies (e.g. a buck converter or op-amp gain stage)","Computing the exact currents and voltages throughout the circuit","Reading dense reference-designator text at small sizes with perfect accuracy"], correct: 1, explanation: "Vision-capable models are comparatively strong at component/topology recognition, but weak at precise visual measurement, fine print, and multi-step numerical/symbolic reasoning from an image. Any specific number or measurement an AI reports from a schematic image should be independently verified against the source file, not trusted as a measurement." },
+    { q: "A compliance question requires combining a spec from two different datasheets to reach a conclusion. What should a well-built datasheet RAG answer do?", options: ["Average the two values and present a single confident number","Clearly separate what each source actually supports and flag what neither document addresses, rather than blending them into one unverifiable claim", "Ignore the second datasheet to keep the answer simple", "Decline to answer any question involving more than one document"], correct: 1, explanation: "The value of grounded RAG over plain LLM chat is precisely this: it should distinguish per-source facts from any inference layered on top, and explicitly flag gaps where the cited documents don't actually connect the way the question assumes. Silently synthesizing a confident answer across sources that don't support it is the failure mode citations are meant to prevent." },
   ],
 },
 
