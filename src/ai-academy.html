@@ -2459,6 +2459,15 @@ C:\\Users\\USERNAME\\AppData\\Roaming\\Claude\\claude_desktop_config.json
       </ul>
 
       <div class="info-box amber"><strong>Troubleshooting:</strong> If a server doesn't appear, check the log file. Common issues: Node.js not in PATH (fix: use absolute path to <code class="inline">node</code>), missing npm package (fix: run <code class="inline">npx -y &lt;pkg&gt;</code> manually first), or JSON syntax error in config (fix: validate with <code class="inline">cat config.json | python3 -m json.tool</code>).</div>
+
+      <h2>Alternative: Connectors (No JSON Required)</h2>
+      <div class="info-box green"><strong>Skip the config file:</strong> Claude Desktop's <strong>Connectors</strong> (Settings → Customize → Connectors, or the <code class="inline">+</code> button in chat) let you add MCP servers without touching <code class="inline">claude_desktop_config.json</code>. Connectors are typically <strong>remote, cloud-hosted</strong> MCP servers — Claude talks to them from Anthropic's cloud, not your machine — so they cover SaaS integrations (Slack, Notion, Google Drive, GitHub, Stripe, etc.) but not localhost or local-file servers, which still need the manual config above.</div>
+      <ul class="checklist">
+        <li>Browse Anthropic's <strong>Connectors directory</strong> — hundreds of pre-built, verified integrations across dozens of categories</li>
+        <li>Or paste a <strong>custom remote MCP server URL</strong> directly into the Connectors UI — no JSON editing</li>
+        <li>Free plan: 1 custom connector. Pro/Max/Team/Enterprise: full access</li>
+        <li>Connectors sync across Claude Desktop, claude.ai, and mobile — the local <code class="inline">claude_desktop_config.json</code> approach only works on that one machine</li>
+      </ul>
     </div>
 
     <!-- ── 2. CLAUDE CODE ── -->
