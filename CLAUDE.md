@@ -152,7 +152,7 @@ quiz: [
 3. skills — AI Skills Training (16 modules)
 4. rag — RAG Deep Dive (13 modules)
 5. prompts — Prompt Engineering (13 modules)
-6. llm — LLM Fundamentals (12 modules)
+6. llm — LLM Fundamentals (15 modules)
 7. hwai — AI for Hardware Engineers (12 modules)
 8. ctx — Context Engineering (13 modules)
 9. vibe — Managing Vibe-Coded Projects (14 modules)
