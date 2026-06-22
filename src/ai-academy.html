@@ -361,6 +361,9 @@ h3 {
 .card-icon { font-size: 22px; margin-bottom: 10px; }
 .card-title { font-family: var(--display); font-weight: 600; font-size: 13.5px; margin-bottom: 6px; }
 .card-body { font-size: 13px; color: var(--muted2); line-height: 1.6; }
+.resource-link { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+.resource-link:hover { border-bottom-color: var(--accent); }
+.resource-link .ext-arrow { display: inline-block; margin-left: 3px; opacity: 0.6; font-size: 11px; }
 .tag {
   display: inline-block;
   margin-top: 10px;
@@ -964,6 +967,7 @@ const COURSES = [
     {
       label: 'Training',
       modules: [
+        { id: 'godeeper',     icon: '🔗', title: 'Go Deeper',      badge: ''   },
         { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
         { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
       ]
@@ -1031,6 +1035,7 @@ const COURSES = [
       label: 'Training',
       modules: [
         { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',    badge: '11' },
+        { id: 'godeeper',    icon: '🔗', title: 'Go Deeper',      badge: ''   },
         { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
         { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
       ]
@@ -1094,6 +1099,7 @@ const COURSES = [
       label: 'Training',
       modules: [
         { id: 'patterns',    icon: '🧩', title: 'Pattern Library',      badge: '11' },
+        { id: 'godeeper',    icon: '🔗', title: 'Go Deeper',      badge: ''   },
         { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
         { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
       ]
@@ -1158,6 +1164,7 @@ const COURSES = [
       label: 'Training',
       modules: [
         { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',    badge: '11' },
+        { id: 'godeeper',    icon: '🔗', title: 'Go Deeper',      badge: ''   },
         { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
         { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
       ]
@@ -1224,6 +1231,7 @@ const COURSES = [
       modules: [
         { id: 'scenarios',   icon: '🧪', title: 'Scenario Exercises',     badge: '13' },
         { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',      badge: '14' },
+        { id: 'godeeper',    icon: '🔗', title: 'Go Deeper',        badge: ''   },
         { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',        badge: ''   },
         { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',        badge: ''   },
       ]
@@ -1294,6 +1302,7 @@ const COURSES = [
     {
       label: 'Training',
       modules: [
+        { id: 'godeeper',   icon: '🔗', title: 'Go Deeper',   badge: '' },
         { id: 'quiz',       icon: '🎯', title: 'Knowledge Check',   badge: '' },
         { id: 'cheatsheet', icon: '📋', title: 'Quick Reference',   badge: '' },
       ]
@@ -1370,6 +1379,7 @@ const COURSES = [
     {
       label: 'Training',
       modules: [
+        { id: 'godeeper',   icon: '🔗', title: 'Go Deeper',   badge: '' },
         { id: 'quiz',       icon: '🎯', title: 'Knowledge Check',   badge: '' },
         { id: 'cheatsheet', icon: '📋', title: 'Quick Reference',   badge: '' },
       ]
@@ -1434,6 +1444,7 @@ const COURSES = [
       modules: [
         { id: 'workflow',    icon: '🔄', title: 'A Sustainable Workflow', badge: '11' },
         { id: 'checklist',   icon: '✅', title: 'Health Checklist',     badge: '12' },
+        { id: 'godeeper',    icon: '🔗', title: 'Go Deeper',      badge: ''   },
         { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
         { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
       ]
@@ -1487,6 +1498,7 @@ const COURSES = [
     ]},
     { label: 'Practice', modules: [
       { id: 'maintenance',icon: '🔧', title: 'Maintaining Tests',    badge: '11' },
+      { id: 'godeeper',   icon: '🔗', title: 'Go Deeper',         badge: '' },
       { id: 'quiz',       icon: '🎯', title: 'Knowledge Check',      badge: '' },
       { id: 'cheatsheet', icon: '📋', title: 'Quick Reference',      badge: '' },
     ]},
@@ -1539,6 +1551,7 @@ const COURSES = [
     ]},
     { label: 'Practice', modules: [
       { id: 'maintain',   icon: '🔧', title: 'Maintaining Images',   badge: '10' },
+      { id: 'godeeper',   icon: '🔗', title: 'Go Deeper',         badge: '' },
       { id: 'quiz',       icon: '🎯', title: 'Knowledge Check',      badge: '' },
       { id: 'cheatsheet', icon: '📋', title: 'Quick Reference',      badge: '' },
     ]},
@@ -1600,6 +1613,7 @@ const COURSES = [
       modules: [
         { id: 'workflow',    icon: '🔄', title: 'Team Workflows',       badge: '9' },
         { id: 'impl',        icon: '🚀', title: 'Host Setup Guides',    badge: '10' },
+        { id: 'godeeper',    icon: '🔗', title: 'Go Deeper',         badge: ''   },
         { id: 'quiz',        icon: '🎯', title: 'Knowledge Check',      badge: ''   },
         { id: 'cheatsheet',  icon: '📋', title: 'Quick Reference',      badge: ''   },
       ]
@@ -2345,6 +2359,19 @@ GET /.well-known/oauth-protected-resource
   </div>
 
   <div class="info-box green"><strong>Summary:</strong> Use servers from trusted sources. Review tool descriptions before connecting. For remote servers, implement OAuth 2.1 + PKCE + RFC 9728 metadata — not static API keys. Keep servers updated. Prefer local stdio over remote HTTP when possible — smaller blast radius.</div>
+</div>`,
+
+'mcp:godeeper': () => `<div class="panel" id="panel-mcp-godeeper">
+  <div class="breadcrumb">MCP › <span class="bc-accent">Training</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">The spec, the reference implementations, and where Anthropic posts updates as MCP evolves.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">🌐</div><div class="card-title"><a class="resource-link" href="https://modelcontextprotocol.io/" target="_blank" rel="noopener noreferrer">Official Site &amp; Spec<span class="ext-arrow">↗</span></a></div><div class="card-body">The authoritative protocol specification, plus architecture and concept guides.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🗂️</div><div class="card-title"><a class="resource-link" href="https://github.com/modelcontextprotocol" target="_blank" rel="noopener noreferrer">modelcontextprotocol org<span class="ext-arrow">↗</span></a></div><div class="card-body">SDKs, the spec repo, and inspector tooling — the source of truth for protocol changes.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">🗄</div><div class="card-title"><a class="resource-link" href="https://github.com/modelcontextprotocol/servers" target="_blank" rel="noopener noreferrer">Reference Servers<span class="ext-arrow">↗</span></a></div><div class="card-body">Anthropic's reference MCP server implementations — filesystem, GitHub, Slack, Postgres, and more.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">📰</div><div class="card-title"><a class="resource-link" href="https://www.anthropic.com/news" target="_blank" rel="noopener noreferrer">Anthropic News<span class="ext-arrow">↗</span></a></div><div class="card-body">Where the MCP launch and major protocol updates get announced.</div><span class="tag amber">updates</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
 </div>`,
 
 'mcp:quiz': () => `<div class="panel" id="panel-mcp-quiz">
@@ -3613,6 +3640,19 @@ print(result.final_output)</div>
     <div class="vendor-row"><div><div class="vendor-name" style="color:var(--amber)">🔥 Meta</div></div><div class="vendor-desc">Llama 4 Scout (long context) and Maverick. Meta emphasizes open-weight models that can be self-hosted for private agent deployments with no data leaving your infrastructure.</div><div><span class="status-badge sb-beta">Growing</span></div><div style="font-size:12px;color:var(--muted)">Open weight / private</div></div>
     <div class="vendor-row"><div><div class="vendor-name" style="color:var(--violet)">⚡ Mistral</div></div><div class="vendor-desc">Mistral Large for reasoning-heavy tasks. Strong function calling. European data residency option. le chat agent mode for consumer. Codestral for coding agents.</div><div><span class="status-badge sb-beta">EU-focused</span></div><div style="font-size:12px;color:var(--muted)">EU sovereignty</div></div>
   </div>
+</div>`,
+
+'agents:godeeper': () => `<div class="panel" id="panel-agents-godeeper">
+  <div class="breadcrumb">Agents › <span class="bc-accent">Training</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">From the field reports both labs have published on what actually works in production agents, to the SDKs you'd build one with.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">🛠</div><div class="card-title"><a class="resource-link" href="https://www.anthropic.com/engineering" target="_blank" rel="noopener noreferrer">Anthropic Engineering Blog<span class="ext-arrow">↗</span></a></div><div class="card-body">Field-tested write-ups on agent design, including the widely-cited piece on building effective agents.</div><span class="tag amber">guide</span></div>
+    <div class="card"><div class="card-icon">🐍</div><div class="card-title"><a class="resource-link" href="https://github.com/openai/openai-agents-python" target="_blank" rel="noopener noreferrer">OpenAI Agents SDK<span class="ext-arrow">↗</span></a></div><div class="card-body">OpenAI's lightweight framework for orchestrating multi-agent workflows.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">🍳</div><div class="card-title"><a class="resource-link" href="https://github.com/anthropics/anthropic-cookbook" target="_blank" rel="noopener noreferrer">Anthropic Cookbook<span class="ext-arrow">↗</span></a></div><div class="card-body">Worked examples including tool use, orchestration, and multi-agent patterns.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Intelligent_agent" target="_blank" rel="noopener noreferrer">Intelligent Agent<span class="ext-arrow">↗</span></a></div><div class="card-body">The classical AI definition this whole course is a modern, LLM-powered take on.</div><span class="tag green">wiki</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
 </div>`,
 
 'agents:quiz': () => `<div class="panel" id="panel-agents-quiz">
@@ -5138,6 +5178,21 @@ ollama run llama3.3          # interactive session</div>
   </div>
 </div>`,
 
+'skills:godeeper': () => `<div class="panel" id="panel-skills-godeeper">
+  <div class="breadcrumb">Skills › <span class="bc-accent">Skills Lab</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">This course is a survey — these are the full reference docs and example repos for the topics it samples from.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">📘</div><div class="card-title"><a class="resource-link" href="https://docs.anthropic.com/" target="_blank" rel="noopener noreferrer">Anthropic Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">Full reference for prompting, tool use, evaluation, and deployment with Claude.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">📗</div><div class="card-title"><a class="resource-link" href="https://platform.openai.com/docs" target="_blank" rel="noopener noreferrer">OpenAI Platform Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">The equivalent reference for building with OpenAI's models and tools.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🍳</div><div class="card-title"><a class="resource-link" href="https://github.com/anthropics/anthropic-cookbook" target="_blank" rel="noopener noreferrer">Anthropic Cookbook<span class="ext-arrow">↗</span></a></div><div class="card-body">Runnable notebooks covering tool design, evaluation, and workflow patterns.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">🍳</div><div class="card-title"><a class="resource-link" href="https://github.com/openai/openai-cookbook" target="_blank" rel="noopener noreferrer">OpenAI Cookbook<span class="ext-arrow">↗</span></a></div><div class="card-body">Same idea, OpenAI's stack — embeddings, evals, and fine-tuning examples.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Fine-tuning_(machine_learning)" target="_blank" rel="noopener noreferrer">Fine-Tuning<span class="ext-arrow">↗</span></a></div><div class="card-body">Background on the technique covered in this course's Fine-Tuning Basics module.</div><span class="tag green">wiki</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/AI_alignment" target="_blank" rel="noopener noreferrer">AI Alignment<span class="ext-arrow">↗</span></a></div><div class="card-body">The broader field behind this course's Responsible AI Use module.</div><span class="tag green">wiki</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
+</div>`,
+
 'skills:quiz': () => `<div class="panel" id="panel-skills-quiz">
   <div class="breadcrumb">Skills › <span class="bc-accent">Skills Lab</span> › Knowledge Check</div>
   <h1>Knowledge <span class="hl">Check</span></h1>
@@ -5763,6 +5818,21 @@ print(resp.content[0].text)</div>
   </div>
 </div>`,
 
+'rag:godeeper': () => `<div class="panel" id="panel-rag-godeeper">
+  <div class="breadcrumb">RAG › <span class="bc-accent">Training</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">Embeddings, vector search, and the retrieval pipelines this course walks through — straight from the people who maintain them.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Retrieval-augmented_generation" target="_blank" rel="noopener noreferrer">Retrieval-Augmented Generation<span class="ext-arrow">↗</span></a></div><div class="card-body">The technique this entire course is named after, in one page.</div><span class="tag green">wiki</span></div>
+    <div class="card"><div class="card-icon">📗</div><div class="card-title"><a class="resource-link" href="https://platform.openai.com/docs/guides/embeddings" target="_blank" rel="noopener noreferrer">OpenAI Embeddings Guide<span class="ext-arrow">↗</span></a></div><div class="card-body">How embeddings work and how to generate them via the API.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🍳</div><div class="card-title"><a class="resource-link" href="https://github.com/openai/openai-cookbook" target="_blank" rel="noopener noreferrer">OpenAI Cookbook<span class="ext-arrow">↗</span></a></div><div class="card-body">Worked RAG pipelines — chunking, retrieval, reranking, and evaluation.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">🧬</div><div class="card-title"><a class="resource-link" href="https://www.sbert.net/" target="_blank" rel="noopener noreferrer">Sentence-Transformers Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">The open-source library behind most self-hosted embedding models.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">🌲</div><div class="card-title"><a class="resource-link" href="https://www.pinecone.io/learn/" target="_blank" rel="noopener noreferrer">Pinecone Learning Center<span class="ext-arrow">↗</span></a></div><div class="card-body">Accessible explainers on vector search, chunking, and reranking concepts.</div><span class="tag amber">guide</span></div>
+    <div class="card"><div class="card-icon">🎨</div><div class="card-title"><a class="resource-link" href="https://docs.trychroma.com/" target="_blank" rel="noopener noreferrer">Chroma Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">A popular open-source vector database — good for seeing a full pipeline end to end.</div><span class="tag">official</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
+</div>`,
+
 'rag:quiz': () => `<div class="panel" id="panel-rag-quiz">
   <div class="breadcrumb">RAG › <span class="bc-accent">Training</span> › Knowledge Check</div>
   <h1>Knowledge <span class="hl">Check</span></h1>
@@ -6261,6 +6331,21 @@ system=[{"type": "text", "text": LONG_SYSTEM_PROMPT,
       </ul>
     </div>
   </div>
+</div>`,
+
+'prompts:godeeper': () => `<div class="panel" id="panel-prompts-godeeper">
+  <div class="breadcrumb">Prompting › <span class="bc-accent">Training</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">Official technique guides, ready-made templates, and worked examples — from both major labs.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">📘</div><div class="card-title"><a class="resource-link" href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener noreferrer">Anthropic Prompt Engineering<span class="ext-arrow">↗</span></a></div><div class="card-body">Anthropic's official technique guide — clarity, examples, chain of thought, and XML structuring.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">📚</div><div class="card-title"><a class="resource-link" href="https://docs.anthropic.com/en/prompt-library/library" target="_blank" rel="noopener noreferrer">Anthropic Prompt Library<span class="ext-arrow">↗</span></a></div><div class="card-body">Dozens of ready-made, copyable prompt templates for common tasks.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">📗</div><div class="card-title"><a class="resource-link" href="https://platform.openai.com/docs/guides/prompt-engineering" target="_blank" rel="noopener noreferrer">OpenAI Prompt Engineering Guide<span class="ext-arrow">↗</span></a></div><div class="card-body">OpenAI's equivalent guide — tactics for getting reliable output from GPT models.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🍳</div><div class="card-title"><a class="resource-link" href="https://github.com/anthropics/anthropic-cookbook" target="_blank" rel="noopener noreferrer">Anthropic Cookbook<span class="ext-arrow">↗</span></a></div><div class="card-body">Runnable notebooks showing prompting techniques applied to real tasks.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Prompt_engineering" target="_blank" rel="noopener noreferrer">Prompt Engineering<span class="ext-arrow">↗</span></a></div><div class="card-body">History and broad survey of the discipline, across vendors.</div><span class="tag green">wiki</span></div>
+    <div class="card"><div class="card-icon">🌐</div><div class="card-title"><a class="resource-link" href="https://www.promptingguide.ai/" target="_blank" rel="noopener noreferrer">Prompt Engineering Guide<span class="ext-arrow">↗</span></a></div><div class="card-body">Community-maintained reference covering techniques across every major model family.</div><span class="tag amber">guide</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
 </div>`,
 
 'prompts:quiz': () => `<div class="panel" id="panel-prompts-quiz">
@@ -6795,6 +6880,21 @@ step 3 -> "...against overcurrent" -> sample -> " conditions"
   <div class="info-box green"><strong>The throughline:</strong> Every failure mode traces back to what an LLM fundamentally is — a probabilistic pattern-completer trained on a fixed corpus. It is not a database, a calculator, or a reasoning engine with ground truth. Used with that understanding — grounded, verified, and supervised where it matters — it's extraordinarily powerful.</div>
 </div>`,
 
+'llm:godeeper': () => `<div class="panel" id="panel-llm-godeeper">
+  <div class="breadcrumb">LLM Core › <span class="bc-accent">Training</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">From official model specs to the open-source tools and architecture explainers behind everything in this course.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">🧠</div><div class="card-title"><a class="resource-link" href="https://docs.anthropic.com/en/docs/about-claude/models/overview" target="_blank" rel="noopener noreferrer">Anthropic Models Overview<span class="ext-arrow">↗</span></a></div><div class="card-body">Specs for every Claude model — context windows, capabilities, and pricing.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🤖</div><div class="card-title"><a class="resource-link" href="https://platform.openai.com/docs/models" target="_blank" rel="noopener noreferrer">OpenAI Models<span class="ext-arrow">↗</span></a></div><div class="card-body">OpenAI's model catalog and capability reference.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Transformer_(deep_learning_architecture)" target="_blank" rel="noopener noreferrer">Transformer Architecture<span class="ext-arrow">↗</span></a></div><div class="card-body">The architecture behind every model in this course, from first principles.</div><span class="tag green">wiki</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Large_language_model" target="_blank" rel="noopener noreferrer">Large Language Model<span class="ext-arrow">↗</span></a></div><div class="card-body">Broad survey of LLM history, training, and scaling.</div><span class="tag green">wiki</span></div>
+    <div class="card"><div class="card-icon">🦙</div><div class="card-title"><a class="resource-link" href="https://github.com/ollama/ollama" target="_blank" rel="noopener noreferrer">Ollama<span class="ext-arrow">↗</span></a></div><div class="card-body">The local-model runner used throughout this course's Running Models Locally module.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">⚙️</div><div class="card-title"><a class="resource-link" href="https://github.com/ggerganov/llama.cpp" target="_blank" rel="noopener noreferrer">llama.cpp<span class="ext-arrow">↗</span></a></div><div class="card-body">The inference engine and GGUF quantization format behind Ollama and LM Studio.</div><span class="tag violet">repo</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
+</div>`,
+
 'llm:quiz': () => `<div class="panel" id="panel-llm-quiz">
   <div class="breadcrumb">LLM Core › <span class="bc-accent">Training</span> › Knowledge Check</div>
   <h1>Knowledge <span class="hl">Check</span></h1>
@@ -7246,6 +7346,19 @@ ollama run llama3.3            # interactive, fully offline
   </div>
 </div>`,
 
+'hwai:godeeper': () => `<div class="panel" id="panel-hwai-godeeper">
+  <div class="breadcrumb">HW + AI › <span class="bc-accent">Deployment</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">This course is a custom application of AI to hardware engineering — there's no single official doc set, so these are grounding references for the domains it touches.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Electronic_design_automation" target="_blank" rel="noopener noreferrer">Electronic Design Automation<span class="ext-arrow">↗</span></a></div><div class="card-body">The tooling category this course's schematic-review use cases sit alongside.</div><span class="tag green">wiki</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Bill_of_materials" target="_blank" rel="noopener noreferrer">Bill of Materials<span class="ext-arrow">↗</span></a></div><div class="card-body">Background for this course's BOM Analysis module.</div><span class="tag green">wiki</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Functional_safety" target="_blank" rel="noopener noreferrer">Functional Safety<span class="ext-arrow">↗</span></a></div><div class="card-body">The discipline behind this course's safety-critical guardrails theme.</div><span class="tag green">wiki</span></div>
+    <div class="card"><div class="card-icon">📘</div><div class="card-title"><a class="resource-link" href="https://docs.anthropic.com/" target="_blank" rel="noopener noreferrer">Anthropic Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">Reference for the underlying Claude capabilities this course applies to hardware workflows.</div><span class="tag">official</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
+</div>`,
+
 'hwai:quiz': () => `<div class="panel" id="panel-hwai-quiz">
   <div class="breadcrumb">HW + AI › <span class="bc-accent">Deployment</span> › Knowledge Check</div>
   <h1>Knowledge <span class="hl">Check</span></h1>
@@ -7683,6 +7796,19 @@ For deep sub-tasks:
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">🔄 Hand off — compaction reset <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Use when:</strong> a single agent run outgrows the window. <strong>How:</strong> summarize progress into a handoff, start fresh context seeded with it. Preserves the thread, resets the bloat.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">💾 Remember — persistent memory <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Use when:</strong> information must survive across sessions. <strong>How:</strong> write facts/summaries to durable storage; retrieve relevant ones just-in-time into context.</div></div>
   <div class="info-box green"><strong>These compose.</strong> A production agent might use Order + Filter + Compact + Offload + Isolate together. Context engineering is assembling the right combination for your system's shape and scale.</div>
+</div>`,
+
+'ctx:godeeper': () => `<div class="panel" id="panel-ctx-godeeper">
+  <div class="breadcrumb">Context Eng › <span class="bc-accent">Training</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">Official guidance on context windows, plus the cookbooks where token-budget and memory patterns get worked through in code.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">📘</div><div class="card-title"><a class="resource-link" href="https://docs.anthropic.com/en/docs/build-with-claude/context-windows" target="_blank" rel="noopener noreferrer">Anthropic — Context Windows<span class="ext-arrow">↗</span></a></div><div class="card-body">How Claude's context window works and how to think about its limits.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🍳</div><div class="card-title"><a class="resource-link" href="https://github.com/anthropics/anthropic-cookbook" target="_blank" rel="noopener noreferrer">Anthropic Cookbook<span class="ext-arrow">↗</span></a></div><div class="card-body">Worked examples of context management, summarization, and long-document handling.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">🍳</div><div class="card-title"><a class="resource-link" href="https://github.com/openai/openai-cookbook" target="_blank" rel="noopener noreferrer">OpenAI Cookbook<span class="ext-arrow">↗</span></a></div><div class="card-body">Equivalent patterns for managing context and memory with OpenAI's models.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Attention_(machine_learning)" target="_blank" rel="noopener noreferrer">Attention Mechanism<span class="ext-arrow">↗</span></a></div><div class="card-body">Why longer context costs more compute — the mechanism that scans the whole window.</div><span class="tag green">wiki</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
 </div>`,
 
 'ctx:quiz': () => `<div class="panel" id="panel-ctx-quiz">
@@ -8242,6 +8368,19 @@ git status                 <span class="c"># any unintended files staged?</span>
     <li>There are no contradictions between CLAUDE.md and the actual codebase</li>
   </ul>
   <div class="info-box green"><strong>The test:</strong> Can you hand this project to a new team member (or a fresh AI session) with CLAUDE.md + the README and have them be productive within 30 minutes? If yes, the project is healthy. If not, the checklist tells you what to fix.</div>
+</div>`,
+
+'vibe:godeeper': () => `<div class="panel" id="panel-vibe-godeeper">
+  <div class="breadcrumb">Vibe Coding › <span class="bc-accent">Practice</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">Where the term came from, the tool this course is built around, and the engineering concept it's really about managing.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Vibe_coding" target="_blank" rel="noopener noreferrer">Vibe Coding<span class="ext-arrow">↗</span></a></div><div class="card-body">Origin and definition of the term this course's title comes from.</div><span class="tag green">wiki</span></div>
+    <div class="card"><div class="card-icon">📘</div><div class="card-title"><a class="resource-link" href="https://docs.anthropic.com/en/docs/claude-code/overview" target="_blank" rel="noopener noreferrer">Claude Code Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">Official docs for the CLI agent this course's workflows assume.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🍙</div><div class="card-title"><a class="resource-link" href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener noreferrer">anthropics/claude-code<span class="ext-arrow">↗</span></a></div><div class="card-body">Issues, releases, and discussion for Claude Code itself.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Technical_debt" target="_blank" rel="noopener noreferrer">Technical Debt<span class="ext-arrow">↗</span></a></div><div class="card-body">The underlying problem this course's anti-bloat and refactoring-loop modules address.</div><span class="tag green">wiki</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
 </div>`,
 
 'vibe:quiz': () => `<div class="panel" id="panel-vibe-quiz">
@@ -8995,6 +9134,20 @@ Test file: {paste}"</div>
 4. Duplicated test logic that should be in a shared fixture
 5. Tests for deleted or changed functionality
 Report findings. I will confirm before any changes."</div>
+</div>`,
+
+'qa:godeeper': () => `<div class="panel" id="panel-qa-godeeper">
+  <div class="breadcrumb">QA Stack › <span class="bc-accent">Practice</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">Official docs for every layer of the stack this course builds — unit, integration, E2E, and the CI pipeline that runs them.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">⚙️</div><div class="card-title"><a class="resource-link" href="https://docs.github.com/en/actions" target="_blank" rel="noopener noreferrer">GitHub Actions Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">Official reference for workflows, jobs, and the CI pipelines this course covers.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🐍</div><div class="card-title"><a class="resource-link" href="https://docs.pytest.org/" target="_blank" rel="noopener noreferrer">pytest Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">The Python testing framework most unit/integration examples in this course are based on.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🎭</div><div class="card-title"><a class="resource-link" href="https://playwright.dev/" target="_blank" rel="noopener noreferrer">Playwright Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">End-to-end browser testing — the E2E layer of the testing pyramid.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🧪</div><div class="card-title"><a class="resource-link" href="https://jestjs.io/" target="_blank" rel="noopener noreferrer">Jest Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">A widely-used JavaScript testing framework, useful as a comparison point.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Continuous_integration" target="_blank" rel="noopener noreferrer">Continuous Integration<span class="ext-arrow">↗</span></a></div><div class="card-body">The practice behind this course's GitHub Actions pipelines.</div><span class="tag green">wiki</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
 </div>`,
 
 'qa:quiz': () => `<div class="panel" id="panel-qa-quiz">
@@ -9783,6 +9936,20 @@ Here is my Dockerfile:
 {paste}
 Diagnose the cause and provide the fix."</div>
   <div class="info-box"><strong>Pin versions, but not too tightly.</strong> node:20-alpine pins the major.minor but allows patch updates (security fixes). node:20.11.1-alpine3.19 pins everything — maximum reproducibility, zero automatic security patches. The right level depends on your update cadence. Most teams use the middle path: pin major.minor, allow patches.</div>
+</div>`,
+
+'docker:godeeper': () => `<div class="panel" id="panel-docker-godeeper">
+  <div class="breadcrumb">Docker + AI › <span class="bc-accent">Practice</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p class="lead">Official Docker references for everything this course's Dockerfiles, Compose setups, and CI integrations are built on.</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">🐳</div><div class="card-title"><a class="resource-link" href="https://docs.docker.com/" target="_blank" rel="noopener noreferrer">Docker Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">The official documentation home — images, Compose, networking, and security.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">📦</div><div class="card-title"><a class="resource-link" href="https://docs.docker.com/build/building/best-practices/" target="_blank" rel="noopener noreferrer">Dockerfile Best Practices<span class="ext-arrow">↗</span></a></div><div class="card-body">Official guidance on layer caching, multi-stage builds, and image size.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🧱</div><div class="card-title"><a class="resource-link" href="https://docs.docker.com/compose/" target="_blank" rel="noopener noreferrer">Docker Compose Docs<span class="ext-arrow">↗</span></a></div><div class="card-body">Reference for the Compose files this course uses for multi-container setups.</div><span class="tag">official</span></div>
+    <div class="card"><div class="card-icon">🍙</div><div class="card-title"><a class="resource-link" href="https://github.com/docker/awesome-compose" target="_blank" rel="noopener noreferrer">docker/awesome-compose<span class="ext-arrow">↗</span></a></div><div class="card-body">Real-world Compose examples across many stacks, maintained by Docker.</div><span class="tag violet">repo</span></div>
+    <div class="card"><div class="card-icon">📖</div><div class="card-title"><a class="resource-link" href="https://en.wikipedia.org/wiki/Docker_(software)" target="_blank" rel="noopener noreferrer">Docker (software)<span class="ext-arrow">↗</span></a></div><div class="card-body">History and overview of containerization and where Docker fits in.</div><span class="tag green">wiki</span></div>
+  </div>
+  <div class="info-box amber"><strong>A note on links:</strong> these point to official sources and well-known open-source projects. Docs reorganize over time — if a link has moved, search the site directly; the resource is still there.</div>
 </div>`,
 
 'docker:quiz': () => `<div class="panel" id="panel-docker-quiz">
