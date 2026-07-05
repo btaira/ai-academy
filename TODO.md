@@ -43,6 +43,11 @@
   - Kept the working `raw.githubusercontent.com` URL as-is. If the link still doesn't open for you, it's likely a transient issue (e.g. GitHub's raw-content CDN briefly lagging right after a push) rather than a wrong URL — try again in a minute, or let me know what error you actually see in the browser console.
 
   **Verification:** added the live end-to-end test screenshot (Try Jupyter successfully loading the real notebook) to the same doc: https://claude.ai/code/artifact/8ca5c360-5521-4dfe-b012-c211c1efd3e0
+- [x] LLM - Attention - "Raw file" hands-on link resolved to https://btaira.github.io/docs/notebooks/attention-hands-on.ipynb instead of the real file
+  - Root cause: the app is being viewed via GitHub Pages (`btaira.github.io`), where `src/ai-academy.html` is served from the site root rather than from `src/`. The three links I'd written as relative paths (`../docs/sources/temperature.md`, `../docs/sources/tokenization.md`, `../docs/notebooks/attention-hands-on.ipynb`) assumed the file's on-disk location, so `..` collapsed at the domain root instead of climbing into `docs/` — exactly the broken URL reported. These worked fine when opening the file directly (`file://`) locally, which is why the earlier verification pass didn't catch it.
+  - Fixed all three to absolute GitHub blob URLs (`https://github.com/btaira/ai-academy/blob/master/docs/...`), which resolve correctly regardless of how/where the HTML is hosted. Verified all three render with the correct `href` in a live browser check, and all three URLs return HTTP 200.
+
+  **Verification:** `node scripts/validate.js` passed (162/162 panels); see https://claude.ai/code/artifact/8ca5c360-5521-4dfe-b012-c211c1efd3e0
 - At Prompting - Advanced Reasoning
 - [ ] API - Add link to: https://developers.openai.com/api/docs, https://platform.claude.com/docs/en/home,
 - [ ] Scrape this article and include it somewhere most valuable: https://www.fastcompany.com/91568873/stop-asking-employees-to-adopt-ai
