@@ -37,5 +37,12 @@
   - The Hands-On info-box link now opens the notebook live in Try Jupyter (`https://jupyter.org/try-jupyter/lab/index.html?fromURL=<raw GitHub URL of docs/notebooks/attention-hands-on.ipynb>`) instead of just linking the static `.ipynb` file — one click runs it in-browser, no local Jupyter install needed. Kept a secondary "raw file" link for anyone who wants to download it into their own Jupyter instead.
 
   **Verification:** updated the same screenshot doc (re-captured the Attention panel, marked the new item with a "new" badge): https://claude.ai/code/artifact/8ca5c360-5521-4dfe-b012-c211c1efd3e0
-At Prompting - Advanced Reasoning
-- [ ] API - Add link to: https://developers.openai.com/api/docs, https://platform.claude.com/docs/en/home, 
+- [x] LLM - Attention - The link does not open properly.  The GitHub URL is wrong - it should be https://github.com/btaira/ai-academy/blob/master/docs/notebooks/attention-hands-on.ipynb.  Ensure it opens to Jupyter.org
+  - Investigated end-to-end in a real browser before changing anything. The panel's current link (`https://jupyter.org/try-jupyter/lab/index.html?fromURL=https://raw.githubusercontent.com/btaira/ai-academy/master/docs/notebooks/attention-hands-on.ipynb`) **does work** — tested live, it opens Try Jupyter and loads the notebook's real content, prompting to select a kernel (screenshot in the verification doc).
+  - Tested the suggested replacement (the `github.com/.../blob/...` URL) the same way, and it **fails**: GitHub's blob page doesn't send CORS headers, so JupyterLite's `fromURL` fetch throws `TypeError: Failed to fetch` (confirmed via console error in the test). Swapping to it would have broken the link, not fixed it.
+  - Kept the working `raw.githubusercontent.com` URL as-is. If the link still doesn't open for you, it's likely a transient issue (e.g. GitHub's raw-content CDN briefly lagging right after a push) rather than a wrong URL — try again in a minute, or let me know what error you actually see in the browser console.
+
+  **Verification:** added the live end-to-end test screenshot (Try Jupyter successfully loading the real notebook) to the same doc: https://claude.ai/code/artifact/8ca5c360-5521-4dfe-b012-c211c1efd3e0
+- At Prompting - Advanced Reasoning
+- [ ] API - Add link to: https://developers.openai.com/api/docs, https://platform.claude.com/docs/en/home,
+- [ ] Scrape this article and include it somewhere most valuable: https://www.fastcompany.com/91568873/stop-asking-employees-to-adopt-ai
