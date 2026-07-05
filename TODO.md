@@ -33,5 +33,9 @@
   - Redesigned `llm:cheatsheet`: each card now has an icon and a distinct accent-colored top border. Added a "Print / Save as PDF" button plus `@media print` rules (hides sidebar/topbar, lays cards out in a single column) — the print rules are global so they'll benefit every course's cheatsheet, not just LLM's.
 
   **Verification:** all of the above were captured live from `src/ai-academy.html` via a headless-Chromium screenshot pass (`node scripts/validate.js` also passed, 162/162 panels). See the compiled screenshot doc: https://claude.ai/code/artifact/8ca5c360-5521-4dfe-b012-c211c1efd3e0
+- [x] LLM - Attention - Have hands-on less open in https://jupyter.org/try-jupyter/lab/
+  - The Hands-On info-box link now opens the notebook live in Try Jupyter (`https://jupyter.org/try-jupyter/lab/index.html?fromURL=<raw GitHub URL of docs/notebooks/attention-hands-on.ipynb>`) instead of just linking the static `.ipynb` file — one click runs it in-browser, no local Jupyter install needed. Kept a secondary "raw file" link for anyone who wants to download it into their own Jupyter instead.
+
+  **Verification:** updated the same screenshot doc (re-captured the Attention panel, marked the new item with a "new" badge): https://claude.ai/code/artifact/8ca5c360-5521-4dfe-b012-c211c1efd3e0
 At Prompting - Advanced Reasoning
 - [ ] API - Add link to: https://developers.openai.com/api/docs, https://platform.claude.com/docs/en/home, 
