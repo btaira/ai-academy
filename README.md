@@ -14,21 +14,28 @@ xdg-open src/ai-academy.html    # Linux
 
 ## What's Inside
 
-11 courses, 148 modules of hands-on AI engineering training:
+11 courses, 162 modules of hands-on AI engineering training. Course order
+follows the learner journey: model fundamentals → communicating with it →
+managing its inputs → grounding it in data → practical synthesis →
+connecting tools → autonomous agents → applying AI to software engineering
+practice → a specialized vertical.
 
 | # | Course | Modules | Topics |
 |---|--------|---------|--------|
-| 1 | Model Context Protocol | 15 | MCP architecture, servers, security, host setup |
-| 2 | Agentic AI Systems | 15 | Agent loop, memory, tools, multi-agent, frameworks |
-| 3 | AI Skills Training | 16 | Prompting, evaluation, RAG, fine-tuning, cost |
-| 4 | RAG Deep Dive | 13 | Embeddings, chunking, hybrid search, reranking, evals |
-| 5 | Prompt Engineering | 13 | CoT, few-shot, structured output, injection defense |
-| 6 | LLM Fundamentals | 12 | Tokens, attention, training, RLHF, inference |
-| 7 | AI for Hardware Engineers | 12 | Compliance, schematic review, BOM, test data |
-| 8 | Context Engineering | 13 | Token budget, compression, memory, agent context |
-| 9 | Managing Vibe-Coded Projects | 14 | Directory structure, AGENTS.md/CLAUDE.md, bloat prevention |
-| 10 | QA Stack & GitHub Actions | 13 | Unit/integration/E2E tests, CI pipelines, AI test gen |
-| 11 | Docker with AI | 12 | Dockerfiles, Compose, session scripts, CI/CD |
+| 1 | LLM Fundamentals | 16 | Tokens, attention, sampling, quantization, local models |
+| 2 | Prompt Engineering | 14 | Zero-shot, few-shot, CoT, system prompts, optimization |
+| 3 | Context Engineering | 14 | Token budget, ordering, compression, memory, failure modes |
+| 4 | RAG Deep Dive | 14 | Embeddings, vector DBs, chunking, reranking, evaluation |
+| 5 | AI Skills Training | 17 | Prompting, evaluation, tool design, automation, ethics |
+| 6 | Model Context Protocol | 16 | Architecture, protocol, web, mobile, CLI, vendors |
+| 7 | Agentic AI Systems | 16 | Reasoning, memory, planning, tools, multi-agent, safety |
+| 8 | Managing Vibe-Coded Projects | 15 | Structure, CLAUDE.md, anti-bloat, git hygiene, refactoring |
+| 9 | QA Stack & GitHub Actions | 14 | Unit tests, integration, E2E, GitHub Actions, AI test gen |
+| 10 | Docker with AI | 13 | Dockerfile, Compose, images, scripts, AI prompts |
+| 11 | AI for Hardware Engineers | 13 | Compliance, schematic review, BOM, test data, documentation |
+
+Every course ends with a Go Deeper resource list, a scored Knowledge Check
+quiz, and a printable Quick Reference cheatsheet.
 
 ## Architecture
 
@@ -38,6 +45,15 @@ The platform is **data-driven**: adding a course means adding an entry to the `C
 
 See `docs/architecture.md` for the full technical walkthrough.
 See `docs/adding-a-course.md` to add new courses.
+
+Some panels link out to supplementary content stored alongside the app
+rather than inlined in the HTML:
+- `docs/sources/` — source notes backing a panel's external "Pro Tip" links
+- `docs/notebooks/` — runnable Jupyter notebooks for hands-on exercises (e.g. `attention-hands-on.ipynb`, also openable with one click in [Try Jupyter](https://jupyter.org/try-jupyter/lab/), no install required)
+
+These are linked with absolute `github.com/.../blob/...` URLs, not relative
+paths — the app is viewed both as a local file and via GitHub Pages, and
+relative paths resolve differently (and break) between the two.
 
 ## Browser & Device Support
 
