@@ -860,6 +860,7 @@ code.inline {
 .ca-vibe   { --accent: #B45309; --accent-dim: rgba(180,83,9,0.1); --accent-glow: rgba(180,83,9,0.15); }
 .ca-qa     { --accent: #059669; --accent-dim: rgba(5,150,105,0.1); --accent-glow: rgba(5,150,105,0.15); }
 .ca-docker { --accent: #2563EB; --accent-dim: rgba(37,99,235,0.1); --accent-glow: rgba(37,99,235,0.15); }
+.ca-learn  { --accent: #BE185D; --accent-dim: rgba(190,24,93,0.1); --accent-glow: rgba(190,24,93,0.15); }
 
 @media (max-width: 740px) {
   #sidebar { width: 210px; min-width: 210px; }
@@ -1641,6 +1642,74 @@ const COURSES = [
     { q: "How should AI assistance be reflected in formal engineering records?", options: ["It should never be mentioned","Document AI use as you would any tool or reference — noting that outputs were engineer-reviewed — to maintain traceability and accountability","Claim the engineer did everything manually","Only mention it if asked by an auditor"], correct: 1, explanation: "Just as you document the use of a reference handbook, calculator, or simulation tool, AI assistance should be noted in the engineering record — with the key fact that a qualified engineer reviewed and verified the outputs. This maintains traceability, accountability, and audit-readiness in regulated environments." },
     { q: "Current multimodal AI models reviewing a schematic image are generally MOST reliable at which task?", options: ["Measuring exact trace widths and clearances from the image","Identifying component types and recognizing standard topologies (e.g. a buck converter or op-amp gain stage)","Computing the exact currents and voltages throughout the circuit","Reading dense reference-designator text at small sizes with perfect accuracy"], correct: 1, explanation: "Vision-capable models are comparatively strong at component/topology recognition, but weak at precise visual measurement, fine print, and multi-step numerical/symbolic reasoning from an image. Any specific number or measurement an AI reports from a schematic image should be independently verified against the source file, not trusted as a measurement." },
     { q: "A compliance question requires combining a spec from two different datasheets to reach a conclusion. What should a well-built datasheet RAG answer do?", options: ["Average the two values and present a single confident number","Clearly separate what each source actually supports and flag what neither document addresses, rather than blending them into one unverifiable claim", "Ignore the second datasheet to keep the answer simple", "Decline to answer any question involving more than one document"], correct: 1, explanation: "The value of grounded RAG over plain LLM chat is precisely this: it should distinguish per-source facts from any inference layered on top, and explicitly flag gaps where the cited documents don't actually connect the way the question assumes. Silently synthesizing a confident answer across sources that don't support it is the failure mode citations are meant to prevent." },
+  ],
+},
+
+/* ──────────────────────────────────────────────────────────────
+   COURSE 12: VIDEO LIBRARY
+────────────────────────────────────────────────────────────── */
+{
+  id: 'learn',
+  title: 'Learn AI',
+  longTitle: 'Video Library',
+  icon: '📺',
+  accentClass: 'ca-learn',
+  accentColor: '#F43F5E',
+  accentDim: 'rgba(244,63,94,0.10)',
+  status: 'available',
+  description: 'Curated short videos on AI fundamentals — what AI is, how LLMs work, prompting, agents, building with AI, and the big questions ahead.',
+  moduleTags: ['Foundations', 'LLMs', 'Prompting', 'Agents', 'Ethics'],
+  sections: [
+    {
+      label: 'Foundations',
+      modules: [
+        { id: 'intro',     icon: '🤔', title: 'What Is AI?',        badge: '1' },
+        { id: 'math',      icon: '🔢', title: 'AI = Math & Data',   badge: '2' },
+        { id: 'neural',    icon: '🧬', title: 'Neural Networks',    badge: '3' },
+        { id: 'llmbasics', icon: '🗝', title: 'LLM Basics',         badge: '4' },
+      ]
+    },
+    {
+      label: 'Using AI Well',
+      modules: [
+        { id: 'limits',    icon: '⚠️', title: 'Limits & Trust',    badge: '5' },
+        { id: 'prompting', icon: '💬', title: 'Better Prompting',   badge: '6' },
+      ]
+    },
+    {
+      label: 'Tools & Building',
+      modules: [
+        { id: 'tools',     icon: '🔧', title: 'AI + Tools',         badge: '7' },
+        { id: 'building',  icon: '🏗', title: 'Building with AI',   badge: '8' },
+        { id: 'safety',    icon: '🛡', title: 'Staying Safe',       badge: '9' },
+      ]
+    },
+    {
+      label: 'The Big Picture',
+      modules: [
+        { id: 'future',    icon: '🔭', title: 'Big Questions',      badge: '10' },
+      ]
+    },
+    {
+      label: 'Reference',
+      modules: [
+        { id: 'godeeper',   icon: '🔗', title: 'Go Deeper',         badge: '' },
+        { id: 'quiz',       icon: '🎯', title: 'Knowledge Check',   badge: '' },
+        { id: 'cheatsheet', icon: '📋', title: 'Quick Reference',   badge: '' },
+      ]
+    }
+  ],
+  quiz: [
+    { q: "What is the key difference between AI and Machine Learning?", options: ["They are the same thing","ML is a subset of AI where systems learn patterns from data, rather than being explicitly programmed","AI predates ML by centuries and has nothing in common with it","ML only works for image recognition tasks"], correct: 1, explanation: "Machine Learning is a type of AI where systems improve automatically through experience (data). Not all AI uses ML — rule-based expert systems are AI without being ML. But all modern LLMs are ML: they learned their weights from training data." },
+    { q: "How does AI 'turn the world into math'?", options: ["By memorizing every number ever written on the internet","By converting real-world inputs (text, images, audio) into numerical vectors called embeddings that capture meaning mathematically","By solving complex differential equations on raw sensory data","By downloading structured databases and querying them like SQL"], correct: 1, explanation: "The fundamental trick of modern AI is representing everything — words, images, sounds — as points in a high-dimensional numerical space (embeddings). Similar things end up near each other mathematically. This lets neural networks compare, search, and generate across any modality using math." },
+    { q: "What is the 'black box problem' in neural networks?", options: ["Neural networks require special black hardware to run","It is difficult to understand why a neural network made a specific decision — the reasoning is distributed across millions of numerical weights","Neural networks only work in dark server rooms","Black box is a marketing term for very fast neural networks"], correct: 1, explanation: "Even when a neural network produces the right answer, the 'why' is distributed across millions of weights in ways humans can't easily read. Interpretability research — like mechanistic interpretability — tries to reverse-engineer what's happening inside." },
+    { q: "What is model sycophancy?", options: ["When a model refuses to answer controversial questions","When a model tends to agree with the user even when the user is wrong, mirroring their stated beliefs to appear helpful","When a model generates duplicated output","When a model runs more slowly than expected"], correct: 1, explanation: "Sycophancy emerges from training on human approval signals: the model learns that agreeing gets positive feedback. The result is a tendency to validate user positions, change its mind when pushed back on, and tell people what they want to hear — a serious issue for high-stakes use." },
+    { q: "Why can't a standard LLM browse the internet?", options: ["The internet is too large to fit in a context window","LLMs have fixed weights after training and no mechanism to make network requests — they can only work with what is in their context","Browsing requires a specialized GPU that most models do not support","Only GPT models from OpenAI can browse the internet"], correct: 1, explanation: "A base LLM generates text purely from its frozen training weights — there is no built-in mechanism to fetch URLs or query APIs. Real-time data access requires external tool integration, which is exactly what agent harnesses and protocols like MCP add on top of the raw model." },
+    { q: "What does RLHF stand for, and what problem does it solve?", options: ["Recursive Large Hallucination Framework — it reduces hallucinations","Reinforcement Learning from Human Feedback — it aligns a model's behavior with human preferences for helpfulness and safety","Real-time Language Hybrid Format — it speeds up generation","Remote Learning from Historical Files — it expands the training dataset"], correct: 1, explanation: "RLHF is how raw base models — which can complete text but are not inherently helpful or safe — get transformed into assistants. Human raters rank model responses; a reward model learns those preferences; the LLM is then optimized with RL to score highly on that reward model." },
+    { q: "What is an agent harness?", options: ["A UI skin that makes a chatbot look more professional","The scaffolding that lets an LLM call external tools, observe results, and loop — turning it from a text responder into an autonomous actor","A safety filter that blocks harmful outputs","A compression technique for reducing model size"], correct: 1, explanation: "An agent harness (also called a host or agentic framework) is the runtime that lets an LLM use tools: search, code execution, file read/write, APIs. The model outputs a tool-call intention, the harness executes it, feeds back the result, and the model continues — enabling multi-step autonomous work." },
+    { q: "What is the main security risk of AI voice cloning?", options: ["It makes background noise louder in recordings","A few seconds of someone's voice can generate convincing synthetic speech that can defeat voice-based biometric authentication","Voice cloning requires physical access to the target's phone","It only works for public figures with large amounts of recorded speech"], correct: 1, explanation: "Modern voice cloning can generate convincing, real-time synthetic speech from a short sample. This is weaponized in scams (fake CEO calls, grandparent scams) and can defeat voice biometrics used by banks. Awareness and layered authentication are the main defenses." },
+    { q: "Why does understanding AI as a 'probability machine' matter for everyday users?", options: ["It means AI is always wrong","It means AI generates the most statistically plausible continuation — not verified truth — which explains hallucination, inconsistency, and why grounding is so important","It means users need to do probability math to use AI effectively","Probability only matters when using reasoning models"], correct: 1, explanation: "Understanding that AI samples from distributions rather than retrieving facts is the mental model that explains most AI behaviors: confident hallucinations, sensitivity to wording, variability with temperature, and why retrieval-augmented systems are safer for factual tasks." },
+    { q: "What is transfer learning, and why does it matter for AI builders?", options: ["Moving trained weights from one server to another","Starting from a model pre-trained on broad data and fine-tuning it for a specific task — dramatically cheaper and more effective than training from scratch","Teaching AI to translate between programming languages","Transferring a model to a different operating system"], correct: 1, explanation: "Transfer learning is why you don't need massive compute to build a useful AI product. A pre-trained model already 'knows' language, reasoning, and world knowledge. Fine-tuning adapts that knowledge to a specific task using a fraction of the compute — the standard pattern for nearly all practical AI development." },
   ],
 },
 
@@ -5945,6 +6014,7 @@ Output a numbered list. For each issue: the line, the risk, and the fix. [FORMAT
       <strong>One strong rewrite:</strong> "You are a conversion copywriting reviewer. Evaluate this landing page headline and subhead against three criteria: clarity of the value proposition, presence of a concrete benefit (not just an adjective), and fit with a technical, skeptical B2B audience. Context: this is for a developer tools product; the reader has seen dozens of similar pitches and tunes out hype. Constraints: do not suggest a full rewrite, only flag what's weak and why. Format: one short paragraph per criterion, ending with a single PASS/REVISE verdict."
     </div>
   </div>
+  <div class="info-box"><strong>📺 Watch:</strong> <a class="resource-link" href="https://www.instagram.com/reel/DU6LaJejoIw/" target="_blank" rel="noopener noreferrer">Put Your Question First: A Prompting Trick<span class="ext-arrow">↗</span></a> — A simple structural change that measurably improves response quality — a quick demo of the kind of specificity this module teaches.</div>
   <div class="info-box amber"><strong>Self-check:</strong> If you can't point to the sentence in your prompt that supplies each of the five components, the model is filling that gap with a guess — and guesses are where quality variance comes from.</div>
 </div>`,
 
@@ -6077,6 +6147,7 @@ the 5V rail (input 12V, load up to 2A).</div>
     <li>Simple lookup, classification, or formatting task? Skip CoT entirely — it adds latency and cost with no accuracy benefit on tasks that don't require multi-step reasoning.</li>
   </ul>
   <h2>Try It Yourself</h2>
+  <div class="info-box"><strong>📺 Watch:</strong> <a class="resource-link" href="https://www.instagram.com/reel/DMUOqNduRMD/" target="_blank" rel="noopener noreferrer">Chain of Thought: Better AI Reasoning<span class="ext-arrow">↗</span></a> — The intuition behind why showing work reduces errors, before you run the exercise above.</div>
   <div class="info-box amber"><strong>Exercise:</strong> Take this prompt: "A battery pack has 4 cells in series, each rated 3.7V nominal and 4.2V full charge. The pack feeds a buck converter requiring a minimum 12V input to stay in regulation. At what state of charge does the pack drop out of regulation?" Run it once with no CoT instruction, and once with "Let's think step by step. Show your per-cell and pack-level voltage math." On a reasoning model with thinking enabled, compare the visible answers — is the explicit instruction still changing anything, or is the model already reasoning internally either way? That comparison is the real lesson of this module.</div>
 </div>`,
 
@@ -6105,6 +6176,7 @@ raising the pool size. Mitigated by rolling back the deploy.</div>
 List specific problems — don't just say "looks good."</div>
   <div class="code-block"><span class="code-label">// TURN 3 — REVISE</span>Now rewrite the summary, fixing every problem you identified above.
 Output only the final version.</div>
+  <div class="info-box"><strong>📺 Watch:</strong> <a class="resource-link" href="https://www.instagram.com/p/DMXwPpTuPZ-/" target="_blank" rel="noopener noreferrer">Reasoning Models: How They Think<span class="ext-arrow">↗</span></a> — How native extended thinking differs from prompted CoT, and when each is worth using — directly relevant to this module's self-critique loop.</div>
   <div class="info-box"><strong>Run this yourself:</strong> The critique turn is where the value comes from — a model asked to critique against explicit criteria will reliably find real issues (jargon like "connection pool," missing customer impact framing, word count) that it didn't catch while generating the first draft. Skipping turn 2 and asking directly for "the best version" produces a noticeably weaker result than this generate→critique→revise sequence.</div>
 </div>`,
 
@@ -6447,6 +6519,7 @@ system=[{"type": "text", "text": LONG_SYSTEM_PROMPT,
     <div class="card"><div class="card-icon">📉</div><div class="card-title">Quantization &amp; Inference</div><div class="card-body">How models get smaller and faster — the same idea that makes local models possible, applied at scale.</div><span class="tag green">smaller &amp; faster</span></div>
     <div class="card"><div class="card-icon">🎓</div><div class="card-title">Training &amp; Alignment</div><div class="card-body">How pre-training, fine-tuning, and RLHF turn raw text prediction into a helpful assistant — and where it still breaks.</div><span class="tag">training</span></div>
   </div>
+  <div class="info-box"><strong>📺 Watch:</strong> <a class="resource-link" href="https://www.youtube.com/watch?v=Ie7qxG9os1U" target="_blank" rel="noopener noreferrer">What is AI vs Machine Learning?<span class="ext-arrow">↗</span></a> — A clear distinction between the two terms most people conflate, before you start on the technical internals.</div>
   <div class="info-box green"><strong>Why this matters for builders:</strong> Understanding the machinery explains the behavior — why models hallucinate, why context windows have limits, why tokenization causes odd failures, why temperature changes output. This knowledge makes you far more effective at prompting, RAG, and debugging.</div>
 </div>`,
 
@@ -6498,6 +6571,7 @@ enc = tiktoken.get_encoding(<span class="s">"o200k_base"</span>)
 ids = enc.encode(<span class="s">"The eFuse subsystem's overcurrent threshold is 12.5A."</span>)
 print(len(ids), ids)
 print(enc.decode(ids[:3]))   <span class="c"># round-trip any slice back to text</span></div>
+  <div class="info-box"><strong>📺 Watch:</strong> <a class="resource-link" href="https://www.instagram.com/p/C95pOcaSQAf/" target="_blank" rel="noopener noreferrer">How ChatGPT Tokenizes Your Text<span class="ext-arrow">↗</span></a> — A quick visual demo of tokenization in action — useful intuition before writing prompts with unusual punctuation or technical terms.</div>
   <div class="info-box amber"><strong>Practical takeaway:</strong> When estimating cost or context usage, count tokens, not words — use the provider's tokenizer (tiktoken for OpenAI, the Messages API count_tokens endpoint for Claude) or the rule of thumb (~0.75 words/token). And if a model fails at a character-level task, tokenization is often the culprit.</div>
 </div>`,
 
@@ -6604,6 +6678,7 @@ output = 0.46*[2,5] + 0.17*[0,1] + 0.37*[4,1]
     <tr><td><span class="hl">MLA</span> (Multi-head Latent Attention)</td><td>Compresses K/V into a small shared latent vector before caching, then reconstructs per-head — big cache savings with little quality loss</td><td>DeepSeek-V2/V3</td></tr>
   </table>
   <div class="info-box green"><strong>Why this is in an inference module too:</strong> GQA and MLA exist purely to shrink the KV cache (covered later) — the memory cost of remembering every token's Key and Value during generation. Smaller KV cache means longer context and higher throughput per GPU, which is why nearly every current frontier model uses one of these variants instead of plain MHA. For a walkthrough of exactly what gets cached and why it can be a 5x+ speedup in practice, see <a class="resource-link" href="https://huggingface.co/blog/not-lain/kv-caching" target="_blank" rel="noopener noreferrer">KV Caching Explained<span class="ext-arrow">↗</span></a>.</div>
+  <div class="info-box"><strong>📺 Watch:</strong> <a class="resource-link" href="https://www.youtube.com/watch?v=GC3E8rz45Ts" target="_blank" rel="noopener noreferrer">How Transformers Work: Deep Dive<span class="ext-arrow">↗</span></a> — A visual walkthrough of attention, positional encoding, and the full forward pass — a strong complement to the math in this module.</div>
   <div class="info-box amber"><strong>Pro Tip — see the variants in real models:</strong> Sebastian Raschka's <a class="resource-link" href="https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison" target="_blank" rel="noopener noreferrer">"The Big LLM Architecture Comparison"<span class="ext-arrow">↗</span></a> walks through which attention variant (MHA/GQA/MLA) and other architectural choices each current frontier model actually uses, side by side.</div>
 </div>`,
 
@@ -6713,6 +6788,7 @@ Target:   "Paris"
   <p style="color:var(--muted2);margin-bottom:12px;">The base model can complete text but doesn't reliably follow instructions. SFT trains it on curated examples of instructions paired with high-quality responses — teaching it the assistant behavior: answer questions, follow directions, use the right format.</p>
   <h2>Stage 3 — Alignment (RLHF)</h2>
   <p style="color:var(--muted2);margin-bottom:12px;">The final stage aligns the model with human preferences for helpfulness, honesty, and harmlessness — covered in depth in the next module.</p>
+  <div class="info-box"><strong>📺 Watch:</strong> <a class="resource-link" href="https://www.youtube.com/watch?v=Hf-FPnYqn5Q" target="_blank" rel="noopener noreferrer">Model Training: How AI Learns From Data<span class="ext-arrow">↗</span></a> — The training loop explained visually — forward pass, loss, backprop — before the more advanced alignment techniques in the next module.</div>
   <div class="info-box amber"><strong>Why knowledge has a cutoff:</strong> The model's factual knowledge is frozen at the moment pre-training data was collected. It can't know events after that "knowledge cutoff" unless given the information at runtime (via search or RAG). This is a direct consequence of how training works — the weights don't update after deployment.</div>
 </div>`,
 
@@ -6743,6 +6819,7 @@ Target:   "Paris"
     <li><div class="cap-icon">✅</div><div class="cap-text"><strong style="color:var(--green)">Improves</strong><span>Helpfulness, instruction-following, tone, willingness to decline harmful requests, calibrated hedging.</span></div></li>
     <li><div class="cap-icon">⚠️</div><div class="cap-text"><strong style="color:var(--amber)">Doesn't eliminate</strong><span>Hallucination, knowledge cutoff, reasoning errors. Alignment shapes behavior and values — it doesn't make the model omniscient or perfectly truthful.</span></div></li>
   </ul>
+  <div class="info-box"><strong>📺 Watch:</strong> <a class="resource-link" href="https://www.instagram.com/p/C8IhTxUSFcg/" target="_blank" rel="noopener noreferrer">RLHF: How ChatGPT Learns From Feedback<span class="ext-arrow">↗</span></a> — A short explainer on the feedback loop that turns a base model into an assistant — the intuition behind this module's alignment pipeline.</div>
   <div class="info-box green"><strong>Why "helpful, honest, harmless" recurs:</strong> These three goals (often called HHH) are the north star of alignment. Much of what makes a model pleasant and safe to use — versus a raw next-token predictor — comes from this stage.</div>
 </div>`,
 
@@ -6929,6 +7006,7 @@ step 3 -> "...against overcurrent" -> sample -> " conditions"
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">🎭 Sycophancy &amp; suggestibility <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Why:</strong> Trained partly on human approval, models can over-agree, mirror a user's stated (wrong) belief, or be steered by leading questions. <strong>Mitigation:</strong> Ask neutrally; request the model to argue both sides; don't telegraph the answer you want if you want an honest assessment.</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">🔓 Prompt injection &amp; jailbreaks <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Why:</strong> The model can't fundamentally distinguish trusted instructions from untrusted content in its context. <strong>Mitigation:</strong> Structural separation, input filtering, least privilege, human-in-the-loop (covered in the Prompt Engineering course).</div></div>
   <div class="accordion"><div class="acc-header" onclick="toggleAcc(this)">⚖️ Bias &amp; uneven knowledge <span class="acc-arrow">▾</span></div><div class="acc-body"><strong>Why:</strong> Models reflect patterns and imbalances in their training data — including societal biases and uneven coverage across topics, languages, and domains. <strong>Mitigation:</strong> Evaluate across groups and edge cases; don't assume uniform competence across all domains; keep humans in the loop for consequential decisions.</div></div>
+  <div class="info-box"><strong>📺 Watch:</strong> <a class="resource-link" href="https://www.youtube.com/watch?v=u8tjByJtFrg" target="_blank" rel="noopener noreferrer">AI Hallucinations Explained: Deep Dive<span class="ext-arrow">↗</span></a> — A thorough explanation of why models hallucinate — the most important failure mode for anyone building with AI.</div>
   <div class="info-box green"><strong>The throughline:</strong> Every failure mode traces back to what an LLM fundamentally is — a probabilistic pattern-completer trained on a fixed corpus. It is not a database, a calculator, or a reasoning engine with ground truth. Used with that understanding — grounded, verified, and supervised where it matters — it's extraordinarily powerful.</div>
 </div>`,
 
@@ -10067,6 +10145,384 @@ Diagnose the cause and provide the fix."</div>
   </div>
 </div>`,
 
+
+// ─── Video Library ─────────────────────────────────────────────────────────
+
+'learn:intro': () => `<div class="panel" id="panel-learn-intro">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Foundations</span> › What Is AI?</div>
+  <h1>What Is <span class="hl">AI?</span></h1>
+  <p>Before the code, before the APIs, before the jargon — what actually <em>is</em> artificial intelligence? These videos give you the clearest non-technical foundation available for free.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>What is AI vs Machine Learning?</h3>
+      <p>The clearest distinction between AI, ML, and deep learning. Most people conflate these — this fixes that in under 10 minutes.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=Ie7qxG9os1U" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>What Is Generative AI?</h3>
+      <p>A quick visual explanation of what generative AI does differently from classification or prediction models.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C9nM6b0SYAQ/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>AI Explained: The Big Picture</h3>
+      <p>Why AI is a general-purpose technology — not a product category — and what that means for how it spreads.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=cdiD-9MMpb0" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+  </div>
+  <div class="info-box">
+    <strong>After watching:</strong> You should be able to explain the difference between narrow AI, machine learning, deep learning, and generative AI to someone who has never written a line of code. If you can't yet, rewatch and take notes.
+  </div>
+</div>`,
+
+'learn:math': () => `<div class="panel" id="panel-learn-math">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Foundations</span> › AI = Math &amp; Data</div>
+  <h1>AI = <span class="hl">Math &amp; Data</span></h1>
+  <p>At its core, machine learning is optimization over data. These videos make that concrete — no math degree required.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>But What Is a Neural Network?</h3>
+      <p>3Blue1Brown's definitive visual introduction to how weights, activations, and gradient descent actually work.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=aircAruvnKk" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>Why Data Quality Beats Data Quantity</h3>
+      <p>The most common misconception about training AI models — and why "more data" isn't always the answer.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C7_jTsSy0tD/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>Model Training: How AI Learns</h3>
+      <p>The training loop explained visually — forward pass, loss function, backpropagation, and parameter updates.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=Hf-FPnYqn5Q" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+  </div>
+  <div class="info-box amber">
+    <strong>Key idea:</strong> A model is just a very large function, and training is the process of finding the parameter values (weights) that make that function output what you want, given inputs you've already labeled. Everything else — transformers, attention, fine-tuning — is a refinement of this loop.
+  </div>
+</div>`,
+
+'learn:neural': () => `<div class="panel" id="panel-learn-neural">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Foundations</span> › Neural Networks</div>
+  <h1>Neural <span class="hl">Networks</span></h1>
+  <p>Neural networks are the architecture behind every modern AI breakthrough. These videos explain how they work — from basic perceptrons to the transformer that powers GPT and Claude.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>Neural Networks: Zero to Hero</h3>
+      <p>Andrej Karpathy's legendary intro — builds a neural net from scratch in Python. More technical, but unbeatable as a foundation.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=VMj-3S1tku0" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>How Transformers Work: Deep Dive</h3>
+      <p>A visual walkthrough of the full transformer architecture — attention, positional encoding, encoder-decoder design.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=GC3E8rz45Ts" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>Attention Is All You Need — Explained</h3>
+      <p>The 2017 paper that changed everything, explained in under 2 minutes without equations.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C8KlmK3SGXZ/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+  </div>
+  <div class="info-box green">
+    <strong>Why the transformer matters:</strong> Before 2017, NLP was dominated by RNNs that processed tokens sequentially. The transformer's parallel attention mechanism let models scale to billions of parameters on modern hardware — which is why every frontier LLM today is a transformer variant.
+  </div>
+</div>`,
+
+'learn:llmbasics': () => `<div class="panel" id="panel-learn-llmbasics">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Foundations</span> › LLM Basics</div>
+  <h1>LLM <span class="hl">Basics</span></h1>
+  <p>What makes a large language model different from earlier AI systems? These videos explain tokens, context windows, and next-token prediction — the building blocks of everything you'll use.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>How ChatGPT Tokenizes Your Text</h3>
+      <p>A visual demo of tokenization — why weird punctuation breaks models and why "token count" is not word count.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C95pOcaSQAf/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>Intro to Large Language Models</h3>
+      <p>Andrej Karpathy's 1-hour masterclass on what LLMs are, how they're trained, and what they can and can't do — the single best overview available.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=zjkBMFhNj_g" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>Context Window vs Memory</h3>
+      <p>The difference between what's in-context (temporary), fine-tuned (permanent), and what RAG retrieves (on demand).</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C9SZiJJSEPR/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+  </div>
+  <div class="info-box">
+    <strong>Core insight:</strong> LLMs don't retrieve answers — they predict the most likely continuation of your prompt given everything they've learned. That's why context is so powerful: you're steering the probability distribution, not querying a database.
+  </div>
+</div>`,
+
+'learn:limits': () => `<div class="panel" id="panel-learn-limits">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Using AI Well</span> › Limits &amp; Trust</div>
+  <h1>Limits &amp; <span class="hl">Trust</span></h1>
+  <p>AI systems fail in specific, predictable ways. Knowing the failure modes makes you a more effective — and safer — AI user.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>AI Hallucinations Explained</h3>
+      <p>Why models confidently output false information — the technical cause, how to detect it, and what to do about it.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=u8tjByJtFrg" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>AI Bias: Where It Comes From</h3>
+      <p>How training data encodes historical bias — and why "neutral" AI is harder than it sounds.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C8GnBv2SYMV/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>When to Trust AI (and When Not To)</h3>
+      <p>A practical framework for knowing when AI output is likely reliable vs. when to always verify independently.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C9JqKB_SGQM/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+  </div>
+  <div class="info-box red">
+    <strong>Trust calibration:</strong> AI is most trustworthy for synthesis, summarization, and generation — least trustworthy for specific facts, numbers, citations, and recent events. The failure modes are consistent; once you know them, you can build appropriate verification habits rather than either over-trusting or dismissing AI entirely.
+  </div>
+</div>`,
+
+'learn:prompting': () => `<div class="panel" id="panel-learn-prompting">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Using AI Well</span> › Better Prompting</div>
+  <h1>Better <span class="hl">Prompting</span></h1>
+  <p>Prompting is the fastest-returning skill in AI. These videos focus on the habits that separate casual users from power users.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>Put Your Question First</h3>
+      <p>A simple structural change — question before context — that measurably improves response quality.</p>
+      <a class="resource-link" href="https://www.instagram.com/reel/DU6LaJejoIw/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>Chain of Thought: Better AI Reasoning</h3>
+      <p>Why asking the model to show its work reduces errors — the intuition behind CoT prompting.</p>
+      <a class="resource-link" href="https://www.instagram.com/reel/DMUOqNduRMD/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>Reasoning Models: How They Think</h3>
+      <p>How extended thinking differs from prompted CoT — and when to use a reasoning model vs. a standard one.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/DMXwPpTuPZ-/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>5 Prompting Mistakes to Avoid</h3>
+      <p>The most common prompting errors — vague instructions, missing context, and asking for too many things at once.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C9_cKjgSqlE/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+  </div>
+  <div class="info-box green">
+    <strong>The prompting mindset:</strong> You are not searching a database. You are collaborating with a system that predicts what a helpful response looks like — given everything you've told it. Better context produces better predictions. That's the whole game.
+  </div>
+</div>`,
+
+'learn:tools': () => `<div class="panel" id="panel-learn-tools">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Tools &amp; Building</span> › AI + Tools</div>
+  <h1>AI + <span class="hl">Tools</span></h1>
+  <p>LLMs become far more powerful when connected to tools — search, code execution, APIs, databases. These videos explain how that works and what it enables.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>Function Calling Explained</h3>
+      <p>How AI models call external tools — the mechanism behind "Browse the web" and "Run code" in ChatGPT and Claude.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C9MvjHJSA3j/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>MCP: Model Context Protocol</h3>
+      <p>Anthropic's standard for connecting AI assistants to external data sources and tools — the USB-C of AI integrations.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=kQmXtrmQ5Zg" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>RAG: Retrieval-Augmented Generation</h3>
+      <p>How to give AI models access to your own documents — and why this beats fine-tuning for most use cases.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C9I5NrXS_FI/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+  </div>
+  <div class="info-box">
+    <strong>Why tools matter:</strong> A bare LLM has frozen knowledge and no access to live data. Tools — web search, code execution, databases, APIs — turn it into an agent that can act on the world, not just describe it.
+  </div>
+</div>`,
+
+'learn:building': () => `<div class="panel" id="panel-learn-building">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Tools &amp; Building</span> › Building with AI</div>
+  <h1>Building with <span class="hl">AI</span></h1>
+  <p>These videos are for people who want to go beyond using AI to actually building with it — products, workflows, and systems.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>Building AI Apps with the Claude API</h3>
+      <p>A practical walk-through of the Messages API, system prompts, multi-turn conversations, and tool use — in real code.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=T-D1OfcDW1M" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>AI Agents: Beyond Single Prompts</h3>
+      <p>What makes a system "agentic" — planning, memory, tool use, and multi-step execution without human checkpoints.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C9P7xfOSSXl/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>Vibe Coding: What It Is and Isn't</h3>
+      <p>AI-assisted coding explained — the workflow, the strengths, and where it breaks down without engineering discipline.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/DJVGAaBSf2M/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+  </div>
+  <div class="info-box amber">
+    <strong>The builder's mindset:</strong> Building with AI is less about writing the perfect prompt and more about system design — what data does the model need, what tools can it call, how do you evaluate its outputs, and where do humans stay in the loop?
+  </div>
+</div>`,
+
+'learn:safety': () => `<div class="panel" id="panel-learn-safety">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Tools &amp; Building</span> › Staying Safe</div>
+  <h1>Staying <span class="hl">Safe</span></h1>
+  <p>AI raises real privacy, security, and data concerns. These videos help you understand the risks so you can make informed choices — not fearful ones.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>What AI Companies Do with Your Data</h3>
+      <p>A plain-language breakdown of training data policies across major AI providers — and what "opt out" actually means.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C9WrKvDyWfv/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>Prompt Injection: A Real Attack</h3>
+      <p>How attackers hijack AI systems by embedding malicious instructions in inputs the model processes — and why this matters for builders.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C_SHqUTSyXY/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>AI Safety vs AI Security</h3>
+      <p>The difference between alignment safety (the model doing what you want) and cybersecurity (defending AI systems from attack).</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C8fPhvtyaMz/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+  </div>
+  <div class="info-box red">
+    <strong>Practical rule:</strong> Never paste into an AI chat anything you wouldn't publish publicly — API keys, customer data, proprietary algorithms, personal health information. Assume everything you type is logged, reviewed, and potentially used in training unless you've verified otherwise.
+  </div>
+</div>`,
+
+'learn:future': () => `<div class="panel" id="panel-learn-future">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">The Big Picture</span> › Big Questions</div>
+  <h1>Big <span class="hl">Questions</span></h1>
+  <p>Where is AI actually heading? These videos cut through the hype and fear to look clearly at the open questions that matter most.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>Situational Awareness: The Decade Ahead</h3>
+      <p>Leopold Aschenbrenner's analysis of AGI timelines, compute scaling, and the geopolitical stakes — long, dense, important.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=zdbVtZIn9IM" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>AI and Jobs: What the Research Shows</h3>
+      <p>Not "will AI take my job" — but which tasks, which roles, and on what timeline? The evidence so far.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C9klNoGSmxg/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📸</div>
+      <h3>AGI: What It Would Actually Mean</h3>
+      <p>Stripping away the sci-fi and defining what artificial general intelligence means — and why definitions matter for policy.</p>
+      <a class="resource-link" href="https://www.instagram.com/p/C8vLbHuy0qS/" target="_blank" rel="noopener noreferrer">Watch on Instagram ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>RLHF: How ChatGPT Learns From Feedback</h3>
+      <p>Anthropic's Constitutional AI and the broader alignment research agenda — making AI safer at the training stage.</p>
+      <a class="resource-link" href="https://www.youtube.com/watch?v=PBH2nImUM5c" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+    </div>
+  </div>
+  <div class="info-box">
+    <strong>The honest answer:</strong> Nobody knows exactly how fast AI will improve or what that means for society. The people building it disagree. What's clear: this technology is general-purpose, it's accelerating, and the decisions made in the next few years will matter for decades. Staying informed beats both panic and complacency.
+  </div>
+</div>`,
+
+'learn:godeeper': () => `<div class="panel" id="panel-learn-godeeper">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Reference</span> › Go Deeper</div>
+  <h1>Go <span class="hl">Deeper</span></h1>
+  <p>Curated resources to continue your learning beyond the short-form videos in this library.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📚</div>
+      <h3>3Blue1Brown: Neural Networks</h3>
+      <p>The best visual introduction to neural networks and backpropagation on the internet. Math-forward but approachable.</p>
+      <a class="resource-link" href="https://www.3blue1brown.com/topics/neural-networks" target="_blank" rel="noopener noreferrer">3blue1brown.com ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">🎓</div>
+      <h3>fast.ai Practical Deep Learning</h3>
+      <p>The top-down practical course — build things first, understand theory second. Free, highly respected, coding-forward.</p>
+      <a class="resource-link" href="https://course.fast.ai" target="_blank" rel="noopener noreferrer">course.fast.ai ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📖</div>
+      <h3>Anthropic's Interpretability Research</h3>
+      <p>Primary research on understanding what happens inside neural networks — features, circuits, and emergent behaviors.</p>
+      <a class="resource-link" href="https://www.anthropic.com/research" target="_blank" rel="noopener noreferrer">anthropic.com/research ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">▶️</div>
+      <h3>Andrej Karpathy: Zero to Hero</h3>
+      <p>Build GPT from scratch in Python — the most thorough hands-on LLM tutorial available for free.</p>
+      <a class="resource-link" href="https://karpathy.ai/zero-to-hero.html" target="_blank" rel="noopener noreferrer">karpathy.ai ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📰</div>
+      <h3>Import AI Newsletter</h3>
+      <p>Jack Clark's weekly roundup of AI research — signal over noise, read by researchers and practitioners alike.</p>
+      <a class="resource-link" href="https://jack-clark.net" target="_blank" rel="noopener noreferrer">jack-clark.net ↗</a>
+    </div>
+    <div class="card">
+      <div style="font-size:1.6rem;margin-bottom:8px;">📊</div>
+      <h3>AI Index Report (Stanford HAI)</h3>
+      <p>Annual data-driven report on AI progress, adoption, economics, and policy — the authoritative reference for numbers.</p>
+      <a class="resource-link" href="https://aiindex.stanford.edu" target="_blank" rel="noopener noreferrer">aiindex.stanford.edu ↗</a>
+    </div>
+  </div>
+</div>`,
+
+'learn:quiz': () => `<div class="panel" id="panel-learn-quiz">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Reference</span> › Knowledge Check</div>
+  <h1>Knowledge <span class="hl">Check</span></h1>
+  <p>Test your understanding of the core concepts from the Video Library.</p>
+  <div id="quiz-container-learn">
+    <div id="quiz-question-learn" class="quiz-question"></div>
+    <div id="quiz-options-learn" class="quiz-options"></div>
+    <div id="quiz-feedback-learn" class="quiz-feedback" style="display:none;"></div>
+    <button id="quiz-next-learn" class="quiz-next-btn" style="display:none;" onclick="quizNext('learn')">Next Question →</button>
+    <div class="quiz-score-line">Score: <span id="quiz-score-learn">0 / 0</span></div>
+  </div>
+  <div id="quiz-complete-learn" style="display:none;">
+    <div class="info-box green"><strong>Quiz complete!</strong> Check your score above. Review any modules where the reasoning felt uncertain.</div>
+  </div>
+</div>`,
+
+'learn:cheatsheet': () => `<div class="panel" id="panel-learn-cheatsheet">
+  <div class="breadcrumb">Video Library › <span class="bc-accent">Reference</span> › Quick Reference</div>
+  <h1>Quick <span class="hl">Reference</span></h1>
+  <p>The core vocabulary and mental models from the Video Library — condensed for review.</p>
+  <div class="cheat-grid">
+    <div class="cheat-card"><h3>The AI Hierarchy</h3><ul class="checklist"><li>AI — any system that mimics intelligence</li><li>ML — AI that learns from data</li><li>Deep Learning — ML via neural nets</li><li>LLM — deep learning on language</li><li>GenAI — LLMs that generate content</li></ul></div>
+    <div class="cheat-card"><h3>How LLMs Work</h3><ul class="checklist"><li>Tokenize input into sub-word units</li><li>Embed tokens into vector space</li><li>Attention: each token attends to all others</li><li>Predict next token via softmax</li><li>Repeat until done or max tokens</li></ul></div>
+    <div class="cheat-card"><h3>Failure Modes</h3><ul class="checklist"><li>Hallucination: confident false output</li><li>Knowledge cutoff: no post-training facts</li><li>Context limit: forgets outside the window</li><li>Bias: reflects training data skews</li><li>Sycophancy: agrees to avoid conflict</li></ul></div>
+    <div class="cheat-card"><h3>Prompting Basics</h3><ul class="checklist"><li>State the task before the context</li><li>Give role, goal, format, constraints</li><li>Ask for step-by-step reasoning</li><li>Critique and revise iteratively</li><li>One task per prompt when possible</li></ul></div>
+    <div class="cheat-card"><h3>Trust Rules</h3><ul class="checklist"><li>Verify specific facts and numbers</li><li>Never trust citations without checking</li><li>Great for synthesis and brainstorming</li><li>Weak on recent events</li><li>Add RAG for proprietary knowledge</li></ul></div>
+    <div class="cheat-card"><h3>Safety Checklist</h3><ul class="checklist"><li>No API keys in prompts</li><li>No customer PII in AI chats</li><li>Check provider data-use policy</li><li>Beware prompt injection in pipelines</li><li>Humans in the loop for high-stakes decisions</li></ul></div>
+  </div>
+</div>`,
 
 }; // end PANEL_CONTENT
 
