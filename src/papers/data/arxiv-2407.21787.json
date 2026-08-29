@@ -1,0 +1,165 @@
+{
+  "schema": 1,
+  "id": "arxiv-2407.21787",
+  "title": "Large Language Monkeys: Scaling Inference Compute with Repeated Sampling",
+  "authors": ["Bradley Brown", "Jordan Juravsky", "Ryan Ehrlich", "Ronald Clark", "Quoc V. Le", "Christopher Ré", "Azalia Mirhoseini"],
+  "venue": "arXiv",
+  "year": 2024,
+  "url": "https://arxiv.org/abs/2407.21787",
+  "added": "2026-08-29",
+  "tags": ["inference-scaling", "verification", "benchmarks", "cost-efficiency", "scaling-laws"],
+  "course_links": [],
+  "summary": "Sampling a model thousands of times per problem keeps raising the fraction of problems solved by at least one attempt — but only pays off where a verifier can find the right attempt.",
+  "thesis": "Instead of asking a model once and accepting the answer, ask it thousands of times and keep the best. Across five benchmarks the fraction of problems solved by at least one attempt keeps climbing over four orders of magnitude of sample count — but only if you have some way to tell which attempt was right.",
+  "claims": [
+    {
+      "tag": "the frame",
+      "h": "Two separate problems, not one",
+      "body": [
+        "The paper splits \"did repeated sampling work\" into two questions that fail independently.",
+        "**Coverage** — of all the problems in the benchmark, how many were solved by *at least one* of the k attempts? This is the ceiling.",
+        "**Precision** — given a pile of 10,000 attempts, mostly wrong, can you actually pick out a correct one? This is what you get to keep.",
+        "Every result in the paper is one of these two. Almost every disagreement about the paper is someone conflating them."
+      ]
+    },
+    {
+      "tag": "result 1",
+      "h": "Coverage scales, and it scales a long way",
+      "body": [
+        "Sampling 10,000 times per problem raised coverage on every model family tested — 70M to 70B parameters, base and instruction-tuned, Llama / Gemma / Pythia.",
+        "The gains are largest for the *weakest* models, because they start with so much headroom. Gemma-2B on CodeContests went from a 0.02% one-shot solve rate to 7.1% — over 300×.",
+        "The practical consequence: a cheap model given many attempts can pass a strong model given one attempt. That is the whole cost argument."
+      ]
+    },
+    {
+      "tag": "result 2",
+      "h": "The curve has a shape you can fit",
+      "body": [
+        "Coverage vs. sample count is close to log-linear over several decades, and fits an exponentiated power law: c ≈ exp(a·k^b).",
+        "That is a scaling law for *inference*, analogous to the training scaling laws. It is not as tight as the training laws — MiniF2F fits poorly — but it means you can extrapolate a budget instead of guessing one.",
+        "Within a model family the curves are near-identical S-shapes shifted horizontally. Bigger model = same curve, further left. The multiplier on sample budget needed to go from coverage c to c′ is roughly constant across the family."
+      ]
+    },
+    {
+      "tag": "result 3",
+      "h": "Verification is the binding constraint",
+      "body": [
+        "Where a machine can check the answer — Lean proof checker, unit tests, test cases — coverage converts one-for-one into real solve rate.",
+        "Where it can't, the wheels come off. On MATH with Llama-3-8B-Instruct, coverage went 82.9% → 98.44% between 100 and 10,000 samples. Actual score using majority voting or a reward model went 40.50% → 41.41%.",
+        "Both selection methods saturate around 100 samples. Majority voting saturating is obvious in hindsight — a rare correct answer can't win a plurality. The reward model failing is the more interesting result, because the paper shows the signal *is* there: over 90% of the correct chains-of-thought they hand-graded were genuinely valid reasoning, not lucky guesses."
+      ]
+    },
+    {
+      "tag": "the honest part",
+      "h": "Their own verifiers were partly broken",
+      "body": [
+        "11.3% of SWE-bench Lite problems have flaky test suites — the same candidate patch passes sometimes and fails other times. In 30 of the 34 flagged problems, even the dataset's own gold solution was flaky.",
+        "In CodeContests, 35 of the 122 Python-solvable test problems reject solutions the dataset itself labels correct, usually because the problem allows several valid outputs and the tests demand one.",
+        "This is the part most summaries skip. If you are building on the technique, verifier fidelity is the number to interrogate, not the coverage curve."
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "t": "Training compute vs. inference compute",
+      "plain": "There are two separate places you can spend money on an AI model: teaching it (once, up front, enormously expensive) and using it (every single time someone asks it something). Almost all the attention has gone to the first. This paper is about the second.",
+      "eng": "Training compute is a one-time capital cost amortised across every future query. Inference compute is recurring per-query operating cost. The field has a well-characterised return curve for the capital spend (training scaling laws) and, before this paper, almost nothing for the operating spend. The paper's contribution is treating sample count as a tunable inference-side knob with a measurable return curve, which turns a fixed model into a performance/cost dial you can set per task."
+    },
+    {
+      "t": "Repeated sampling",
+      "plain": "Ask the model the exact same question 10,000 times. Because it doesn't answer deterministically, you get 10,000 different answers. Then pick one.",
+      "eng": "Draw k independent completions from the same prompt at temperature > 0, with no shared state between attempts. Deliberately the dumbest possible version of the idea — no feedback between attempts, no prompt variation, no metadata conditioning, no iteration on failures. The authors call this out as a limitation, not a design goal: it establishes a floor, and anything smarter should beat it."
+    },
+    {
+      "t": "Coverage (pass@k)",
+      "plain": "Out of all the problems you tried, what fraction got solved by at least one of your attempts? One correct answer buried in 9,999 wrong ones still counts.",
+      "eng": "pass@k, computed with the unbiased estimator from Chen et al. (2021): generate N samples, count Ci correct per problem, then estimate pass@k combinatorially rather than by re-sampling. Coverage is an upper bound on achievable success rate. It equals real performance only when your verifier is perfect — which is why the paper labels the math-benchmark curves \"Oracle Verifier.\" Treat coverage as the theoretical maximum yield of the process, not the yield."
+    },
+    {
+      "t": "Precision and the verifier",
+      "plain": "Having a right answer in the pile is useless unless you can find it. The verifier is whatever picks the winner — a test suite, a proof checker, a vote, another model.",
+      "eng": "The selection stage. Its difficulty is entirely a property of the task domain: Lean 4 gives you a sound proof checker, code gives you unit tests (unsound but cheap), and free-form math word problems give you nothing, so you fall back on heuristics. As k grows, correct samples get rarer within each newly-solved problem — often below 1% — so the verifier's job shifts from majority-detection to needle-in-haystack detection. Methods built on frequency cannot make that transition."
+    },
+    {
+      "t": "Temperature (and why it matters here)",
+      "plain": "A dial on how random the model's word choices are. Zero means it always says the same thing. Turn it up and you get variety — which is the entire fuel supply for this technique.",
+      "eng": "Temperature rescales the logits before sampling, flattening or sharpening the next-token distribution. It is the only diversity mechanism used in these experiments, which is a real limitation: token-level noise produces solutions that are correlated in approach even when they differ in text. The SWE-bench runs used T=1.6 after a sweep — far above chat defaults — because the failure mode being optimised against is 250 attempts that are all subtly the same wrong idea."
+    },
+    {
+      "t": "Majority voting / self-consistency",
+      "plain": "Take the answer that came up most often and go with it. Sensible, cheap, and it stops helping almost immediately.",
+      "eng": "Plurality over normalised final answers. It saturates by construction: coverage improvements past ~100 samples come from problems where the correct answer is generated at low frequency, and a low-frequency answer by definition cannot win a plurality. Adding samples cannot help; it can only sharpen an already-wrong consensus. This is the cleanest illustration in the paper that coverage and success rate are different quantities."
+    },
+    {
+      "t": "Reward models and best-of-N",
+      "plain": "A second model trained to score answers. Generate a hundred candidates, let the scorer rank them, submit the top one.",
+      "eng": "The scorer here is ArmoRM-Llama3-8B-v0.1, near the top of RewardBench's reasoning section — so this is not a strawman. It still plateaus around 100 samples, and the best-of-N variant actually degrades on MATH past ~1,000 samples: with enough draws you eventually surface a wrong answer that games the reward model. That is reward hacking at inference time. Note the authors' evidence that the failure is in the verifier rather than the generator: hand-grading 105 chains-of-thought found >90% of correct answers had faithful reasoning behind them, so the signal a better verifier could exploit demonstrably exists."
+    },
+    {
+      "t": "Exponentiated power law",
+      "plain": "A specific curve shape — c ≈ exp(a·k^b) — that fits the coverage data well enough to predict what you'd get from a budget you haven't spent yet.",
+      "eng": "Adopted from the GPT-4 technical report's treatment of mean-log-pass-rate. Fit log(c) ≈ a·k^b with SciPy curve_fit over 40 log-spaced points, then exponentiate. Both fitted parameters are negative; |b| governs how fast returns decay. Typical fit error is under 0.02 on MATH and CodeContests, but MiniF2F-MATH sits near 0.03 with high variance — the paper flags this rather than burying it. Useful for budget extrapolation within a decade or so, not for confident projection to 10⁶ samples."
+    },
+    {
+      "t": "Same-family S-curves",
+      "plain": "Plot several models from one family on a log x-axis and you get the same S-shaped curve, just slid sideways. A better model isn't a different curve — it's the same curve, reached sooner.",
+      "eng": "Normalising each curve by pass@k⁻¹(c) — the k at which that model first hits an anchor coverage c — collapses the family onto one another. The interpretation: within a family, the multiplicative sample-budget increase needed to move from coverage c to c′ is approximately model-independent. Practically, you can characterise the cheap model in a family and infer the sample budget behaviour of the expensive one."
+    },
+    {
+      "t": "FLOPs vs. dollars as the cost metric",
+      "plain": "Two ways to price the tradeoff. Raw arithmetic operations, or what the API actually charges you. They disagree, and the second one is the one you pay.",
+      "eng": "The FLOP model is the standard 2·(params + 2·layers·dim·ctx) per token, valid for dense transformers. At fixed FLOPs the optimal model size flips by task: 8B wins on MATH, GSM8K and MiniF2F; 70B wins on CodeContests. But the authors concede FLOPs is a crude proxy — repeated sampling shares a prefix across all k completions, so it exploits shared-prefix attention kernels and very large batch sizes that a latency-bound chat workload cannot. Real cost per sample is therefore below what the FLOP count implies, which strengthens the argument rather than weakening it."
+    },
+    {
+      "t": "Verifier imperfection",
+      "plain": "The graders themselves are buggy. Some tests give different answers on different runs; some reject answers that are actually correct.",
+      "eng": "Two named failure classes. False negatives in CodeContests: 35/122 problems reject the dataset's own reference solutions, usually because multiple outputs are valid but the test demands one specific string. Flaky tests in SWE-bench Lite: 11.3% of problems, including 30 where the gold patch itself is flaky — often unordered Python sets where the gold solution imposes an ordering and model patches don't. Both matter more as k grows: with 250 draws you are effectively sampling until you hit the grader's idiosyncrasies, so a flaky verifier converts repeated sampling into a slot machine."
+    },
+    {
+      "t": "Agent framework (Moatless Tools)",
+      "plain": "A wrapper that lets the model actually move around a codebase — search files, read them, edit them — instead of just emitting text.",
+      "eng": "Off-the-shelf scaffold providing retrieval (Voyage AI embeddings) and file-edit tools, used unmodified. Important for reading the SWE-bench numbers correctly: one \"sample\" is not one generation, it is an entire multi-turn trajectory through the repository. So 250 samples means 250 independent agent runs, each with its own multi-step trace. The unit of repetition is the whole episode."
+    }
+  ],
+  "sections": [
+    { "n": "§1", "h": "Introduction", "s": "Sets up inference compute as a neglected scaling axis and states the coverage/precision split. Figure 1 is the whole method in one picture: generate many, verify, pick.", "read": "read closely — the framing carries the rest" },
+    { "n": "§2", "h": "Scaling Repeated Sampling", "s": "Defines the five tasks and the pass@k estimator. Two of the five (GSM8K, MATH) deliberately have no automatic verifier — that asymmetry is the experiment, not an oversight.", "read": "read the task list, skim the estimator" },
+    { "n": "§2.1", "h": "Effective across tasks", "s": "Figure 2. All five benchmarks improve smoothly with budget. GPT-4o beats every model tested at k=1 and loses to all of them at high k. SWE-bench Lite: 15.9% → 56%.", "read": "read — this is the headline" },
+    { "n": "§2.2", "h": "Across sizes and families", "s": "Figure 3. Holds from Pythia-70M to Llama-3-70B. The one clean failure: no Pythia model ever solves a CodeContests problem, at any budget — sampling cannot manufacture a capability that was never trained in.", "read": "read the Pythia exception" },
+    { "n": "§2.3", "h": "Performance vs. cost", "s": "Figure 4 in FLOPs, Table 1 in dollars. Five DeepSeek attempts beat one Claude 3.5 Sonnet attempt at roughly a fifth of the cost. Optimal model size depends on task and budget, not on a universal rule.", "read": "read Table 1 if cost is your question" },
+    { "n": "§3", "h": "Characterizing the Benefits", "s": "The exponentiated power law fit (§3.1) and the family S-curve collapse (§3.2). This is the section that makes the effect predictable rather than anecdotal.", "read": "read §3.1, skim §3.2" },
+    { "n": "§4", "h": "Harnessing Requires Precision", "s": "The counterweight. Majority voting, best-of-N and reward-weighted voting all flatten near 100 samples while coverage climbs past 95%. Figure 7 is the single most important plot in the paper.", "read": "read closely — this bounds every claim in §2" },
+    { "n": "§4.2", "h": "Two cautionary tales", "s": "Flaky SWE-bench tests and CodeContests false negatives. Rare, valuable self-criticism from the authors about their own measurement apparatus.", "read": "read if you plan to reproduce or deploy" },
+    { "n": "§5", "h": "Discussion and Limitations", "s": "Three named improvements the authors did not attempt: richer diversity mechanisms, multi-turn iteration with execution feedback, and letting attempts learn from earlier attempts. Also the systems argument — sampling k completions from one prompt is a throughput-bound workload, not a latency-bound one.", "read": "read — this is the roadmap the field then followed" },
+    { "n": "§6", "h": "Related Work", "s": "Places the paper against AlphaCode (a million samples per problem), tree search methods, chain-of-thought, model ensembling and the training scaling law literature.", "read": "skim for citations you want" },
+    { "n": "App. A–E", "h": "Appendices", "s": "Prompts and hyperparameters per task, the full flaky-instance list, power law fitting details, and a worked example of a GSM8K ground-truth answer that is simply wrong — the only problem Llama-3-70B never 'solved' in 10,000 tries.", "read": "reference only — but Appendix E is a good story" }
+  ],
+  "numbers": [
+    { "v": "15.9% → 56%", "k": "SWE-bench Lite, 1 → 250 samples", "m": "DeepSeek-Coder-V2-Instruct with Moatless Tools. Beats the 43% single-attempt state of the art, which was a GPT-4o / Claude 3.5 Sonnet mixture.", "c": "Each 'sample' is a full agent trajectory, not one generation. And 11.3% of these problems have flaky tests." },
+    { "v": "300×", "k": "Gemma-2B coverage gain, CodeContests", "m": "0.02% at one sample to 7.1% at 10,000. The largest relative gains go to the weakest models.", "c": "7.1% is still 7.1%. A huge multiplier on a near-zero base is not a usable system." },
+    { "v": "82.9% → 98.44%", "k": "MATH coverage, 100 → 10,000 samples", "m": "Llama-3-8B-Instruct with an oracle verifier. Near-perfect coverage is reachable on this benchmark.", "c": "Over that exact same range, actual score with majority voting or a reward model moved 40.50% → 41.41%. The gap is the paper's real finding." },
+    { "v": "$10.80 vs $51", "k": "Cost per issue set, SWE-bench Lite", "m": "Five DeepSeek attempts solved 29.62% for $10.80. One Claude 3.5 Sonnet attempt solved 26.70% for $51; one GPT-4o attempt solved 24.00% for $39.", "c": "July 2024 API prices, one agent framework, one benchmark. The ratio is the transferable part, not the dollar figures." },
+    { "v": ">90%", "k": "Chains-of-thought that were genuinely valid", "m": "Of 105 hand-graded correct GSM8K samples, over 90% had faithful reasoning — including on problems the model solved less than 10% of the time.", "c": "This is what makes verifier failure interesting: the signal exists, the verifiers just aren't finding it." },
+    { "v": "35 / 122", "k": "CodeContests problems with broken tests", "m": "Problems where the dataset's own reference Python solutions fail the dataset's own test suite.", "c": "Reported coverage on CodeContests is therefore an undercount of true capability — and an overcount of reproducibility." },
+    { "v": "c ≈ exp(a·k^b)", "k": "The fitted inference scaling law", "m": "Both parameters negative. Fits within ~0.02 error on most task/model pairs, letting you extrapolate a sample budget.", "c": "MiniF2F-MATH fits poorly (~0.03 error, high variance). The authors say so explicitly." }
+  ],
+  "jargon": [
+    { "t": "pass@k", "h": "the coverage metric", "d": "Probability that at least one of k samples is correct, averaged over problems. Estimated combinatorially from a larger sample pool rather than by literally running k draws, which cuts variance. pass@1 is the ordinary one-shot accuracy everyone quotes." },
+    { "t": "base vs. instruct model", "h": "post-training level", "d": "A base model is raw next-token prediction over the pretraining corpus. An instruct model has been further tuned (supervised fine-tuning, usually RLHF) to follow requests and answer in a helpful format. Instruct models start higher at k=1; the paper's point is that base models still show the same coverage scaling shape." },
+    { "t": "chain-of-thought (CoT)", "h": "reasoning shown in the output", "d": "Prompting the model to write out intermediate steps before its final answer. Reliably improves accuracy on multi-step problems. In GSM8K/MATH grading only the final answer is scored and the CoT is discarded — which is exactly why the authors hand-graded 105 of them to check whether correct answers were reasoned or guessed." },
+    { "t": "few-shot prompting", "h": "worked examples in the prompt", "d": "Prepending several solved examples to the question so the model infers the expected format and approach. Used throughout: 5 examples for MATH and GSM8K, 5 Lean proofs for MiniF2F, 2 for CodeContests. Format compliance matters here because answers are string-matched." },
+    { "t": "temperature / top-p (nucleus)", "h": "sampling controls", "d": "Temperature scales the output distribution's sharpness. Top-p truncates it to the smallest set of tokens whose probabilities sum to p, discarding the long tail. This paper used T=0.5–0.6 on the math and proof tasks, T=0.6 with top-p 0.95 on CodeContests, and T=1.6 on SWE-bench — chosen by sweep to maximise useful diversity." },
+    { "t": "oracle verifier", "h": "a hypothetical perfect grader", "d": "An assumed checker that always identifies a correct answer if one exists. Not implementable for word problems — it's a measurement device for reporting the ceiling. Any plot labelled 'Oracle Verifier' is showing coverage, not achievable performance." },
+    { "t": "reward model", "h": "a model that scores answers", "d": "Trained on human preference comparisons to output a scalar quality score. Central to RLHF; used here at inference time to rank candidates. ArmoRM-Llama3-8B-v0.1 was chosen for its high RewardBench reasoning score, so its failure to scale is a result about the method, not about a weak choice of model." },
+    { "t": "dense transformer vs. MoE", "h": "architecture families", "d": "In a dense model every parameter participates in every token. In a mixture-of-experts model a router activates only a few expert subnetworks per token, so active parameters are far fewer than total. Llama-3 is dense, which is why the paper's simple FLOP formula applies to it. DeepSeek-Coder-V2 is MoE — part of why it is over 10× cheaper per token." },
+    { "t": "FLOPs", "h": "arithmetic operations", "d": "Floating-point operations, the hardware-agnostic proxy for compute. Roughly 2 × parameters per token for a dense forward pass, plus an attention term that grows with context length. A proxy, not a bill: it ignores memory bandwidth, batching efficiency and utilisation." },
+    { "t": "shared-prefix attention", "h": "why k samples cost less than k×1", "d": "All k completions to one prompt share an identical prefix, so its key/value cache can be computed once and reused across the batch. Kernels like Hydragen and SGLang exploit this. It is the systems reason repeated sampling is cheaper than naively firing k API calls — and it favours throughput-optimised serving over latency-optimised chat serving." },
+    { "t": "SWE-bench Lite", "h": "real GitHub issues benchmark", "d": "300 real issues from Python repositories (Django, sympy, scikit-learn, matplotlib, requests). The model gets the issue text and a repository snapshot and must produce a patch; the repo's own test suite grades it. The Lite subset only contains issues fixable by editing a single file." },
+    { "t": "MiniF2F / Lean 4", "h": "formal proof benchmark", "d": "Competition math problems restated as machine-checkable theorem statements. Lean 4 is a proof assistant with a kernel that mechanically verifies a proof is valid. This is the only task in the paper with a genuinely sound verifier — no false positives possible, which is why it's the cleanest demonstration of coverage converting to performance." },
+    { "t": "GSM8K / MATH", "h": "math word problem benchmarks", "d": "GSM8K is grade-school arithmetic word problems; MATH is competition-level. Both are graded by string-matching the extracted final answer against ground truth, which is why neither has a real verifier — and why they're the two tasks used to expose the precision problem." },
+    { "t": "SOTA", "h": "state of the art", "d": "Best published result on a benchmark at time of writing. In this paper, 43% on SWE-bench Lite (CodeStory Aide, a GPT-4o and Claude 3.5 Sonnet mixture). Treat as a moving target: the paper is from mid-2024." },
+    { "t": "log-linear", "h": "straight line on a log axis", "d": "A quantity that increases by a roughly fixed amount each time the input multiplies by ten. Coverage rising log-linearly in k means going from 100 to 1,000 samples buys about as much as going from 1,000 to 10,000 — so cost grows 10× for each equal increment of benefit." },
+    { "t": "scaling law", "h": "empirical performance-vs-resource curve", "d": "A fitted relationship, usually a power law, predicting performance from compute, data, or model size. Their value is extrapolation: you can justify a budget before spending it. This paper's contribution is proposing one for inference-time sample count rather than training resources." }
+  ],
+  "context": "Paper: \"Large Language Monkeys: Scaling Inference Compute with Repeated Sampling\" (arXiv 2407.21787v3, Brown, Juravsky, Ehrlich, Clark, Le, Ré, Mirhoseini; Stanford/Oxford/Google DeepMind, 2024).\n\nMETHOD: Sample k independent candidate solutions from one LLM at temperature > 0 using an identical prompt, then use a domain verifier to select a final answer. Two decomposed properties: COVERAGE (fraction of problems solved by at least one sample; = pass@k) and PRECISION (ability to identify correct samples from the pile).\n\nTASKS: GSM8K (128 problems), MATH (128 problems), MiniF2F-MATH in Lean 4 (130 problems), CodeContests (140 problems), SWE-bench Lite. MiniF2F, CodeContests and SWE-bench have automatic verifiers; GSM8K and MATH do not. pass@k estimated with the unbiased Chen et al. (2021) estimator.\n\nKEY RESULTS: Coverage rises smoothly with k across all five tasks and across Llama-3 (8B base, 8B-Instruct, 70B-Instruct), Gemma (2B, 7B) and Pythia (70M-12B). SWE-bench Lite with DeepSeek-Coder-V2-Instruct + Moatless Tools: 15.9% at k=1 to 56% at k=250, versus 43% single-attempt SOTA (CodeStory Aide, GPT-4o + Claude 3.5 Sonnet) and 24.67% for single-attempt GPT-4o + Moatless. Gemma-2B on CodeContests: 0.02% to 7.1% (>300x). Pythia-160M on MATH: 0.27% to 57%. All Pythia models score exactly zero on CodeContests at any budget. Cost (Table 1): DeepSeek 5 attempts = 29.62% solved, $10.80; GPT-4o 1 attempt = 24.00%, $39 (3.6x); Claude 3.5 Sonnet 1 attempt = 26.70%, $51 (4.7x). At fixed FLOPs, Llama-3-8B-Instruct beats 70B on MiniF2F/GSM8K/MATH, but 70B wins on CodeContests.\n\nSCALING LAW: log(c) = a*k^b, so c = exp(a*k^b), fitted with SciPy curve_fit over 40 log-spaced points. Example fits: Llama-3-8B-Instruct MATH a=-1.33 b=-0.43 (error 0.003); Llama-3-70B-Instruct MATH a=-0.75 b=-0.46; Llama-3-8B-Instruct CodeContests a=-3.88 b=-0.11; MiniF2F fits worst (error 0.0297 +/- 0.0157). Within a model family, curves are S-shapes of similar slope with distinct horizontal offsets; normalising by pass@k^-1(c) collapses them.\n\nPRECISION FINDINGS: On GSM8K/MATH, three selection methods tested - majority vote, reward model best-of-N, reward-weighted majority vote - using ArmoRM-Llama3-8B-v0.1. All plateau by ~100 samples. Llama-3-8B-Instruct on MATH: coverage 82.9% at k=100 to 98.44% at k=10,000, but selection methods move only 40.50% to 41.41%; best-of-N degrades past ~1000 samples. Human grading of 105 chains-of-thought found >90% faithful reasoning even for problems solved <10% of the time, so verifier signal exists.\n\nVERIFIER DEFECTS: 34 SWE-bench Lite problems (11.3%) have flaky tests; 30 of those were flaky even on the gold patch; results with them removed are similar (54.14% vs 56%). CodeContests: 35 of 122 Python-solvable test problems reject their own reference solutions. One GSM8K test problem (index 1042) has an incorrect ground truth - the only problem Llama-3-70B-Instruct never \"solved\" in 10,000 attempts.\n\nHYPERPARAMETERS: MiniF2F T=0.5, 200 max tokens, 5-shot, lean-dojo 1.1.2 / Lean 4.3.0-rc2. CodeContests T=0.6 top-p 0.95, 1024 max tokens, 2-shot. MATH T=0.6, 512 tokens, 5-shot (Minerva prompts). GSM8K T=0.6, 512 tokens, 5-shot. SWE-bench T=1.6 (chosen by sweep over 1.0/1.4/1.6/1.8), Moatless Tools with Voyage AI embeddings, 250 samples per issue.\n\nLIMITATIONS THE AUTHORS NAME: only temperature-based diversity; single-turn only, no execution feedback; attempts fully independent with no learning across them; FLOPs is a crude cost metric that ignores batching and shared-prefix attention optimisations (Hydragen, SGLang) that make repeated sampling cheaper than k separate requests."
+}

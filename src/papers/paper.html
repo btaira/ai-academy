@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paper — AI Academy</title>
+<link rel="stylesheet" href="assets/decoder.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <a class="home" href="./">← Papers</a>
+    <span class="spacer"></span>
+    <button class="ghost" id="settings-btn">key settings</button>
+  </div>
+
+  <div class="keypanel hide" id="keypanel">
+    <span class="tag warn">local only</span>
+    <h3>Your Anthropic API key</h3>
+    <p class="note">Stored in this browser's localStorage and sent only to api.anthropic.com. It is never
+      committed to the repo and no other visitor to this site can see or use it. The live features —
+      go deeper, term lookup and Ask — stay disabled until a key is set.</p>
+    <div class="keyrow">
+      <input type="password" id="key-input" placeholder="sk-ant-…" style="flex:1 1 260px" autocomplete="off">
+      <button class="solid" id="key-save">save</button>
+      <button class="ghost" id="key-clear">clear</button>
+    </div>
+    <div class="keyrow">
+      <input type="text" id="model-input" placeholder="claude-sonnet-4-6" style="flex:1 1 200px" aria-label="Model">
+      <span class="note" style="align-self:center">model used for live explanations</span>
+    </div>
+    <div id="key-state" class="note" style="margin-top:10px"></div>
+  </div>
+
+  <header class="hero">
+    <div class="eyebrow" id="eyebrow">loading</div>
+    <h1 id="title">…</h1>
+    <p class="thesis" id="thesis"></p>
+    <div class="byline" id="byline"></div>
+    <div class="linkback" id="linkback"></div>
+  </header>
+
+  <div class="bar">
+    <div class="seg" role="group" aria-label="Explanation depth">
+      <button id="lvl-plain" aria-pressed="false">plain english</button>
+      <button id="lvl-eng" aria-pressed="true">engineer</button>
+    </div>
+    <span class="note" id="lvl-note">Assumes technical fluency, not ML fluency.</span>
+    <span class="spacer"></span>
+    <a class="ghost" id="source-link" href="#" target="_blank" rel="noopener">source ↗</a>
+  </div>
+
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+  <main id="panel"></main>
+
+  <hr class="rule" style="margin-top:40px">
+  <p class="note" style="margin-top:12px;font-size:12.5px">
+    Static views come from the committed record. Anything generated live can be wrong —
+    check load-bearing claims against the source.
+  </p>
+
+</div>
+<script type="module" src="assets/paper.js"></script>
+</body>
+</html>

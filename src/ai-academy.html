@@ -168,6 +168,20 @@ body {
 .course-pill.locked { opacity: 0.45; cursor: default; }
 .course-pill.locked:hover { color: var(--muted); border-color: var(--border); }
 
+/* Papers library link — styled like a course pill */
+.papers-pills {
+  padding: 10px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.papers-pill {
+  border-color: rgba(244,63,94,0.35);
+  color: #F43F5E;
+  background: rgba(244,63,94,0.08);
+}
+.papers-pill:hover { color: #F43F5E; border-color: #F43F5E; background: rgba(244,63,94,0.14); }
+.papers-pill .pill-dot { background: #F43F5E; }
+
 /* Nav list */
 .nav-scroll {
   flex: 1;
@@ -885,6 +899,16 @@ code.inline {
   <div class="course-pills">
     <div class="course-pills-label">Courses</div>
     <div class="pills-row" id="course-pills-row"></div>
+  </div>
+
+  <div class="papers-pills">
+    <div class="course-pills-label">Library</div>
+    <div class="pills-row">
+      <a class="course-pill papers-pill" id="papers-link" href="papers/index.html" target="_blank" rel="noopener" title="Research papers, decoded into six views">
+        <span class="pill-dot"></span>
+        📚 Research Papers
+      </a>
+    </div>
   </div>
 
   <div class="nav-scroll" id="nav-scroll"></div>

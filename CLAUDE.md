@@ -17,6 +17,11 @@ The entire app — data, UI, logic, styles — lives in one file: `src/ai-academ
 ai-academy/
   src/
     ai-academy.html          # THE entire application (source of truth)
+    papers/                  # Papers library — see "Papers library" section below
+  tools/
+    decode-paper.mjs         # Source document -> papers library record
+    export-corpus.mjs        # Records -> SQL for a retrieval corpus
+    paper-schema.json        # The record contract
   docs/
     architecture.md          # How the data-driven system works
     course-registry.md       # All 11 courses and their module IDs
@@ -164,5 +169,82 @@ Order follows the learner journey: model fundamentals → communicating with it 
 mcp=#00D4FF · agents=#FFB347 · skills=#4EEEA8 · rag=#2DD4BF · prompts=#A78BFA
 llm=#F472B6 · hwai=#FB923C · ctx=#38BDF8 · vibe=#F59E0B · qa=#34D399 · docker=#60A5FA
 
+## Papers library (`src/papers/`)
+
+A decoded-paper reader for the academy, linked from the sidebar as the "Research Papers"
+pill. Static, no backend, no build step — lives next to `ai-academy.html` so relative
+links resolve the same way whether the file is opened locally or served from GitHub
+Pages (the Pages workflow copies `src/papers/` alongside the renamed `index.html`).
+
+```
+src/papers/
+  index.html            library: search, tag filter, sort, in-browser "add paper"
+  paper.html            reader: ?id=<paper-id>
+  assets/               decoder.css, library.js, paper.js, claude-client.js, ingest.js
+  data/
+    index.json          manifest — cards only, no bodies
+    <paper-id>.json     one decoded record per paper
+tools/
+  decode-paper.mjs      source document -> record + index update (CLI / Claude Code)
+  export-corpus.mjs     records -> SQL for the retrieval corpus
+  paper-schema.json     the record contract
+```
+
+### Conventions
+
+- **One record per file, git-versioned.** `src/papers/data/` is the database. No server,
+  no hosted DB, nothing to keep in sync.
+- **`index.json` is derived, never hand-edited.** `decode-paper.mjs` (and the in-browser
+  ingest flow) rewrite it. If it drifts from the record files, regenerate rather than
+  patch.
+- **Ids are stable and URL-safe.** `arxiv-2407.21787` for arXiv, otherwise a slug. The id
+  is the filename stem, the `?id=` parameter, and the foreign key in the corpus export.
+  Renaming one breaks inbound links — don't.
+- **Never commit an API key.** The live features read a key from the visitor's own
+  `localStorage` (`ai-academy.anthropic-key`). Anyone without one gets the static views,
+  which is the whole page minus go-deeper, term lookup, Ask and the in-browser ingest
+  flow. This is a deliberate, scoped exception to the repo's no-localStorage rule:
+  `papers/` is a separate static site (not previewed as a Claude.ai artifact), and every
+  storage call is wrapped so it degrades gracefully wherever storage is genuinely
+  unavailable.
+- **Two ways to add a record, same output shape:** `node tools/decode-paper.mjs
+  <source>` from a terminal (or the `/decode-paper` command in Claude Code), or the
+  "+ add paper" button on the library page, which runs the same extraction passes
+  client-side with the visitor's own key and produces a record + index.json download —
+  since a static page can't write to the repo, the visitor still drops the downloaded
+  file(s) into `src/papers/data/` and commits them. Hand-editing an existing record
+  afterwards is expected and fine.
+
+### Quality bar for a record
+
+The point of this library is that a paper's numbers arrive with their caveats attached.
+A record that reads like a press release has failed. Before considering a decode done:
+
+- At least one `claims` entry covers limitations, or what the paper is honest about.
+  If every claim is a positive finding, something was dropped.
+- Every `numbers` entry has a `c` that says what the figure does *not* show. A caveat
+  that restates the meaning is not a caveat.
+- `concepts[].eng` explains a mechanism and names a failure mode. "X is a technique for
+  Y" is a definition, not an explanation — that belongs in `jargon`.
+- `jargon` targets the reader's actual gap: machine-learning vocabulary, benchmark names,
+  model names, metrics. Not terms the paper already defines inline.
+- `context` is 500-900 words, contains the real figures, and is written for a model to
+  answer from. It grounds Ask and becomes the paper row in the retrieval corpus.
+
+### Linking papers to courses
+
+`course_links` holds repo-relative module paths. The reader renders them as links back
+into the course. Add the reverse link by hand in the module page so the relationship is
+navigable both ways — a module points at the papers behind it, a paper points at the
+modules that use it.
+
+### Retrieval corpus
+
+`node tools/export-corpus.mjs > papers.sql` emits one row per paper plus one row per
+chunk (claim, concept, section, number, glossary entry), with FTS5 over the chunks. Each
+chunk carries a `kind` so a hybrid retriever can weight structure — a `number` chunk and
+a `concept` chunk answer different questions. This is the intended bridge to the wider
+document corpus; keep the schema stable.
+
 ## Current Focus
-[Update this at the start of each session with what you're working on]
+Papers library lives at `src/papers/` (colocated with `ai-academy.html`) and is linked from the sidebar as the "Research Papers" pill. Building an in-browser "add paper" ingest flow on `src/papers/index.html` so records can be added without a terminal.

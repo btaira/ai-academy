@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Papers — AI Academy</title>
+<meta name="description" content="Technical papers, decoded: thesis, concepts, section walkthrough, key numbers and a glossary for engineers coming from outside machine learning.">
+<link rel="stylesheet" href="assets/decoder.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <a class="home" href="../">← AI Academy</a>
+    <span class="spacer"></span>
+    <button class="ghost" id="settings-btn">key settings</button>
+    <span class="eyebrow" id="count"></span>
+  </div>
+
+  <div class="keypanel hide" id="keypanel">
+    <span class="tag warn">local only</span>
+    <h3>Your Anthropic API key</h3>
+    <p class="note">Stored in this browser's localStorage and sent only to api.anthropic.com. It is never
+      committed to the repo and no other visitor to this site can see or use it. Adding a paper below
+      needs this key — the site is static and has no server of its own to hold one.</p>
+    <div class="keyrow">
+      <input type="password" id="key-input" placeholder="sk-ant-…" style="flex:1 1 260px" autocomplete="off">
+      <button class="solid" id="key-save">save</button>
+      <button class="ghost" id="key-clear">clear</button>
+    </div>
+    <div class="keyrow">
+      <input type="text" id="model-input" placeholder="claude-sonnet-4-6" style="flex:1 1 200px" aria-label="Model">
+      <span class="note" style="align-self:center">model used to decode papers</span>
+    </div>
+    <div id="key-state" class="note" style="margin-top:10px"></div>
+  </div>
+
+  <header class="hero">
+    <div class="eyebrow">library</div>
+    <h1>Papers, decoded</h1>
+    <p class="thesis">Each paper is broken into six views: the thesis, the concepts you need to follow it,
+      a section walkthrough with read-or-skim guidance, the numbers with their caveats attached,
+      a glossary aimed at engineers coming from outside machine learning, and a Q&amp;A grounded in the text.</p>
+  </header>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="Search titles, authors, tags, thesis" style="flex:1 1 240px" aria-label="Search papers">
+    <div class="seg" role="group" aria-label="Sort order">
+      <button id="sort-added" aria-pressed="true">newest added</button>
+      <button id="sort-year" aria-pressed="false">by year</button>
+      <button id="sort-title" aria-pressed="false">a–z</button>
+    </div>
+    <button class="solid" id="add-btn">+ add paper</button>
+  </div>
+
+  <div class="chips" id="tags" style="margin-top:14px" role="group" aria-label="Filter by tag"></div>
+
+  <div class="grid three" id="list"></div>
+  <p class="note hide" id="empty" style="margin-top:22px">Nothing matches that. Clear the search or drop a tag filter.</p>
+
+  <div class="ingestpanel hide" id="ingestpanel">
+    <span class="tag">add paper</span>
+    <h3>Decode a new paper</h3>
+    <p class="note">Runs the same five extraction passes as <code>tools/decode-paper.mjs</code>, in this
+      browser, using your own key. This page can't write to the repo, so when it's done you'll download
+      the record and an updated index — drop both into <code>src/papers/data/</code> and commit.</p>
+
+    <div class="seg" role="group" aria-label="Source type" style="margin-top:14px">
+      <button id="src-pdf" aria-pressed="true">upload pdf</button>
+      <button id="src-text" aria-pressed="false">paste text</button>
+      <button id="src-arxiv" aria-pressed="false">arxiv id</button>
+    </div>
+
+    <div id="src-pdf-panel" class="ingest-src">
+      <input type="file" id="pdf-input" accept="application/pdf" style="margin-top:12px">
+    </div>
+    <div id="src-text-panel" class="ingest-src hide">
+      <textarea id="text-input" rows="8" placeholder="Paste the abstract, or the full text of the paper" style="margin-top:12px"></textarea>
+    </div>
+    <div id="src-arxiv-panel" class="ingest-src hide">
+      <input type="text" id="arxiv-input" placeholder="e.g. 2407.21787" style="margin-top:12px">
+      <p class="note" id="arxiv-note" style="margin-top:8px">Fetched directly from arxiv.org. If your browser
+        blocks the cross-origin request, download the PDF yourself and use "upload pdf" instead.</p>
+    </div>
+
+    <div class="keyrow" style="margin-top:16px">
+      <input type="text" id="ingest-id" placeholder="id (optional — derived from the source)" style="flex:1 1 200px">
+      <input type="text" id="ingest-tags" placeholder="tags, comma-separated (optional)" style="flex:1 1 200px">
+    </div>
+    <input type="text" id="ingest-links" placeholder="course links, comma-separated, e.g. course-04/module-12 (optional)" style="margin-top:8px">
+
+    <div class="keyrow" style="margin-top:16px">
+      <button class="solid" id="ingest-run">decode</button>
+      <span class="note" id="ingest-status"></span>
+    </div>
+
+    <div id="ingest-log" class="ingest-log"></div>
+    <div id="ingest-result" class="hide"></div>
+  </div>
+
+  <hr class="rule" style="margin-top:40px">
+  <p class="note" style="margin-top:12px;font-size:12.5px">
+    Records live in <code>src/papers/data/</code> as JSON, one file per paper, versioned in git.
+    Add one from the button above, with <code>node tools/decode-paper.mjs &lt;file-or-arxiv-id&gt;</code>,
+    or with the <code>/decode-paper</code> command in Claude Code.
+  </p>
+
+</div>
+<script type="module" src="assets/library.js"></script>
+<script type="module" src="assets/ingest.js"></script>
+</body>
+</html>

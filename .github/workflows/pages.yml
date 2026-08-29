@@ -29,6 +29,7 @@ jobs:
         run: |
           mkdir -p _site
           cp src/ai-academy.html _site/index.html
+          cp -r src/papers _site/papers
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

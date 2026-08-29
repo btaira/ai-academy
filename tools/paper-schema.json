@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AI Academy decoded paper record",
+  "type": "object",
+  "required": ["schema", "id", "title", "thesis", "claims", "concepts", "sections", "jargon", "context"],
+  "properties": {
+    "schema": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9._-]+$", "description": "Filename stem and URL parameter. Prefer arxiv-<id> for arXiv papers." },
+    "title": { "type": "string" },
+    "authors": { "type": "array", "items": { "type": "string" } },
+    "venue": { "type": "string" },
+    "year": { "type": "integer" },
+    "url": { "type": "string", "description": "Canonical source. Empty string if none." },
+    "added": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "tags": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9-]+$" } },
+    "course_links": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Repo-relative paths to academy modules this paper backs, e.g. course-04/module-12. Rendered as links back into the course."
+    },
+    "summary": { "type": "string", "description": "One sentence under 30 words for the library card." },
+    "thesis": { "type": "string", "description": "Two sentences: the claim and why it matters." },
+
+    "claims": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object", "required": ["tag", "h", "body"],
+        "properties": {
+          "tag": { "type": "string", "description": "2-3 word label. Tags matching /honest|limit|caveat|caution|weak/ render in the caveat colour." },
+          "h": { "type": "string" },
+          "body": { "type": "array", "items": { "type": "string" }, "description": "Paragraphs. **bold** is rendered." }
+        }
+      }
+    },
+
+    "concepts": {
+      "type": "array", "minItems": 4,
+      "items": {
+        "type": "object", "required": ["t", "plain", "eng"],
+        "properties": {
+          "t": { "type": "string" },
+          "plain": { "type": "string", "description": "Zero background assumed. Shown at the plain-english depth." },
+          "eng": { "type": "string", "description": "Senior engineer from another field. Mechanism, behaviour, caveat." }
+        }
+      }
+    },
+
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["h", "s"],
+        "properties": {
+          "n": { "type": "string", "description": "Section number or short label, rendered in the left rail." },
+          "h": { "type": "string" },
+          "s": { "type": "string" },
+          "read": { "type": "string", "description": "Read-or-skim guidance." }
+        }
+      }
+    },
+
+    "numbers": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["v", "k", "m"],
+        "properties": {
+          "v": { "type": "string", "description": "The figure itself, as displayed." },
+          "k": { "type": "string", "description": "Short caption: what it measures." },
+          "m": { "type": "string", "description": "What it means." },
+          "c": { "type": "string", "description": "The caveat, or what it does not show. Strongly preferred on every entry." }
+        }
+      }
+    },
+
+    "jargon": {
+      "type": "array", "minItems": 5,
+      "items": {
+        "type": "object", "required": ["t", "d"],
+        "properties": {
+          "t": { "type": "string" },
+          "h": { "type": "string", "description": "3-5 word gloss shown collapsed." },
+          "d": { "type": "string", "description": "60-100 words." }
+        }
+      }
+    },
+
+    "context": {
+      "type": "string", "minLength": 800,
+      "description": "Dense factual digest, 500-900 words, written for a model rather than a human. Grounds the Ask feature and becomes the paper-level row in the retrieval corpus."
+    },
+    "source_hash": { "type": "string", "description": "Truncated sha256 of the source, so re-decodes of the same file are detectable." }
+  }
+}
