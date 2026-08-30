@@ -1,0 +1,308 @@
+{
+  "schema": 1,
+  "id": "scalingllmtest-timecomputeoptimally",
+  "title": "Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters",
+  "authors": [
+    "Charlie Snell",
+    "Jaehoon Lee",
+    "Kelvin Xu",
+    "Aviral Kumar"
+  ],
+  "venue": "arXiv",
+  "year": 2024,
+  "url": "https://arxiv.org/abs/2408.03314",
+  "added": "2026-08-30",
+  "tags": [
+    "test-time-compute",
+    "inference-scaling",
+    "process-reward-models",
+    "self-refinement",
+    "llm-reasoning",
+    "compute-efficiency"
+  ],
+  "course_links": [],
+  "summary": "Adaptively allocating extra computation at inference time, matched to problem difficulty, can outperform a 14× larger pretrained model on easy-to-medium tasks.",
+  "thesis": "The optimal way to spend extra compute at inference time depends critically on problem difficulty—easy problems benefit from sequential self-revision while hard problems benefit from parallel search with a verifier. This adaptive 'compute-optimal' strategy achieves 4× better efficiency than naive best-of-N sampling and can substitute for much larger pretrained models on many problem classes.",
+  "claims": [
+    {
+      "tag": "two scaling axes",
+      "h": "Test-time compute can be scaled along two independent axes: improving the proposal distribution or optimizing the verifier.",
+      "body": [
+        "The **proposal distribution** is modified by fine-tuning the model to iteratively revise its own answers in sequence, conditioned on prior incorrect attempts. This is analogous to local search refinement.",
+        "The **verifier** (specifically a Process Reward Model, or PRM) assigns correctness scores to each intermediate reasoning step—not just the final answer—allowing tree-search methods like beam search and lookahead search to guide generation toward better solutions.",
+        "These two axes are complementary: sequential revisions work better on easier problems already close to the answer, while parallel search with a PRM works better on harder problems requiring broad exploration of solution strategies."
+      ]
+    },
+    {
+      "tag": "compute-optimal strategy",
+      "h": "Allocating test-time compute adaptively per prompt difficulty improves efficiency by more than 4× over best-of-N sampling.",
+      "body": [
+        "**Question difficulty** is defined model-specifically as the model's pass@1 rate estimated over 2048 samples, then binned into five quantiles. This per-model difficulty estimate is more predictive of test-time compute effectiveness than the dataset's hand-labeled difficulty.",
+        "A **compute-optimal scaling strategy** selects the hyperparameters (e.g., sequential-to-parallel ratio, beam width) that maximize accuracy for a given difficulty bin and compute budget, chosen on a validation fold and applied to a held-out test fold.",
+        "Using this strategy, the compute-optimal approach matches or exceeds best-of-N performance using approximately 4× fewer generated samples in both the revision and PRM-search settings."
+      ]
+    },
+    {
+      "tag": "vs. pretraining scaling",
+      "h": "On easy and medium problems, test-time compute can substitute for training a model 14× larger, but not on the hardest problems.",
+      "body": [
+        "A **FLOPs-matched evaluation** compares a smaller model with added inference compute against a model with ~14× more parameters using greedy decoding. Pretraining FLOPs are approximated as 6ND and inference FLOPs as 2ND, where N is parameter count and D is token count.",
+        "For easy and intermediate difficulty problems, or when inference demand is low relative to pretraining (R << 1), compute-optimal test-time scaling with the smaller model outperforms the larger pretrained model.",
+        "On the hardest problems or when inference volume is high (R >> 1), the larger pretrained model is preferable, showing that test-time and pretraining compute are not universally interchangeable."
+      ]
+    },
+    {
+      "tag": "verifier search behavior",
+      "h": "Beam search over a PRM outperforms best-of-N at low budgets but degrades at high budgets due to verifier exploitation.",
+      "body": [
+        "**Beam search** prunes candidates at each reasoning step using PRM scores, concentrating compute on promising solution paths. It significantly outperforms best-of-N at small generation budgets but underperforms at large budgets.",
+        "The degradation at high budgets is attributed to **verifier exploitation**: the search over-optimizes spurious features in the PRM, sometimes producing repetitive low-information steps or unnaturally short solutions.",
+        "**Lookahead search**, which rolls out k additional steps before scoring each beam candidate, further amplifies this exploitation and consistently underperforms beam search at equal compute cost."
+      ]
+    },
+    {
+      "tag": "limitations and honesty",
+      "h": "The study has several practical limitations that the authors openly acknowledge.",
+      "body": [
+        "Estimating question difficulty requires running 2048 model samples per problem, which itself is a substantial compute cost that is not accounted for in the efficiency comparisons presented.",
+        "The hardest problems (difficulty bin 5) show little benefit from any test-time compute strategy tested, and no current method bridges this gap—more pretraining appears necessary for such problems.",
+        "The revision model required task-specific fine-tuning because off-the-shelf LLMs cannot self-correct on reasoning tasks; the authors note this is a current limitation but expect future models to develop this capability through pretraining."
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "t": "Test-Time Compute",
+      "plain": "This is extra computation spent by an AI model while answering a question, after training is already finished. Instead of just generating one answer instantly, the model uses more processing cycles to search for or refine a better answer. Think of it as letting the model 'think harder' on demand.",
+      "eng": "During inference, rather than a single forward pass producing a greedy output, the system performs multiple forward passes — either generating many candidate answers in parallel, or generating them sequentially where each pass conditions on prior outputs. The computational cost scales with the number of generated tokens, governed by the approximation Y = 2ND_inference where N is parameter count. The key caveat is that the benefit per added compute unit diminishes differently depending on problem difficulty, so naive uniform scaling is wasteful."
+    },
+    {
+      "t": "Process Reward Model (PRM)",
+      "plain": "A PRM is a separately trained neural network that scores not just the final answer of a math solution, but every intermediate step along the way. This per-step scoring lets the system prune bad reasoning paths early, rather than only finding out a solution was wrong at the end. It acts like a quality inspector checking each stage of an assembly line.",
+      "eng": "An ORM (Outcome Reward Model) scores only the terminal answer, whereas a PRM produces a correctness probability estimate at each reasoning step — effectively a value function estimating reward-to-go from that intermediate state. The PRM in this paper is trained via Monte Carlo rollouts: from each step, many completions are sampled and the empirical fraction that reach a correct final answer becomes the soft training label. The practical caveat is that a PRM trained on outputs from one model (e.g., GPT-4) degrades when applied to a different model's outputs due to distribution shift, requiring retraining on the target model's own samples."
+    },
+    {
+      "t": "Best-of-N Sampling",
+      "plain": "Best-of-N means generating N independent candidate answers and then picking whichever one a scoring function rates highest. It is the simplest way to use extra compute at test time: just run the model N times in parallel. The downside is that all N attempts are independent — they do not learn from each other.",
+      "eng": "Best-of-N is embarrassingly parallel: N complete solutions are sampled i.i.d. from the model's distribution, then a verifier selects the top-scoring one. The 'weighted' variant aggregates verifier scores across all candidates sharing the same final answer before selecting, which reduces sensitivity to individual scoring noise. Scaling behavior follows a log-linear improvement curve that eventually saturates, and on problems where the base model's pass@1 is near zero, no amount of best-of-N sampling helps because the correct answer is never in the candidate set."
+    },
+    {
+      "t": "Beam Search over a PRM",
+      "plain": "Beam search is a tree-structured search where at each reasoning step you keep only the top-K partial solutions according to the PRM score, and expand those further. Unlike best-of-N which builds complete answers independently, beam search prunes bad paths mid-solution to focus compute on promising directions. It trades breadth for depth in the search.",
+      "eng": "The algorithm maintains a fixed beam of N partial solutions; at each step M new continuations are sampled per beam element, the PRM scores all N×M partial solutions, and only the top N are retained. Lookahead search extends this by rolling out k additional steps before scoring each candidate, giving a better value estimate at the cost of k+1× more compute per step. The critical failure mode is reward hacking: on easy problems where the PRM is already accurate, aggressive beam search over-optimizes spurious PRM features, generating degenerate outputs (e.g., repetitive low-information steps) while achieving high PRM scores."
+    },
+    {
+      "t": "Sequential Revisions (Proposal Distribution Refinement)",
+      "plain": "Instead of generating N answers independently, a revision model generates answers one at a time, where each new attempt can see all the previous incorrect attempts and try to correct their mistakes. The model is fine-tuned specifically to learn from its own prior errors in context. This is analogous to iterative debugging rather than writing N independent implementations.",
+      "eng": "The revision model is trained via supervised fine-tuning on trajectories of the form [wrong_answer_1, ..., wrong_answer_k, correct_answer], where incorrect answers are selected by character-level edit distance to the correct answer to ensure correlation. At inference, the model autoregressively generates a chain of revisions, conditioning on the last four attempts to avoid context overflow. A key failure mode is distribution shift: the model was trained on sequences ending in a correct answer, so when a correct answer appears mid-chain at test time, the model may erroneously revise it to an incorrect one — requiring a separate verifier to select the best answer across the chain."
+    },
+    {
+      "t": "Compute-Optimal Scaling Strategy",
+      "plain": "Instead of applying the same test-time strategy to every problem, a compute-optimal strategy first estimates how hard the problem is for the model, then picks whichever method (revisions, beam search, best-of-N, etc.) works best for that difficulty level. Easy problems and hard problems benefit from different strategies, so one-size-fits-all allocation wastes compute. The difficulty estimate is derived from how often the model gets the problem right across many samples.",
+      "eng": "Formally, this selects hyperparameters θ* = argmax_θ E[1_{y=y*(q)}] over a discrete set of strategies, where difficulty is operationalized as the model's pass@1 rate binned into five quintiles estimated from 2048 samples. In practice, ground-truth labels are unavailable at deployment, so 'oracle difficulty' is approximated by 'model-predicted difficulty' using the average PRM score as a proxy — empirically these two produce nearly identical strategy selections. The 4× compute efficiency gain reported in the paper means that the compute-optimal policy at N=64 generations matches or exceeds a naive best-of-N baseline at N=256, validated via two-fold cross-validation to prevent overfitting the strategy selection to the test set."
+    },
+    {
+      "t": "FLOPs-Matched Evaluation",
+      "plain": "To fairly compare 'spending compute at training time by building a bigger model' versus 'spending compute at inference time by running more searches', the authors convert both costs into the same unit: floating-point operations (FLOPs). This lets them ask whether a small model running many searches beats a large model running once, for the same total energy budget. The answer depends heavily on how many times you plan to run inference relative to how many tokens the model was trained on.",
+      "eng": "Pretraining FLOPs are approximated as X = 6ND_pretrain and inference FLOPs as Y = 2ND_inference, so scaling model parameters by M multiplies both X and Y by M, giving M(X+Y) total FLOPs. To match this budget with test-time compute on the smaller model, the inference budget is scaled by M + 3(D_pretrain/D_inference)(M-1). The ratio R = D_inference/D_pretrain is the critical deployment parameter: when R<<1 (few inference calls, e.g., a self-improvement pipeline), test-time compute is often preferable; when R>>1 (high-volume production serving), the larger pretrained model wins because the amortized pretraining cost per inference call is low."
+    }
+  ],
+  "sections": [
+    {
+      "n": "Abstract",
+      "h": "Scaling Test-Time Compute vs Model Parameters",
+      "s": "The paper asks whether giving an LLM more computation at inference time can substitute for training a larger model. The key claim is that an adaptive 'compute-optimal' strategy for allocating test-time compute outperforms naive best-of-N sampling by 4x and can beat a 14x larger model on certain problem classes.",
+      "read": "read closely"
+    },
+    {
+      "n": "1",
+      "h": "Introduction",
+      "s": "Motivates the problem by noting that prior work gives conflicting results on whether test-time compute helps LLMs on reasoning tasks. Sets up the two mechanisms studied: (1) searching against a process reward model and (2) iteratively revising answers.",
+      "read": "read closely"
+    },
+    {
+      "n": "2",
+      "h": "Unified Framework: Proposer and Verifier",
+      "s": "Frames all test-time compute methods as either modifying the proposal distribution (how answers are generated) or optimizing a verifier (how answers are selected). This two-axis view unifies best-of-N, beam search, self-revision, and MCTS-style methods.",
+      "read": "read closely"
+    },
+    {
+      "n": "3",
+      "h": "Compute-Optimal Scaling Strategy",
+      "s": "Defines a formal objective for choosing the best test-time hyperparameters per prompt given a fixed compute budget. Introduces question difficulty (estimated from pass@1 rates over 2048 samples) as the key signal for selecting the right strategy.",
+      "read": "read closely"
+    },
+    {
+      "n": "4",
+      "h": "Experimental Setup",
+      "s": "Uses the MATH benchmark (12k train / 500 test) with PaLM 2-S* (Codey) as the base model. This model has non-trivial but non-saturated MATH performance, making it a useful testbed.",
+      "read": "skim"
+    },
+    {
+      "n": "5",
+      "h": "Scaling via Verifiers (PRM Search)",
+      "s": "Trains a process reward model (PRM) using Monte Carlo rollouts for step-level supervision, then compares best-of-N, beam search, and lookahead search. Beam search wins at low budgets but degrades at high budgets on easy problems; best-of-N is safer at scale; compute-optimal selection of method per difficulty bin nearly matches best-of-N with 4x less compute.",
+      "read": "read closely"
+    },
+    {
+      "n": "6",
+      "h": "Refining the Proposal Distribution (Revisions)",
+      "s": "Fine-tunes a revision model that iteratively improves its own answers conditioned on prior attempts, trained via supervised fine-tuning on trajectories built from parallel samples. Sequential revisions outperform parallel sampling on easy questions; harder questions need a mix; compute-optimal allocation again achieves 4x efficiency over plain best-of-N.",
+      "read": "read closely"
+    },
+    {
+      "n": "7",
+      "h": "Exchanging Pretraining and Test-Time Compute",
+      "s": "Conducts a FLOPs-matched comparison between using more test-time compute on a small model versus training a 14x larger model. On easy/medium problems or when inference tokens are few relative to pretraining tokens, test-time compute wins; on hard problems or high inference load, more pretraining wins.",
+      "read": "read closely"
+    },
+    {
+      "n": "8",
+      "h": "Discussion and Future Work",
+      "s": "Summarizes limitations: hard problems remain resistant to test-time compute, difficulty estimation is itself expensive, and the study only covers revisions and PRM search. Points to future work on combining methods, cheaper difficulty estimation, and distilling test-time outputs back into the base model.",
+      "read": "skim"
+    },
+    {
+      "n": "App A",
+      "h": "Related Work",
+      "s": "Surveys prior work on LLM reasoning, train/test-time compute tradeoffs, and augmentation methods. Contextualizes the paper's contributions relative to MCTS literature and self-improvement pipelines.",
+      "read": "reference only"
+    },
+    {
+      "n": "App D–F",
+      "h": "PRM Training and Aggregation Details",
+      "s": "Describes PRM training via binary cross-entropy on soft Monte Carlo return labels and compares aggregation strategies (min, product, last step). Last-step aggregation outperforms others; PRM consistently beats ORM.",
+      "read": "reference only"
+    },
+    {
+      "n": "App H–K",
+      "h": "Revision Model Training and Ablations",
+      "s": "Details the fine-tuning recipe for the revision model including edit-distance-based incorrect answer selection, ORM verifier training on revision outputs, and a failed ReSTEM extension. ReSTEM optimization hurts sequential revision performance, suggesting off-policy data collection is preferable.",
+      "read": "reference only"
+    }
+  ],
+  "numbers": [
+    {
+      "v": "4x",
+      "k": "Test-time compute efficiency gain from compute-optimal strategy vs best-of-N",
+      "m": "By routing easy questions to sequential revision and hard ones to parallel+search, you can match best-of-N accuracy with one-quarter the inference budget.",
+      "c": "Measured only on MATH benchmark with PaLM 2-S*; gap shrinks at very high compute budgets with predicted (not oracle) difficulty bins."
+    },
+    {
+      "v": "14x",
+      "k": "Model size of the larger baseline in the FLOPs-matched comparison",
+      "m": "A smaller model with compute-optimal test-time scaling can outperform a 14x larger model on easy and medium problems when the inference-to-pretraining token ratio is low.",
+      "c": "Applies only when R (inference/pretraining tokens) is small; at R>>1 or on hard problems, the larger model wins."
+    },
+    {
+      "v": "~38%",
+      "k": "Fraction of correct revision-model answers that regress to incorrect on the next step",
+      "m": "The revision model is unreliable as a standalone chain; a verifier or majority vote is required to pick the best answer from the trajectory.",
+      "c": "This is a property of the specific fine-tuning recipe used; better training could reduce regression rate."
+    },
+    {
+      "v": "2048",
+      "k": "Number of samples used to estimate per-question difficulty (pass@1)",
+      "m": "Difficulty binning requires a large sample to be accurate; this is the oracle cost that is not charged to the test-time budget in the paper's accounting.",
+      "c": "This cost is ignored in efficiency comparisons; practical deployments would need a cheaper difficulty proxy."
+    },
+    {
+      "v": "5 bins",
+      "k": "Number of difficulty quantiles used for compute-optimal routing",
+      "m": "Questions are sorted into five difficulty levels; the optimal search strategy is selected independently for each bin on a held-out validation fold.",
+      "c": "Bin boundaries are model-specific (based on PaLM 2-S* pass@1), so they do not transfer directly to other models."
+    },
+    {
+      "v": "R=0.16 / 0.79 / 22",
+      "k": "Three inference-to-pretraining token ratios tested in FLOPs-matched evaluation",
+      "m": "At R<<1 (few inference tokens, e.g. self-improvement pipelines) test-time compute almost always wins; at R>>1 (production serving) pretraining wins on hard problems.",
+      "c": "The paper fixes model parameter scaling as the pretraining axis and does not evaluate data scaling (Chinchilla-optimal) as an alternative."
+    },
+    {
+      "v": "~21.6% / +27.8%",
+      "k": "Best relative accuracy improvement from test-time compute on easy questions (revisions / search)",
+      "m": "Easy questions see the largest gains from additional test-time compute, confirming the model already has the needed knowledge and just needs better inference.",
+      "c": "Hard questions (difficulty bin 5) show near-zero or negative improvement from all tested methods."
+    },
+    {
+      "v": "16 vs 64",
+      "k": "Generations needed: compute-optimal vs best-of-N to reach same accuracy (PRM search)",
+      "m": "Compute-optimal search achieves equivalent accuracy to best-of-N weighted at 4x fewer samples in the low-budget regime.",
+      "c": "The advantage narrows at higher budgets, especially with model-predicted (vs oracle) difficulty bins."
+    }
+  ],
+  "jargon": [
+    {
+      "t": "test-time compute",
+      "h": "computation spent during inference",
+      "d": "The floating-point operations an AI model performs when answering a query, as opposed to operations spent during training. Distinct from training because the model weights are frozen. This paper argues that spending more compute at inference time—by generating multiple answers or revising answers iteratively—can substitute for training a larger model, and studies how to allocate that budget most efficiently."
+    },
+    {
+      "t": "best-of-N sampling",
+      "h": "pick best of N outputs",
+      "d": "A baseline inference strategy where the model generates N independent candidate answers in parallel, then a separate scoring function (verifier) picks the highest-scoring one. Analogous to running a simulation N times and keeping the best result. The paper uses this as its primary comparison baseline, showing that smarter allocation strategies can match its performance using 4x less compute."
+    },
+    {
+      "t": "PRM (Process Reward Model)",
+      "h": "step-by-step correctness scorer",
+      "d": "A neural network trained to predict whether each intermediate reasoning step in a solution is correct, rather than only judging the final answer. Enables tree-search by pruning bad partial solutions early. Contrasts with an ORM (Outcome Reward Model) that scores only the finished answer. This paper trains its PRM using Monte Carlo rollouts instead of expensive human labels."
+    },
+    {
+      "t": "ORM (Outcome Reward Model)",
+      "h": "final-answer correctness scorer",
+      "d": "A verifier trained to predict only whether the final answer is correct, ignoring intermediate steps. Simpler and cheaper to train than a PRM. The paper compares ORM and PRM performance, finding the PRM consistently outperforms the ORM, and attributes the gap partly to the richer representation learned through per-step training supervision."
+    },
+    {
+      "t": "beam search",
+      "h": "keep top-N partial solutions",
+      "d": "A tree-search algorithm that maintains N candidate solution prefixes at each reasoning step, scores them with the PRM, prunes to the top fraction, then expands again. More focused than best-of-N but risks over-exploiting the verifier on easy problems. The paper finds beam search outperforms best-of-N at low compute budgets but degrades at high budgets due to reward hacking."
+    },
+    {
+      "t": "lookahead search",
+      "h": "simulate k steps ahead",
+      "d": "An extension of beam search where, before scoring a partial solution step, the model rolls out k additional steps and uses the PRM score at the end of that rollout to evaluate the current step. More accurate value estimates at the cost of extra compute. The paper shows lookahead search underperforms beam search per unit compute budget because the rollout overhead is too costly."
+    },
+    {
+      "t": "MATH benchmark",
+      "h": "competition-level math dataset",
+      "d": "A publicly available dataset of high-school mathematics competition problems spanning algebra, geometry, number theory, and other topics, with hand-graded difficulty levels 1–5. Widely used to evaluate LLM reasoning. This paper uses a 12k-train/500-test split and treats it as the primary testbed because models have partial but unsaturated performance, making scaling effects measurable."
+    },
+    {
+      "t": "PaLM 2-S*",
+      "h": "small finetuned PaLM 2",
+      "d": "Google's PaLM 2 model in a small (S) configuration, further finetuned (indicated by the asterisk) for specific capabilities such as step-by-step math reasoning and answer revision. Used as the primary experimental model throughout the paper. Chosen because it achieves non-trivial but unsaturated accuracy on MATH, providing room to measure the benefit of additional test-time compute strategies."
+    },
+    {
+      "t": "FLOPs-matched evaluation",
+      "h": "compare under equal compute budget",
+      "d": "An apples-to-apples comparison methodology that normalizes total floating-point operations across both training and inference before declaring one approach better. The paper uses it to ask: given a fixed total compute budget, is it better to spend FLOPs training a 14x larger model or keeping the smaller model and spending extra FLOPs at inference? Pretraining FLOPs are estimated as 6ND and inference FLOPs as 2ND."
+    },
+    {
+      "t": "proposal distribution",
+      "h": "distribution model samples from",
+      "d": "In statistical sampling, the distribution used to generate candidate answers before any reranking or selection. In this paper it refers to the LLM's output distribution, which can be left as-is (naive sampling) or modified—for example by finetuning the model to revise previous answers—to increase the probability of correct solutions being generated in the first place."
+    },
+    {
+      "t": "compute-optimal scaling strategy",
+      "h": "best compute allocation per prompt",
+      "d": "The paper's core contribution: an adaptive policy that selects which test-time inference method (e.g., sequential revisions vs. parallel sampling vs. beam search) and its hyperparameters based on the estimated difficulty of each prompt. Rather than applying one fixed strategy uniformly, it routes easy questions to sequential refinement and hard questions to broader parallel search, achieving 4x efficiency gains over best-of-N."
+    },
+    {
+      "t": "pass@1",
+      "h": "single-attempt success rate",
+      "d": "The probability that a model produces a correct answer on a single randomly sampled attempt at a problem. Used here to define question difficulty: each question's pass@1 is estimated from 2048 samples, then questions are binned into five difficulty quintiles. A pass@1 near 1.0 means the model almost always gets it right; near 0 means it almost never does."
+    },
+    {
+      "t": "Monte Carlo rollouts",
+      "h": "random forward simulations from a state",
+      "d": "A technique borrowed from reinforcement learning: from a given intermediate solution state, the model generates multiple random completions to the end, then averages the outcomes to estimate the expected final reward. Used here to create training labels for the PRM without requiring expensive human annotation of each reasoning step's correctness."
+    },
+    {
+      "t": "sequential vs. parallel compute",
+      "h": "revise in series vs. sample in parallel",
+      "d": "Two orthogonal axes for spending inference budget. Parallel compute generates N independent answers simultaneously (best-of-N). Sequential compute generates each answer conditioned on previous attempts, allowing iterative self-correction. The paper shows these are complementary: easy problems favor sequential revision; hard problems need parallel diversity plus some sequential refinement, with an optimal ratio that varies by difficulty."
+    }
+  ],
+  "context": "This paper by Snell, Lee, Xu, and Kumar (Google DeepMind / UC Berkeley, August 2024, arXiv:2408.03314) studies how to scale inference-time computation in large language models (LLMs) optimally, asking whether a fixed but non-trivial amount of test-time compute can substantially improve performance on challenging prompts, and whether this can substitute for scaling pretraining. Experiments use the PaLM 2-S* (Codey) base model on the MATH benchmark (12k train, 500 test questions, the split from Lightman et al.). The paper analyzes two primary mechanisms: (1) searching against a process-based reward model (PRM) verifier, and (2) iteratively refining the model's proposal distribution via a finetuned revision model.\n\nThe unifying framework treats test-time compute as modifying an LLM's output distribution via two axes: the proposal distribution (what the model generates) and the verifier (how outputs are selected or guided). The compute-optimal scaling strategy selects hyperparameters theta* that maximize accuracy for a given prompt and budget N, formally argmax over theta of E[1_{y=y*(q)}] under Target(theta, N, q). Question difficulty is estimated by binning the model's pass@1 rate (estimated from 2048 samples per question) into five quintiles. An oracle difficulty version uses ground-truth correctness; a model-predicted difficulty version uses the PRM's averaged final-answer score over the same 2048 samples, requiring no ground-truth labels. Two-fold cross-validation on the test set is used to avoid confounders.\n\nFor PRM training, the authors use Monte Carlo rollouts (16 rollouts per step, 16 samples per question) to estimate per-step correctness without human labels, following Wang et al. The PRM is finetuned as a binary classifier with soft labels and binary cross-entropy loss, using AdamW with lr 3e-5, batch size 128, dropout 0.05, Adam betas (0.9, 0.95), with early stopping on a held-out 10% validation split. The PRM outperforms an ORM baseline at all sample counts tested. For score aggregation, using the last-step PRM prediction outperforms taking the minimum or product of per-step scores, contrary to prior work, attributed to soft MC label training.\n\nThree PRM search methods are compared: best-of-N weighted (N independent samples, select by PRM), beam search (BFS-V style, beam width M, up to 40 rounds), and lookahead search (k-step rollouts at each beam step, temperature 0; cost defined as N*(k+1)). Beam widths swept include M=sqrt(N) and M=4; lookahead k values include 1 and 3. At low generation budgets, beam search significantly outperforms best-of-N. At higher budgets beam search degrades, falling below best-of-N, due to PRM exploitation producing repetitive or very short (1-2 step) solutions. Lookahead search generally underperforms at equivalent compute cost. By difficulty bin: on easy questions (bins 1-2) beam search over-optimizes and degrades with budget; on medium-hard questions (bins 3-4) beam search consistently outperforms best-of-N; on the hardest questions (bin 5) no method makes meaningful progress. Compute-optimal search (selecting best method per difficulty bin) nearly matches or outperforms PRM best-of-N weighted using up to 4x less test-time compute (e.g., 16 vs. 64 generations). Oracle and predicted difficulty bins produce nearly identical curves.\n\nFor revision model training, 64 responses per question are sampled in parallel at higher temperature. Correct answers are paired with up to 4 incorrect answers (number sampled uniformly from 0-4) using character-level edit distance to select the most correlated incorrect answer as the final in-context incorrect response. SFT is run on the correct final answers. AdamW lr 1e-5, batch size 128, dropout 0.0, Adam betas (0.9, 0.95). Checkpoint selection is done slightly after validation loss begins increasing due to off-policy distribution shift. At inference, the model can sample chains longer than 4 by truncating context to the most recent 4 responses. Pass@1 improves monotonically across revision steps (up to 60 steps tested). About 38% of correct answers are flipped to incorrect in naive sequential sampling, requiring verifier-based or majority-voting selection. A separate ORM is trained on revision model outputs (due to distribution shift from the base-model PRM) with revision history in context, improving performance slightly over without history. Sequential sampling outperforms parallel sampling under both verifier-based and majority-based selection.\n\nThere exists an optimal sequential-to-parallel compute ratio that varies by question difficulty. Easy questions benefit from purely sequential computation; harder questions benefit from a balanced ratio. Compute-optimal revision scaling outperforms parallel best-of-N using up to 4x less compute (64 vs. 256 samples). A ReSTEM-optimized revision model showed substantial performance degradations with additional sequential revisions, hypothesized to result from spurious correlations in online-collected data.\n\nFor the pretraining vs. test-time compute comparison, pretraining FLOPs are approximated as 6ND_pretrain and inference FLOPs as 2ND_inference. Scaling model parameters by factor M multiplies both pretraining and inference FLOPs by M. The equivalent test-time compute multiplier is M + 3*(D_pretrain/D_inference)*(M-1). Three values of R = D_inference/D_pretrain are tested: 0.16 (R<<1), 0.79 (R~1), and 22 (R>>1). The comparison is against a model approximately 14x larger in parameters. On easy and intermediate questions (bins 1-3) and at low inference loads (R<<1), compute-optimal test-time scaling frequently outperforms the larger pretrained model. On the hardest questions (bins 4-5) and at high inference loads (R>>1), additional pretraining is more effective. The relationship is not 1-to-1 exchangeable.\n\nKey headline numbers: compute-optimal scaling improves test-time compute efficiency by more than 4x versus best-of-N baseline; in FLOPs-matched evaluation on problems where the smaller model has non-trivial success, test-time compute outperforms a 14x larger model. Relative accuracy improvements shown in Figure 1 include values such as +27.8%, +21.6%, +16.7%, +11.8%, +5.4%, +3.5% for revisions and +19.1%, +2.2%, +2.0% for PRM search on easy/medium questions at various R values, with negative values (down to -52.9%) for hard questions at high inference load.\n\nLimitations acknowledged: difficulty estimation requires 2048 samples per question (high cost, not accounted for in reported numbers); PRM tree-search was not combined with revisions; very hard problems see little benefit from any test-time method; the analysis fixes model parameters scaled and training data fixed (LLaMA-style), not jointly compute-optimal pretraining scaling; ReSTEM revision optimization failed; self-improvement distillation loop not studied.",
+  "source_hash": "sha256:ded7b20b51493258"
+}

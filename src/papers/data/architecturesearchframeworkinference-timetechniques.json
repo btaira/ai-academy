@@ -1,0 +1,325 @@
+{
+  "schema": 1,
+  "id": "architecturesearchframeworkinference-timetechniques",
+  "title": "An Architecture Search Framework for Inference-Time Techniques",
+  "authors": [
+    "Jon Saad-Falcon",
+    "Adrian Gamarra Lafuente",
+    "Shlok Natarajan",
+    "Nahum Maru",
+    "Hristo Todorov",
+    "Etash Guha",
+    "E. Kelly Buchanan",
+    "Mayee Chen",
+    "Neel Guha",
+    "Christopher Ré",
+    "Azalia Mirhoseini"
+  ],
+  "venue": "arXiv",
+  "year": 2025,
+  "url": "https://arxiv.org/abs/2409.15254",
+  "added": "2026-08-30",
+  "tags": [
+    "inference-time-compute",
+    "llm-ensembling",
+    "architecture-search",
+    "bayesian-optimization",
+    "multi-model-systems",
+    "benchmark-evaluation"
+  ],
+  "course_links": [],
+  "summary": "ARCHON automatically searches for optimal combinations of inference-time techniques and LLMs to outperform frontier models by 15.1% on average.",
+  "thesis": "Combining multiple inference-time techniques—generation, ranking, fusion, critique, verification, and unit testing—across ensembles of LLMs yields higher accuracy than any single model or technique alone. Automatically searching this large configuration space with Bayesian optimization is far more efficient than manual or exhaustive methods.",
+  "claims": [
+    {
+      "tag": "modular components",
+      "h": "ARCHON defines seven composable LLM components that each perform a specific role in the inference pipeline.",
+      "body": [
+        "A **Generator** produces candidate responses; a **Fuser** synthesizes multiple candidates into one higher-quality response; a **Ranker** filters candidates to the top-K; a **Critic** annotates strengths and weaknesses; a **Verifier** confirms reasoning correctness; and paired **Unit Test Generator/Evaluator** modules score responses against auto-generated test cases.",
+        "Components are arranged in layers with strict ordering rules—Generators only in the first layer, Critics before Fusers—forming a directed pipeline analogous to a neural network but with no learned weights between layers.",
+        "The Fuser module alone improved performance by 8.9% on average across all benchmarks tested; adding Critic layers before fusion provided an additional 3.1 percentage-point gain."
+      ]
+    },
+    {
+      "tag": "architecture search",
+      "h": "Bayesian optimization over a ~9,576-configuration search space finds optimal inference-time architectures far more efficiently than random or greedy search.",
+      "body": [
+        "The **search space** is defined by six hyperparameter axes: number of generator models (1–10), samples per generator (1–5), fusion layers (1–4), fusers per layer (2–10), presence of critic/ranker layers, and choice of verification layer.",
+        "**Bayesian optimization** using Gaussian processes with Expected Improvement as the acquisition function found the best architecture in 96% of searches, requiring 88.5% fewer evaluations than greedy search and 90.4% fewer than random search.",
+        "Architecture search uses 20% of each target dataset as a development set, and the gap between performance on this subset versus the held-out 80% was only 0.44% on average, indicating low overfitting risk."
+      ]
+    },
+    {
+      "tag": "performance results",
+      "h": "ARCHON architectures consistently outperform frontier single-call LLMs and prior inference-time systems across diverse task categories.",
+      "body": [
+        "Across instruction-following, reasoning, and coding benchmarks, the best ARCHON configurations beat GPT-4o, Claude 3.5 Sonnet, and OpenAI's o1 by an average of 15.1%, while using 20% fewer inference calls and 15.1% fewer input tokens than competing inference-time frameworks (MoA, ADAS, AFlow).",
+        "Open-source-only ARCHON architectures exceeded SOTA open-source baselines by 11.2% on average; for coding (CodeContests), adding unit test generation and high sample counts boosted Pass@1 from 17.9% to 29.3%—a 56% relative improvement.",
+        "Generalized (single-architecture-for-all-tasks) ARCHON configurations retained 91–94% of the performance of task-specific architectures on held-out benchmarks (GPQA, MMLU, MMLU Pro), versus only 66–74% retention for competing systems ADAS and AFlow."
+      ]
+    },
+    {
+      "tag": "task-specific behavior",
+      "h": "No single inference-time technique dominates all task types; optimal architecture composition varies significantly by task.",
+      "body": [
+        "For **instruction-following tasks** (MT-Bench, AlpacaEval 2.0, Arena-Hard-Auto), multi-layer Critic and Ranker before Fuser stacks are most effective, producing richer and more stylistically adherent responses.",
+        "For **coding tasks** (CodeContests), ensembling and fusion provide limited benefit because one or two models dominate; large-sample generation combined with unit test evaluation is instead the key driver of improvement.",
+        "For **reasoning and math tasks**, Verifier and Unit Test modules are most valuable, filtering flawed answers before final fusion; however, these modules are less helpful for instruction-following tasks."
+      ]
+    },
+    {
+      "tag": "limitations and costs",
+      "h": "ARCHON's performance gains come with substantially higher latency, cost, and a search process that itself requires compute.",
+      "body": [
+        "Running an ARCHON architecture requires up to 5× more time and money per query than a single LLM API call, which the authors acknowledge limits applicability to latency-sensitive or cost-constrained deployments.",
+        "Bayesian optimization is less effective for very small inference budgets (fewer than 20 inference calls), where greedy search performs comparably—meaning the automated search provides the most value only when a larger compute budget is available.",
+        "The paper notes that 7B-parameter models work adequately for ranking but are substantially less effective for critique and fusion roles within ARCHON, limiting the framework's utility in settings restricted to small open-source models."
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "t": "Inference-Time Compute Scaling",
+      "plain": "Normally an AI model is trained once and then used as-is. Inference-time compute scaling means spending extra computation at the moment you ask the model a question, not during training. This extra work—like asking multiple models or checking answers—can make outputs significantly better.",
+      "eng": "Training a model is a one-time offline cost; inference-time scaling trades per-query compute for quality. The intuition is that stochastic sampling from a language model's distribution means any single draw is suboptimal, and additional draws plus selection/synthesis can approximate a better point in output space. Practically, this increases latency and API costs by a large multiplier (5–10×) per query, so it is only justified for high-value tasks where quality dominates throughput."
+    },
+    {
+      "t": "Generation Ensembling",
+      "plain": "Instead of asking one AI model a question once, you ask several different models the same question at the same time. You collect all their answers and then combine or pick the best one. Using diverse models tends to produce better results than using one model many times.",
+      "eng": "Ensemble diversity comes from different model architectures, training data, and RLHF objectives, producing outputs with different error modes. When a downstream fusion or ranking step aggregates these, the combined output can exceed the oracle-best single-model answer because weaknesses in one model are compensated by others. The practical caveat is that ensemble performance saturates as you add models ranked by quality from best to worst; adding weak models eventually hurts unless you filter first."
+    },
+    {
+      "t": "Fuser (Generative Fusion)",
+      "plain": "A fuser is a model that reads all the candidate answers produced by the generator ensemble and writes a single new answer that combines the best parts of each. It is not just picking the best answer—it synthesizes a new, higher-quality response. This consistently improved performance more than simply selecting the top answer.",
+      "eng": "Generative fusion is distinct from voting or selection: the fuser model is prompted with all candidate responses as context and autoregressively generates a novel output, effectively performing supervised distillation at inference time without gradient updates. The information bottleneck from N candidates to 1 output forces the fuser to resolve contradictions and retain high-confidence content. Key caveat: fuser efficacy depends on its context window fitting all candidates, and stacking multiple fusion layers yields diminishing returns unless interspersed with critic or ranker stages."
+    },
+    {
+      "t": "Bayesian Optimization for Architecture Search",
+      "plain": "Bayesian optimization is a smart way to search through a large number of possible configurations without trying all of them. It builds a statistical model that predicts which configurations are likely to be good, then focuses testing on the most promising ones. This found the best architecture in 96% of cases while evaluating far fewer options than random or greedy search.",
+      "eng": "Bayesian optimization fits a Gaussian Process surrogate f̂(x) to the observed (configuration, performance) pairs and uses an acquisition function—here Expected Improvement—to select the next configuration that maximizes expected gain over the current best. This exploits the smoothness assumption: nearby configurations in hyperparameter space tend to have similar performance, so the GP can interpolate. The practical caveat is that BO requires enough initial random samples (230–240 here) to calibrate the GP; with fewer than ~20 inference-call budget configurations the search space is too small to outperform greedy search."
+    },
+    {
+      "t": "Critic and Ranker Components",
+      "plain": "A critic model reads all candidate answers and writes a list of strengths and weaknesses for each one. A ranker model then uses those critiques to order the candidates from best to worst. Together they help the fuser focus on the strongest answers and ignore weaker ones.",
+      "eng": "The critic functions as a structured self-evaluation step: by externalizing per-candidate quality signals into text, it provides the downstream fuser with explicit gradient-free feedback analogous to advantage estimates in RL. The ranker performs pairwise comparison scoring, which is more reliable than absolute scoring due to calibration issues in LLMs. Critically, neither component improves performance when used alone as the final output; they only add value upstream of a fuser, meaning the ordering constraint in ARCHON (critic/ranker must precede fuser) is empirically motivated."
+    },
+    {
+      "t": "Verifier and Unit Test Evaluator",
+      "plain": "A verifier is a model that checks whether a candidate answer is logically correct before passing it forward. A unit test evaluator works similarly but uses a set of automatically generated test cases to score each candidate. Both act as filters that remove wrong answers before the final synthesis step.",
+      "eng": "Verification applies a two-stage reasoning chain: first the model generates a rationale for correctness, then uses that rationale plus the original response to emit a binary verdict. This is a form of self-consistency checking without ground-truth labels. Unit-test evaluation generalizes program test coverage to natural language: a unit-test generator produces falsifiable assertions about the expected response, and the evaluator grades each candidate against them. Both are most valuable for tasks with verifiable correctness (math, coding, structured reasoning) and add little for open-ended instruction-following where correctness is subjective."
+    },
+    {
+      "t": "Pareto Frontier of Accuracy vs. Token Budget",
+      "plain": "There is a trade-off: spending more tokens (more computation) generally gives better answers, but costs more. The Pareto frontier is the curve of configurations where you cannot improve accuracy without spending more tokens, and cannot cut costs without losing accuracy. ARCHON is designed to push this frontier—getting more accuracy for the same token budget than competing systems.",
+      "eng": "In multi-objective optimization terms, a Pareto-optimal configuration is one where no other configuration dominates it on both objectives simultaneously. For inference-time systems, the two axes are task performance (accuracy/win-rate) and resource consumption (input+output tokens or API cost). ARCHON's architecture search imposes hard budget constraints as search filters, ensuring only Pareto-admissible configurations are evaluated, which is why it achieves higher accuracy at the same token count than MoA or AFlow rather than simply consuming more tokens."
+    },
+    {
+      "t": "Neural Architecture Search (NAS) Analogy",
+      "plain": "Neural Architecture Search is a technique originally used to automatically design the layer structure of deep neural networks. ARCHON borrows the same idea but applies it to pipelines of language models instead of neural layers. The 'weights' between layers are not learned—instead, the configuration of which models to use and how many layers to stack is what gets optimized.",
+      "eng": "Classical NAS searches over a discrete graph of layer types, skip connections, and widths using RL, evolutionary algorithms, or differentiable relaxations. ARCHON adapts this paradigm to a combinatorial hyperparameter space of LLM component types, model identities, and layer counts, using Bayesian optimization as the search algorithm. A critical difference: in NAS the discovered architecture is then trained end-to-end; in ARCHON no weights are updated—the discovered architecture is used zero-shot, which means the search cost is amortized over query volume rather than gradient steps."
+    }
+  ],
+  "sections": [
+    {
+      "n": "Abstract",
+      "h": "Problem and Solution Overview",
+      "s": "ARCHON is an automated framework that selects and combines inference-time techniques (sampling, ranking, fusion, etc.) and LLMs to maximize accuracy within a compute budget. The key claim is that automated architecture search over these combinations consistently beats single frontier models.",
+      "read": "read closely"
+    },
+    {
+      "n": "1",
+      "h": "Introduction",
+      "s": "The introduction frames three core challenges: understanding which inference-time techniques help on which tasks, understanding how techniques interact, and efficiently searching the large design space. ARCHON addresses all three by treating LLM pipeline construction as a hyperparameter search problem.",
+      "read": "read closely"
+    },
+    {
+      "n": "2",
+      "h": "Related Work",
+      "s": "Prior work either focuses on a single technique (e.g., repeated sampling) or a single task type, and LM orchestration tools like DSPy only optimize one LLM at a time. ARCHON's distinguishing feature is multi-LLM, multi-technique, automated joint optimization.",
+      "read": "skim"
+    },
+    {
+      "n": "3.1",
+      "h": "LLM Components (Building Blocks)",
+      "s": "ARCHON defines seven modular LLM roles: Generator, Fuser, Critic, Ranker, Verifier, Unit Test Generator, and Unit Test Evaluator, each with fixed input/output contracts. Each component is a standard LLM call performing a specific text-to-text transformation on candidates.",
+      "read": "read closely"
+    },
+    {
+      "n": "3.2",
+      "h": "Combining Components and Key Trends",
+      "s": "Components are stacked in layers with ordering rules (Generators first, Critics before Fusers, etc.), and ablation studies identify four trends: more sampling helps, adding fusion layers helps, diverse technique combinations help, and verification modules help on reasoning tasks. The fuser is the single highest-impact component, averaging +8.9% across all benchmarks.",
+      "read": "read closely"
+    },
+    {
+      "n": "3.3",
+      "h": "Architecture Search Algorithm",
+      "s": "The search space has 9,576 valid configurations defined by six hyperparameters; Bayesian optimization with Gaussian processes finds the best architecture using 88.5% fewer evaluations than greedy search. A 20% dataset sample is used as the development set during search, with compute budget constraints enforced as hard filters.",
+      "read": "read closely"
+    },
+    {
+      "n": "4.1",
+      "h": "Benchmarks and Models",
+      "s": "Seven benchmarks span instruction-following (MT-Bench, AlpacaEval 2.0, Arena-Hard-Auto), reasoning (MixEval, MixEval-Hard, MATH), and coding (CodeContests), evaluated on the held-out 80% split after search on 20%. Models range from 8B open-source to closed-source APIs (GPT-4o, Claude 3.5 Sonnet).",
+      "read": "skim"
+    },
+    {
+      "n": "4.2",
+      "h": "Main Comparison Results (Table 1)",
+      "s": "ARCHON task-specific all-source architectures outperform frontier models and prior inference-time systems across all benchmarks while using 20% fewer inference calls, 15.1% fewer input tokens, and 13.5% fewer output tokens than competing systems. Open-source-only ARCHON still beats SOTA open-source baselines by 11.2% on average.",
+      "read": "read closely"
+    },
+    {
+      "n": "4.3",
+      "h": "ARCHON by Task Type",
+      "s": "Instruction-following tasks benefit most from multi-layer fusing with diverse models; coding tasks require unit test generation and high sample counts rather than fusion; reasoning tasks need per-subtask architectures for full benefit. No single architecture topology is universally optimal across task types.",
+      "read": "read closely"
+    },
+    {
+      "n": "4.4",
+      "h": "Discussion: Model Size, Latency, Cost",
+      "s": "ARCHON is most effective with 70B+ models; 7B models work for ranking but poorly for critique and fusion. The system can cost 5x more per query than a single LLM call, though this translates to meaningfully higher output quality.",
+      "read": "skim"
+    },
+    {
+      "n": "A.2–A.3",
+      "h": "Component Prompts and Ablation Details",
+      "s": "Exact prompts for each component are provided (Tables 10–23), and detailed ablation tables (Tables 5–9) show the incremental effect of adding each component across multiple model families. These tables are the primary evidence for the interaction trends claimed in Section 3.2.",
+      "read": "reference only"
+    },
+    {
+      "n": "A.4–A.9",
+      "h": "Bayesian Optimization Details and Discovered Architectures",
+      "s": "The search space formulation, Expected Improvement acquisition function, and convergence criteria are formalized, and the discovered architectures for each task type are diagrammed (Figures 13–16). The general-purpose architecture uses a 'funneling' pattern: wide generator ensemble narrowing through successive critic-ranker-fuser layers.",
+      "read": "reference only"
+    }
+  ],
+  "numbers": [
+    {
+      "v": "15.1%",
+      "k": "Average improvement over frontier models (o1, GPT-4o, Claude 3.5 Sonnet)",
+      "m": "ARCHON task-specific all-source architectures consistently beat the best single-call models across all seven benchmarks",
+      "c": "Averaged across heterogeneous metrics (win rates, accuracy, Pass@1); individual benchmark gains vary substantially"
+    },
+    {
+      "v": "11.2%",
+      "k": "Open-source-only ARCHON improvement over best open-source baselines",
+      "m": "Even without proprietary models, automated architecture search delivers large gains",
+      "c": "Baseline is the best single open-source LLM, not the best open-source inference-time system"
+    },
+    {
+      "v": "20.0%",
+      "k": "Inference call efficiency advantage over AFlow/ADAS/MoA",
+      "m": "ARCHON achieves higher accuracy with fewer LLM calls than competing multi-model systems",
+      "c": "Inference call count is a proxy for cost/latency; actual wall-clock latency can still be 5x a single call"
+    },
+    {
+      "v": "8.9%",
+      "k": "Average accuracy boost from Fuser module alone",
+      "m": "Fusing multiple candidate responses is the single highest-impact inference-time technique across all benchmarks",
+      "c": "Effect size varies by task; coding tasks benefit much less from fusion than instruction-following tasks"
+    },
+    {
+      "v": "88.5%",
+      "k": "Reduction in architecture evaluations vs. greedy search using Bayesian optimization",
+      "m": "Bayesian optimization finds near-optimal configurations far more efficiently than alternatives",
+      "c": "Advantage shrinks for very small budgets (<20 inference calls) where greedy search is comparable"
+    },
+    {
+      "v": "56%",
+      "k": "Improvement in CodeContests Pass@1 from adding unit test generation/evaluation with high sampling",
+      "m": "Unit tests are essential for coding tasks; Pass@1 rises from 17.9% to 29.3%",
+      "c": "This configuration uses up to 1000 samples per generator, making it far more expensive than other task architectures"
+    },
+    {
+      "v": "91–94%",
+      "k": "General-purpose ARCHON performance retention on out-of-domain tasks (GPQA, MMLU, MMLU-Pro)",
+      "m": "A single generalized architecture transfers well to unseen tasks, retaining over 91% of task-specific performance",
+      "c": "Competing systems (AFlow, ADAS) only retain 66–74%, but absolute scores still favor task-specific architectures"
+    },
+    {
+      "v": "9,576",
+      "k": "Valid configurations in the ARCHON search space",
+      "m": "The design space is large enough to require automated search but constrained enough for Bayesian optimization to be effective",
+      "c": "Space is defined by six hyperparameters with human-imposed ordering rules; a fully unconstrained search would be far larger"
+    }
+  ],
+  "jargon": [
+    {
+      "t": "inference-time techniques",
+      "h": "compute added at prediction time",
+      "d": "Methods that spend extra computation when a model is answering a question, rather than during training. Examples include generating multiple candidate answers and then picking the best one. This document treats these techniques as the building blocks being searched over and composed by ARCHON to improve answer quality beyond what any single model call achieves."
+    },
+    {
+      "t": "LLM (Large Language Model)",
+      "h": "large text-generation neural network",
+      "d": "A neural network trained on massive text corpora that can generate, summarize, rank, or critique natural-language responses. In this document, multiple LLMs are combined as independent pipeline stages—each playing a specialized role such as Generator, Critic, or Fuser—rather than relying on a single model call."
+    },
+    {
+      "t": "Fuser",
+      "h": "model that merges candidate answers",
+      "d": "An LLM component that receives multiple candidate responses and synthesizes them into one higher-quality output. It is analogous to a reducing function in hardware pipelines. The paper finds Fuser adds 8.9 percentage points on average across benchmarks and that stacking multiple Fuser layers compounds the benefit, especially for instruction-following tasks."
+    },
+    {
+      "t": "Critic",
+      "h": "model that scores each candidate",
+      "d": "An LLM component that reads each candidate response and produces a list of strengths and weaknesses. That critique text is then fed to downstream Fuser or Ranker stages. The document shows adding a Critic to an ensemble-plus-Fuser pipeline improves accuracy by 3.1 percentage points on average across all benchmarks tested."
+    },
+    {
+      "t": "Ranker",
+      "h": "model that orders candidates by quality",
+      "d": "An LLM component that performs pairwise comparisons of candidate responses and returns a sorted list, allowing only the top-K to proceed. The paper reports the Ranker brings output quality 10.8% above random selection and stays within 2.7% of an oracle (perfect) selection, particularly for instruction-following tasks."
+    },
+    {
+      "t": "Verifier",
+      "h": "model that checks answer correctness",
+      "d": "A two-stage LLM component: Stage 1 generates reasoning for why a candidate answer is correct; Stage 2 issues a binary Correct/Incorrect verdict. Only verified answers pass to the next stage. The document finds it most useful for reasoning benchmarks, boosting MixEval and MATH performance by 8.4% when combined with other components."
+    },
+    {
+      "t": "Bayesian Optimization",
+      "h": "probabilistic search over configurations",
+      "d": "A global hyperparameter search method that fits a Gaussian Process surrogate model to observed objective values and uses an Expected Improvement acquisition function to decide which configuration to evaluate next. ARCHON uses it to search 9,576 possible architecture configurations, requiring 88.5% fewer evaluations than greedy search and finding the best architecture in 96% of trials."
+    },
+    {
+      "t": "generation ensembling",
+      "h": "querying many models in parallel",
+      "d": "Running multiple LLMs simultaneously on the same prompt to obtain a diverse pool of candidate responses, rather than sampling one model repeatedly. The document shows adding ensemble models one-by-one raises Arena-Hard-Auto win rate by 18.5% cumulatively, and that ensemble diversity generally outperforms repeated sampling from a single best model."
+    },
+    {
+      "t": "Pass@1",
+      "h": "fraction of problems solved first try",
+      "d": "A coding benchmark metric: the percentage of problems where the model's single submitted solution passes all test cases on the first attempt. The document uses Pass@1 on CodeContests, reporting ARCHON boosts it from 17.9% to 29.3% by adding unit-test generation and evaluation with high sample counts."
+    },
+    {
+      "t": "MT-Bench",
+      "h": "instruction-following conversation benchmark",
+      "d": "A benchmark of 80 multi-turn conversational questions judged pairwise by GPT-4, producing a win-rate score. It targets instruction-following quality and style. ARCHON's all-source task-specific architecture achieves a 79.5% win rate on MT-Bench versus 44.2% for a single GPT-4o call."
+    },
+    {
+      "t": "Arena-Hard-Auto",
+      "h": "hard pairwise instruction benchmark",
+      "d": "A benchmark of 500 challenging prompts where model outputs are compared pairwise against a reference model (Claude 3.5 Sonnet or GPT-4-0314) by a GPT-4 judge. It is considered harder than MT-Bench. ARCHON's all-source task-specific architecture reaches a 92.5% win rate versus 80.6% for GPT-4o alone."
+    },
+    {
+      "t": "MixEval",
+      "h": "mixed ground-truth reasoning benchmark",
+      "d": "A 2,000-question benchmark that aggregates sub-datasets including GSM8K, TriviaQA, DROP, MATH, BBH, and AGIEval, scored against ground-truth answers (not a judge model). The paper uses it to measure reasoning gains; ARCHON's task-specific closed-source architecture reaches 89.5% accuracy versus 87.5% for GPT-4o."
+    },
+    {
+      "t": "Neural Architecture Search (NAS)",
+      "h": "automated neural network design",
+      "d": "A family of algorithms that automatically discover neural network topologies instead of hand-designing them. ARCHON is explicitly inspired by NAS: it treats each LLM pipeline configuration as an 'architecture' and applies Bayesian optimization—borrowed from NAS literature—to search the 9,576-configuration space of inference-time pipeline layouts."
+    },
+    {
+      "t": "AlpacaEval 2.0",
+      "h": "length-controlled instruction win-rate benchmark",
+      "d": "A benchmark of 805 instruction prompts where responses are compared to GPT-4-Turbo outputs and scored as a length-controlled win rate (LC WR) to reduce verbosity bias. Used in this paper as a primary instruction-following metric; ARCHON's all-source task-specific configuration achieves 69.0% LC WR versus 57.8% for GPT-4o alone."
+    },
+    {
+      "t": "Mixture-of-Agents (MoA)",
+      "h": "layered multi-LLM ensembling baseline",
+      "d": "A prior inference-time architecture where multiple LLMs generate answers and successive layers of aggregator models combine them. It is a key baseline in this paper. ARCHON consistently outperforms MoA while using 20% fewer inference calls, demonstrating that automated architecture search finds better configurations than MoA's fixed design."
+    }
+  ],
+  "context": "ARCHON (Architecture Search Framework for Inference-Time Techniques) is an open-source modular automated framework from Stanford University and University of Washington (Saad-Falcon et al., 2025, arXiv:2409.15254v6) for optimizing the selection and combination of inference-time techniques and LLMs. Given a compute budget and available LLMs, ARCHON uses Bayesian optimization to search a design space of 9,576 valid configurations (reduced from 18,750 by removing configurations where initial generations exceed the fuser context window of 24 candidates, or where a single fuser layer has multiple fusers when xf=1 and xr>=2). The six hyperparameter axes are: (1) top-K generators for ensemble (1-10), (2) top-K generator samples (1-5, or 1-1000 for CodeContests), (3) number of fusion layers (1-4), (4) top-K fusers per layer (2-10 in steps of 2), (5) whether to use critic and ranker layers before each fuser (binary), and (6) evaluation layer type (Verifier, Unit Test Gen/Eval, or neither). The seven LLM component types are: Generator (1 call per candidate, all domains), Fuser (1 call per candidate, all domains), Critic (1 call, all domains), Ranker (1 call, all domains), Verifier (2 calls per candidate, reasoning tasks), Unit Test Generator (1 call, reasoning tasks), and Unit Test Evaluator (1 call per candidate, reasoning tasks). Construction rules enforce that only one component type appears per layer, Generators can only be in the first layer, Critic must precede Ranker or Fuser, Ranker/Critic/Verifier/Unit Test layers must be solo in their layer, and Unit Test Generator precedes Evaluator in consecutive layers. The architecture operates without learned weights and can be deployed off-the-shelf. Bayesian optimization uses Expected Improvement as the acquisition function with a Gaussian Process surrogate model, initialized with 230-240 random configurations (empirically optimal), and finds best architectures in 96.0% of searches, requiring 88.5% fewer evaluations than greedy search and 90.4% fewer than random search. For inference budgets below 20 calls, greedy search performs comparably. Architecture search uses 20% of each dataset as a development set. Evaluation is on the held-out 80% subset; the delta between full-dataset and held-out performance averages 0.44% with SD 0.20%. Generation temperature is 0.7 for all components. Benchmarks evaluated: MT-Bench (80 examples, pairwise win rate), AlpacaEval 2.0 (805 examples, LC and raw win rate vs GPT-4-Turbo), Arena-Hard-Auto (500 examples, win rate vs Claude-3.5-Sonnet or GPT-4-0314), MixEval (2000 examples, ground truth accuracy), MixEval-Hard (500 examples), MATH (200 sampled from 5000, Pass@1), CodeContests (140 non-visual queries, Pass@1). Three out-of-domain evaluation benchmarks: GPQA Diamond, MMLU (500-query sample), MMLU Pro (500-query sample). Models tested span closed-source (GPT-4o, GPT-4-Turbo, Claude-3-Opus, Claude-3.5-Sonnet, Claude-3-Haiku) and open-source 70B+ (Llama-3.1-70B, Llama-3.1-405B, Qwen2-72B, Qwen1.5-110B, Qwen1.5-72B, Mixtral-8x22B, WizardLM-8x22B, DBRX-132B, DeepSeek-67B) and 7B/8B models. Key quantitative results from Table 1 (80% held-out sets): Task-specific all-source ARCHON achieves MT-Bench 79.5%, AlpacaEval 2.0 LC WR 69.0%, Arena-Hard-Auto 92.5%, MixEval-Hard 72.7%, MixEval 89.7%, MATH 93.5%, CodeContests Pass@1 41.4%. Compared to baselines: GPT-4o single call scores 44.2%/57.8%/80.6%/63.4%/87.5%/83.5%/18.1%; o1 scores 56.3%/59.3%/81.7%/72.0%/87.5%/92.7%/31.5% with unknown inference calls; MoA uses 19 calls with avg 25,109 input tokens and scores 51.6%/65.0%/85.3%/62.3%/86.9%/82.9%/15.1%; ADAS uses 52 calls with 72,804 input tokens scoring 66.3%/60.1%/85.4%/64.2%/87.0%/86.0%/23.7%; AFlow uses 48 calls with 68,596 input tokens scoring 62.4%/57.8%/83.2%/63.5%/87.2%/84.5%/21.1%. ARCHON task-specific all-source uses 39 average inference calls, 58,250 input tokens, 36,114 output tokens. ARCHON outperforms frontier models by an average of 15.1%, beats o1 and o1-mini by 8.1% and 9.7% on average, is 20.0% more inference-call efficient than competing open-source frameworks, uses 15.1% fewer input tokens and 13.5% fewer output tokens. Open-source-only ARCHON surpasses SOTA open-source approaches by 11.2% on average. On out-of-domain tasks (Table 2), generalized all-source ARCHON achieves 91.7% performance preservation on GPQA, 93.9% on MMLU, 94.2% on MMLU Pro versus task-specific ARCHON, compared to AFlow preserving 70.8%/73.8%/67.0% and ADAS preserving 73.2%/73.3%/66.8%. Component-level findings from ablations on 70B+ open-source ensemble: Fuser improves performance by 8.9% on average across all benchmarks; adding Critic to ensemble+fuser improves by average 3.1 pp (11.5 pp on the 10-model 70B+ ensemble); Ranker improves output quality 10.8% over random selection on MT-Bench and Arena-Hard-Auto, within 2.7% of oracle; Verifier most effective for reasoning (8.4% improvement on MixEval, MixEval-Hard, MATH); Unit Test Gen/Eval gives 56% boost (17.9 to 29.3 Pass@1) on CodeContests with increased sampling; repeated sampling increases performance 9.3%; ensemble scaling increases performance 18.5%. The best general-purpose all-source architecture uses 10 generators followed by four successive critic-ranker-fuser layers with decreasing fuser counts (8, 6, 4, then 1) producing a funneling effect using Qwen2-72B for critics and Claude-3.5-Sonnet for fusion. Coding architectures favor multiple generation-critique-fusion iterations over a single response with unit test evaluation. Math architectures use broad initial generation then rapid reduction. ARCHON is 5x more expensive in time and money than a single LLM call. The framework is noted as extensible to new techniques, models, and tasks. Limitations include the 5x latency and cost increase, reduced effectiveness of Bayesian optimization at budgets below 20 inference calls, limited benefits of 7B models for critique and fusion (though ranking works well), and the need for individualized architectures for reasoning subtasks.",
+  "source_hash": "sha256:7531f7bd335276b3"
+}
