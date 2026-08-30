@@ -53,20 +53,27 @@ function boot() {
 
 function wireKeyPanel() {
   $("#settings-btn").addEventListener("click", () => { $("#keypanel").classList.toggle("hide"); keyState(); });
-  $("#key-save").addEventListener("click", () => {
-    const v = $("#key-input").value.trim();
-    if (v) keyStore.set(v);
-    keyStore.setModel($("#model-input").value);
-    $("#key-input").value = "";
-    keyState();
-  });
+  $("#key-save").addEventListener("click", saveKey);
+  $("#key-input").addEventListener("keydown", e => { if (e.key === "Enter") saveKey(); });
   $("#key-clear").addEventListener("click", () => { keyStore.clear(); keyState(); });
   $("#model-input").value = keyStore.model();
   keyState();
 }
 
-function keyState() {
-  $("#key-state").textContent = keyStore.has()
+function saveKey() {
+  const v = $("#key-input").value.trim();
+  if (!v) return;
+  const ok = keyStore.set(v);
+  keyStore.setModel($("#model-input").value);
+  if (ok) $("#key-input").value = "";
+  keyState(!ok);
+}
+
+function keyState(saveFailed) {
+  $("#settings-btn").classList.toggle("key-set", !saveFailed && keyStore.has());
+  $("#key-state").textContent = saveFailed
+    ? "Couldn't save — this browser is blocking local storage for this site (private browsing, tracking protection, or an extension). Try a different browser or disable that blocking for this page."
+    : keyStore.has()
     ? "Key set on this browser. You can decode papers below."
     : "No key set. Add one above before decoding a paper.";
 }

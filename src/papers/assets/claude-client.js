@@ -15,7 +15,9 @@ const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 export const keyStore = {
   get: () => { try { return localStorage.getItem(KEY_STORE) || ""; } catch { return ""; } },
-  set: (v) => { try { localStorage.setItem(KEY_STORE, v.trim()); } catch {} },
+  // Returns true on success, false if this browser is blocking/restricting storage —
+  // callers should surface that rather than let the save silently no-op.
+  set: (v) => { try { localStorage.setItem(KEY_STORE, v.trim()); return localStorage.getItem(KEY_STORE) === v.trim(); } catch { return false; } },
   clear: () => { try { localStorage.removeItem(KEY_STORE); } catch {} },
   has: () => !!keyStore.get(),
   model: () => { try { return localStorage.getItem(MODEL_STORE) || DEFAULT_MODEL; } catch { return DEFAULT_MODEL; } },
