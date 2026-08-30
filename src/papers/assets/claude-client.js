@@ -11,6 +11,7 @@
 
 const KEY_STORE = "ai-academy.anthropic-key";
 const MODEL_STORE = "ai-academy.anthropic-model";
+const WORKSPACE_STORE = "ai-academy.anthropic-workspace";
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 export const keyStore = {
@@ -21,7 +22,12 @@ export const keyStore = {
   clear: () => { try { localStorage.removeItem(KEY_STORE); } catch {} },
   has: () => !!keyStore.get(),
   model: () => { try { return localStorage.getItem(MODEL_STORE) || DEFAULT_MODEL; } catch { return DEFAULT_MODEL; } },
-  setModel: (v) => { try { localStorage.setItem(MODEL_STORE, v.trim() || DEFAULT_MODEL); } catch {} }
+  setModel: (v) => { try { localStorage.setItem(MODEL_STORE, v.trim() || DEFAULT_MODEL); } catch {} },
+  // Some Anthropic API keys are "identity-linked" and scoped to a person rather than a
+  // single workspace — those require the workspace to act in named on every request.
+  // Legacy workspace-scoped keys don't need this at all, so it's optional.
+  workspace: () => { try { return localStorage.getItem(WORKSPACE_STORE) || ""; } catch { return ""; } },
+  setWorkspace: (v) => { try { localStorage.setItem(WORKSPACE_STORE, v.trim()); } catch {} }
 };
 
 export class NoKeyError extends Error {
@@ -32,14 +38,18 @@ export async function callClaude(system, messages, { maxTokens = 1200 } = {}) {
   const key = keyStore.get();
   if (!key) throw new NoKeyError();
 
+  const headers = {
+    "content-type": "application/json",
+    "x-api-key": key,
+    "anthropic-version": "2023-06-01",
+    "anthropic-dangerous-direct-browser-access": "true"
+  };
+  const workspace = keyStore.workspace();
+  if (workspace) headers["anthropic-workspace-id"] = workspace;
+
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
+    headers,
     body: JSON.stringify({ model: keyStore.model(), max_tokens: maxTokens, system, messages })
   });
 
@@ -47,6 +57,7 @@ export async function callClaude(system, messages, { maxTokens = 1200 } = {}) {
     let detail = res.status + "";
     try { const j = await res.json(); detail = j?.error?.message || detail; } catch {}
     if (res.status === 401) detail = "Key rejected. Check it in Settings.";
+    else if (!workspace && /workspace/i.test(detail)) detail = "This key needs a workspace id — add it under key settings, then try again.";
     throw new Error(detail);
   }
 

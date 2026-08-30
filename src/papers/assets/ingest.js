@@ -57,15 +57,19 @@ function wireKeyPanel() {
   $("#key-input").addEventListener("keydown", e => { if (e.key === "Enter") saveKey(); });
   $("#key-clear").addEventListener("click", () => { keyStore.clear(); keyState(); });
   $("#model-input").value = keyStore.model();
+  $("#workspace-input").value = keyStore.workspace();
+  $("#workspace-input").addEventListener("keydown", e => { if (e.key === "Enter") saveKey(); });
   keyState();
 }
 
 function saveKey() {
   const v = $("#key-input").value.trim();
-  if (!v) return;
-  const ok = keyStore.set(v);
+  // The key field clears after a successful save, so re-clicking Save with it empty
+  // just updates model/workspace without touching the already-stored key.
+  const ok = v ? keyStore.set(v) : true;
   keyStore.setModel($("#model-input").value);
-  if (ok) $("#key-input").value = "";
+  keyStore.setWorkspace($("#workspace-input").value);
+  if (ok && v) $("#key-input").value = "";
   keyState(!ok);
 }
 
