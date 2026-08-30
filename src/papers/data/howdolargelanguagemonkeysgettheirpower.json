@@ -1,0 +1,308 @@
+{
+  "schema": 1,
+  "id": "howdolargelanguagemonkeysgettheirpower",
+  "title": "How Do Large Language Monkeys Get Their Power (Laws)?",
+  "authors": [
+    "Rylan Schaeffer",
+    "Joshua Kazdan",
+    "John Hughes",
+    "Jordan Juravsky",
+    "Sara Price",
+    "Aengus Lynch",
+    "Erik Jones",
+    "Robert Kirk",
+    "Azalia Mirhoseini",
+    "Sanmi Koyejo"
+  ],
+  "venue": "arXiv preprint",
+  "year": 2025,
+  "url": "https://arxiv.org/abs/2502.17578",
+  "added": "2026-08-30",
+  "tags": [
+    "scaling-laws",
+    "inference-compute",
+    "language-models",
+    "power-laws",
+    "statistical-distributions",
+    "jailbreaking"
+  ],
+  "course_links": [],
+  "summary": "Explains why repeated LLM sampling yields aggregate power-law scaling even though each individual problem scales exponentially, via heavy-tailed difficulty distributions.",
+  "thesis": "When a language model makes k independent attempts at each problem in a benchmark, the aggregate failure rate follows a power law in k because a heavy-tailed distribution of per-problem difficulty warps the sum of exponentials into a polynomial. Understanding this mechanism lets practitioners predict the power-law exponent with far less compute than standard regression.",
+  "claims": [
+    {
+      "tag": "per-problem vs aggregate",
+      "h": "Individual problems scale exponentially; only the aggregate looks like a power law.",
+      "body": [
+        "For any single problem i, the probability of failing all k attempts is (1 - pass_i@1)^k, so **pass_i@k** approaches 1 exponentially fast in k.",
+        "When you average across all problems in a benchmark, this exponential per-problem improvement produces an aggregate curve that looks like a power law, which is surprising and non-obvious.",
+        "The paper confirms both behaviors empirically across Pythia model families on MATH and frontier models on HarmBench."
+      ]
+    },
+    {
+      "tag": "heavy tail mechanism",
+      "h": "A power-law left tail in the distribution of single-attempt success rates is both necessary and sufficient for aggregate power-law scaling.",
+      "body": [
+        "**Theorem 3.1 (Sufficiency)** states: if the density of per-problem single-attempt success rates behaves as C * p^(b-1) near p=0, then -log(pass_D@k) ~ C*Gamma(b)*k^(-b) for large k.",
+        "**Theorem 3.2 (Necessity)** proves the converse: observing aggregate power-law decay with exponent b implies the density must have exactly that polynomial weight near zero.",
+        "Intuitively, a small fraction of extremely hard problems (tiny pass_i@1) pile up just enough to keep dragging the aggregate success rate down polynomially, even as every individual problem is being solved exponentially quickly."
+      ]
+    },
+    {
+      "tag": "distributional estimator",
+      "h": "Fitting a distribution to single-attempt success rates predicts the power-law exponent far more efficiently than least-squares regression.",
+      "body": [
+        "The **distributional estimator** fits a scaled Kumaraswamy-Binomial (or Beta-Binomial) distribution to the observed success counts per problem, then simulates how pass_D@k scales with k to extract the exponent b.",
+        "In backtesting on synthetic data with known ground-truth exponents, the distributional estimator achieves roughly an order of magnitude lower relative error |b_hat - b|/b than the standard least-squares log-log regression.",
+        "This translates to needing approximately 2-4 orders of magnitude less inference compute to reach the same estimation accuracy."
+      ]
+    },
+    {
+      "tag": "deviation explanation",
+      "h": "Models without a heavy left tail in per-problem difficulty do not exhibit aggregate power-law scaling.",
+      "body": [
+        "Llama 3 8B Instruction Tuned failed to show power-law scaling under Best-of-N jailbreaking, a result that previously lacked a principled explanation.",
+        "The distributional view immediately explains this: Llama 3 8B IT could be successfully jailbroken on every prompt within the sampling budget, so there were no ultra-hard prompts forming the required heavy left tail.",
+        "Without that tail, the aggregate success rate rises much faster than any power law."
+      ]
+    },
+    {
+      "tag": "limitations and caveats",
+      "h": "The framework assumes independent attempts and continuous distributions, and the Best-of-N jailbreaking data violates these assumptions.",
+      "body": [
+        "Best-of-N Jailbreaking sampled attempts sequentially until success or until a 10,000-attempt cap, in minibatches of 60, rather than drawing all attempts independently. The paper simplifies this to independent attempts for analytical tractability.",
+        "The authors acknowledge this nuance explains why the distributional and least-squares exponent estimates agree less closely for jailbreaking data than for the math benchmark data.",
+        "A more accurate model for that setting would use a **beta-negative binomial distribution** with a correction for the maximum attempt cap, as noted in Appendix H."
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "t": "pass@k (and ASR@k)",
+      "plain": "When an AI model gets k independent tries at a problem, pass@k is the probability that at least one attempt succeeds. It is not the average score per attempt; it is the probability of getting any correct answer in k shots. ASR@k is the same idea applied to jailbreak attacks.",
+      "eng": "pass_i@k = 1 - (1 - p_i)^k, where p_i is the single-attempt success probability for problem i. Because you only need one success in k independent Bernoulli trials, the failure probability (1-p_i)^k decays exponentially in k. The practical caveat is that naive estimation as 1-(1-p_hat)^k is biased; the Chen et al. estimator based on counting successes in n>>k samples is unbiased and numerically stable."
+    },
+    {
+      "t": "Inference-time compute scaling",
+      "plain": "A language model's accuracy can be improved not only by training a bigger model but also by spending more computation at answer time, for example by generating many candidate answers and taking the best one. This is called scaling inference-time compute. It is an alternative to scaling training compute.",
+      "eng": "Training compute (FLOPs used to update weights) and inference compute (FLOPs used to generate outputs) are two distinct axes of resource expenditure. Repeated sampling is the simplest inference-time scaling strategy: sample k outputs, return any that satisfy a verifier. The key engineering question is how the success rate grows with k, because that determines the compute-accuracy trade-off curve at deployment time."
+    },
+    {
+      "t": "Power law scaling",
+      "plain": "A power law relationship means one quantity scales as another raised to some fixed exponent, like y = a * x^(-b). On a log-log plot this appears as a straight line. Power laws are important because they let you extrapolate performance at large scales from measurements at small scales.",
+      "eng": "In this paper the observed relationship is -log(average pass rate) ~ a * k^(-b), where k is the number of attempts. The exponent b controls how quickly performance improves: larger b means faster improvement with more attempts. Power laws are practically useful because you can fit a and b from cheap small-k experiments and forecast behavior at expensive large-k regimes, but only if the relationship is truly power-law and not, say, exponential."
+    },
+    {
+      "t": "Heavy-tailed distribution (left power-law tail)",
+      "plain": "A heavy-tailed distribution is one where extreme values (here, very tiny success probabilities) occur far more often than a normal distribution would predict. A left power-law tail near zero means the probability density of a problem having success probability p behaves like p^(b-1) as p approaches zero. This is the key structural property that causes aggregate power-law scaling.",
+      "eng": "The core theorem in the paper states that -log(pass_D@k) ~ C*Gamma(b)*k^(-b) if and only if the density of per-problem single-attempt success rates behaves as f(p) ~ C*p^(b-1) near p=0. The mechanism is that hard problems (tiny p) are never fully solved even after many attempts, so they keep dragging down the aggregate. The polynomial density of hard problems near zero 'piles them up' in just the right proportion to convert each problem's exponential improvement into aggregate polynomial improvement. This is a compound-binomial effect: the lower-tail probability of the mixing distribution controls the upper tail of the marginal survivor function."
+    },
+    {
+      "t": "Exponential vs polynomial (power-law) decay",
+      "plain": "For a single fixed problem, the probability of still failing after k tries drops exponentially fast in k (doubly fast: failure probability halves every fixed number of extra attempts). Across all problems averaged together, the drop is much slower and follows a power law. Understanding why those two facts are consistent is the central puzzle the paper solves.",
+      "eng": "For problem i: -log(pass_i@k) ≈ (1-p_i)^k, which is exponential in k. Aggregating over a benchmark: -log(pass_D@k) ≈ a*k^(-b), which is polynomial in k. The reconciliation is that averaging a mixture of exponentials with a power-law-weighted mixing measure produces a Laplace transform evaluated at k, and the Laplace transform of p^(b-1) is Gamma(b)*k^(-b) — a standard result. The practical consequence is that benchmarks with more truly hard problems (heavier left tail) will have a smaller exponent b and slower improvement with added inference compute."
+    },
+    {
+      "t": "Beta and Kumaraswamy distributions as models for per-problem difficulty",
+      "plain": "These are two flexible mathematical distributions that live on the interval [0,1], making them natural models for probabilities. The authors fit them to the observed spread of per-problem success rates across a benchmark. The shape parameter alpha of these distributions directly determines the power-law exponent b in the aggregate scaling law.",
+      "eng": "For Beta(alpha, beta): the aggregate -log(pass@k) scales as k^(-alpha), so the first shape parameter alpha is exactly the power-law exponent. For Kumaraswamy(alpha, beta), the same holds. This gives a direct, interpretable link between the difficulty distribution of a benchmark and its scaling behavior. The practical payoff is that fitting a scaled Kumaraswamy-Binomial to the histogram of per-problem success counts (a single-k experiment) yields an estimate of b with ~10x lower relative error than fitting the power law directly from multi-k data, requiring 100-10000x less inference compute."
+    },
+    {
+      "t": "Distributional estimator vs least-squares estimator",
+      "plain": "The standard way to estimate the power-law exponent b is to run the model at many different values of k, compute the average pass rate at each k, and fit a straight line on a log-log plot. The new distributional estimator instead fits a parametric distribution to the single-attempt success rates across problems, and then simulates how the aggregate pass rate would scale with k. The distributional estimator is much more data-efficient.",
+      "eng": "The least-squares estimator requires many samples at many k values, and its estimate of the exponent b is noisy because it tries to observe the aggregate trend directly, which is heavily influenced by the hard-tail problems that are rarely solved. The distributional estimator concentrates statistical power on estimating the tail of f(p) from single-attempt data, then analytically propagates that to the scaling exponent via the Gamma function relationship. A key practical subtlety: problems with p < 1/N (where N is the sample budget) are never observed to succeed, but their count is still informative for fitting the tail, which the distributional estimator handles through discretized maximum likelihood."
+    }
+  ],
+  "sections": [
+    {
+      "n": "Abstract",
+      "h": "Core Claim and Puzzle",
+      "s": "When a language model makes multiple independent attempts at each of many tasks, the negative log of the average success rate follows a power law in the number of attempts. The puzzle is that per-problem scaling is exponential, not polynomial, so the aggregate power law must arise from something else — specifically the distribution of per-problem difficulty.",
+      "read": "read closely"
+    },
+    {
+      "n": "1",
+      "h": "Introduction and Background",
+      "s": "Prior work (Brown et al. 2024, Hughes et al. 2024) empirically observed power-law aggregate scaling for mathematical problem solving and jailbreaking attacks. This section frames the central question: should such scaling be expected, and where does it come from?",
+      "read": "skim"
+    },
+    {
+      "n": "2",
+      "h": "Per-Problem Scaling Is Exponential, Not Polynomial",
+      "s": "Simple probability shows that the chance all k attempts fail is (1−p)^k, so the negative log per-problem success rate decays exponentially with k. Empirical plots for all tested models confirm this, including Llama 3 8B IT which never exhibits aggregate power law.",
+      "read": "read closely"
+    },
+    {
+      "n": "3",
+      "h": "Heavy-Tailed Problem Difficulty Causes Aggregate Power Law",
+      "s": "The aggregate power law emerges because the distribution of single-attempt success probabilities has a power-law left tail near zero; problems with tiny pass@1 collectively dominate the aggregate failure rate. Two theorems (sufficiency and necessity) prove this is an if-and-only-if relationship: −log(passD@k) ~ Ck^(−b) exactly when the density near zero behaves like p^(b−1).",
+      "read": "read closely"
+    },
+    {
+      "n": "4",
+      "h": "Absence of Heavy Tail Explains Deviations from Power Law",
+      "s": "Llama 3 8B IT was jailbroken on every prompt within the sampling budget, so its pass@1 distribution has no left power-law tail. Without that tail, no aggregate power law appears, which matches observed data.",
+      "read": "skim"
+    },
+    {
+      "n": "5",
+      "h": "Distributional Estimator for Power Law Parameters",
+      "s": "Fitting a scaled Beta or Kumaraswamy distribution to the pass@1 histogram lets one simulate passD@k and extract power law parameters without running huge inference sweeps. Backtesting shows the distributional estimator achieves ~10x lower relative error in the exponent, or equivalently 100–10,000x less inference compute, compared to least-squares regression.",
+      "read": "read closely"
+    },
+    {
+      "n": "6",
+      "h": "Related Work",
+      "s": "Surveys the large literature on neural scaling laws across training compute, architecture, modalities, and settings. Reference section only; no new claims.",
+      "read": "reference only"
+    },
+    {
+      "n": "7",
+      "h": "Discussion and Pretraining Conjecture",
+      "s": "The paper proposes the distributional mechanism may explain why pretraining loss also follows a power law in compute: at small compute the dominant term is unclear, but at large scale a single power-law term dominates. Unresolved questions include why benchmark difficulty distributions have heavy tails in the first place.",
+      "read": "skim"
+    },
+    {
+      "n": "A",
+      "h": "Appendix: Sampling Clarification",
+      "s": "Best-of-N Jailbreaking stopped sampling after the first success or 10,000 attempts, unlike Large Language Monkeys which always drew 10,000 samples. This second-order difference may explain why exponent estimates from the two methods agree less well for jailbreaking.",
+      "read": "skim"
+    },
+    {
+      "n": "B",
+      "h": "Appendix: Chen et al. Estimator",
+      "s": "Describes the unbiased, numerically stable estimator for pass@k using n total samples and c successes. Using the naive estimator 1−(1−p̂)^k is biased, especially at small pass@1.",
+      "read": "reference only"
+    },
+    {
+      "n": "C",
+      "h": "Appendix: Fitted Power Law Parameters",
+      "s": "Tables of (a, b) for each model on MATH and HarmBench benchmarks; Llama 3 8B IT has no entry because no power law was observed. Useful lookup table for specific numbers.",
+      "read": "reference only"
+    },
+    {
+      "n": "E",
+      "h": "Appendix: Mathematical Derivations",
+      "s": "Full proofs that Uniform(0,β), Beta(α,β), Kumaraswamy(α,β), and Continuous Bernoulli distributions yield power laws with different exponents, while Delta and Reciprocal distributions do not. Includes the formal proof of the sufficiency and necessity theorems stated in Section 3.",
+      "read": "reference only"
+    },
+    {
+      "n": "F–H",
+      "h": "Appendix: MLE for Scaled Distributions",
+      "s": "Derives the PMF of scaled Beta-Binomial, Kumaraswamy-Binomial, and Beta-Negative-Binomial distributions used to fit the pass@1 histograms via maximum likelihood. The Beta-Negative-Binomial is the correct model for the jailbreaking data due to its different stopping rule.",
+      "read": "reference only"
+    }
+  ],
+  "numbers": [
+    {
+      "v": "~10x",
+      "k": "Relative error reduction in power law exponent estimation",
+      "m": "The distributional estimator recovers the true exponent about 10x more accurately than least-squares log-log regression at any given sample size.",
+      "c": "Measured on synthetic data with known ground truth; real-data improvement may vary."
+    },
+    {
+      "v": "2–4 orders of magnitude",
+      "k": "Inference compute saved by distributional estimator",
+      "m": "You can get the same exponent accuracy with 100–10,000x fewer model calls by fitting the pass@1 distribution instead of sweeping k.",
+      "c": "Depends on the specific distribution shape and how hard the problems are."
+    },
+    {
+      "v": "b ≈ 0.19–0.37",
+      "k": "Power law exponents for Pythia models on MATH",
+      "m": "Larger Pythia models have steeper (larger b) power laws, meaning their aggregate success rate improves faster with more attempts.",
+      "c": "Fit only on 128 MATH problems; may not generalize to other benchmarks."
+    },
+    {
+      "v": "b ≈ 0.26–0.49",
+      "k": "Power law exponents for frontier models on HarmBench jailbreaking",
+      "m": "Frontier model jailbreak resistance varies substantially; GPT-4o Mini (b=0.49) is easier to attack at scale than Gemini 1.5 Pro (b=0.26).",
+      "c": "Text modality only; audio/image attacks not analyzed here."
+    },
+    {
+      "v": "10,000",
+      "k": "Attempts per problem or prompt in the source datasets",
+      "m": "Both studies sampled up to 10,000 attempts per task, giving sufficient resolution to measure very small pass@1 values.",
+      "c": "Best-of-N Jailbreaking stopped early on success, so effective sample counts differ across prompts."
+    },
+    {
+      "v": "128 / 159",
+      "k": "Number of MATH problems / HarmBench prompts used",
+      "m": "Small benchmark sizes mean empirical pass@1 distributions are noisy; this motivates the parametric distributional fit.",
+      "c": "Results may not hold for much larger or differently curated benchmarks."
+    }
+  ],
+  "jargon": [
+    {
+      "t": "pass@k",
+      "h": "success rate over k tries",
+      "d": "A metric measuring the probability that at least one of k independent attempts by a language model solves a given problem. Defined formally as the expected value of an indicator that any attempt succeeds. This document tracks how pass@k changes as k grows, revealing power-law versus exponential scaling behavior across individual problems and across aggregated benchmark datasets."
+    },
+    {
+      "t": "inference-time compute scaling",
+      "h": "more compute at test time",
+      "d": "The practice of spending additional computational resources during model deployment (not training) to improve output quality, typically by generating multiple candidate answers. Contrasted with pre-training compute scaling. This paper specifically studies repeated independent sampling as the mechanism, asking how performance improves as the number of attempts k increases from 1 to 10,000."
+    },
+    {
+      "t": "power law",
+      "h": "y proportional to x to negative exponent",
+      "d": "A relationship where one quantity scales as another raised to a fixed negative exponent: y ~ a * x^(-b). Appears linear on log-log plots. This paper explains why the negative log of the average success rate follows a power law in the number of attempts k, tracing the origin to the heavy-tailed distribution of per-problem single-attempt success probabilities."
+    },
+    {
+      "t": "heavy-tailed distribution",
+      "h": "many extreme low-probability events",
+      "d": "A probability distribution where the tail decays slowly, meaning rare events occur far more often than a normal distribution predicts. Here the relevant tail is the left tail: many benchmark problems have extremely small single-attempt success probabilities. The paper proves this polynomial density near zero is the necessary and sufficient condition for aggregate power-law scaling to appear."
+    },
+    {
+      "t": "Beta distribution",
+      "h": "flexible distribution over probabilities",
+      "d": "A continuous probability distribution supported on [0,1], parameterized by shape parameters alpha and beta, commonly used to model probabilities or proportions. This paper shows that if per-problem success rates follow a Beta(alpha, beta) distribution, the aggregate negative log pass rate scales as k^(-alpha), directly linking the distribution's shape parameter to the observed power-law exponent."
+    },
+    {
+      "t": "Kumaraswamy distribution",
+      "h": "Beta-like distribution, closed-form CDF",
+      "d": "A two-parameter distribution on (0,1) similar to the Beta distribution but with a closed-form CDF, making it computationally convenient. The paper finds that scaled three-parameter Kumaraswamy distributions fit the empirical per-problem success rate histograms well for both math benchmarks and jailbreaking data, and uses it as the basis for the distributional power-law exponent estimator."
+    },
+    {
+      "t": "MATH benchmark",
+      "h": "competitive math problem dataset",
+      "d": "A dataset of competition-level mathematics problems introduced by Hendrycks et al. (2021), spanning topics from algebra to number theory with varying difficulty. Used in this paper via Brown et al. (2024)'s data: Pythia language models (70M to 12B parameters) each attempted 128 MATH problems with up to 10,000 independent tries, providing the primary evidence for per-problem exponential and aggregate power-law scaling."
+    },
+    {
+      "t": "HarmBench",
+      "h": "standardized jailbreak evaluation dataset",
+      "d": "A standardized benchmark for evaluating automated red-teaming attacks against language model safety filters, introduced by Mazeika et al. (2024). Contains 159 harmful prompts. This paper uses Hughes et al. (2024)'s Best-of-N jailbreaking data on HarmBench with frontier models (Claude, GPT-4o, Gemini, Llama) to demonstrate that the same power-law and distributional findings extend beyond math problem-solving to safety-relevant settings."
+    },
+    {
+      "t": "Attack Success Rate (ASR@k)",
+      "h": "jailbreak success over k tries",
+      "d": "The probability that at least one of k independently sampled adversarial prompts successfully bypasses a language model's safety guardrails on a given harmful instruction. The jailbreaking analogue of pass@k. Hughes et al. (2024) found -log(ASR@k) also scales as a power law in k for most frontier models, motivating this paper's unified distributional explanation."
+    },
+    {
+      "t": "Pythia model family",
+      "h": "open-source LLMs at multiple scales",
+      "d": "A suite of open-source transformer language models ranging from 70M to 12B parameters released by Biderman et al. (2023), designed explicitly for studying scaling behavior with matched training data and procedures across sizes. This paper uses Pythia models as the primary subjects for the math problem-solving experiments, plotting how power-law exponents change systematically with model size."
+    },
+    {
+      "t": "Beta-Binomial distribution",
+      "h": "binomial with Beta-distributed success probability",
+      "d": "A compound distribution where the success probability in each Bernoulli trial is itself drawn from a Beta distribution, making it appropriate when there is uncertainty or variability in the underlying per-trial success rate. This paper fits scaled Beta-Binomial and Kumaraswamy-Binomial distributions to empirical success count data across benchmark problems to estimate power-law parameters with far fewer samples than least-squares regression requires."
+    },
+    {
+      "t": "least-squares power law estimator",
+      "h": "log-log linear regression fit",
+      "d": "The standard method of estimating power-law scaling parameters by taking logarithms of both axes and fitting a line via linear regression, minimizing squared residuals between observed and predicted -log(pass@k) values at multiple k. This paper shows this estimator requires 2-4 orders of magnitude more inference compute than the proposed distributional estimator to achieve the same accuracy in recovering the true exponent b."
+    },
+    {
+      "t": "distributional estimator",
+      "h": "fit distribution then simulate scaling",
+      "d": "The paper's proposed alternative to least-squares: fit a parametric distribution (e.g., scaled Kumaraswamy-Binomial) to the observed per-problem single-attempt success counts, then numerically simulate how the aggregate pass rate would scale with k using equation 11. Achieves roughly one order of magnitude lower relative error in recovering the true power-law exponent with the same data, by exploiting the structural connection between the distribution's left tail and the scaling exponent."
+    },
+    {
+      "t": "Best-of-N jailbreaking",
+      "h": "repeated adversarial prompt sampling",
+      "d": "An attack strategy introduced by Hughes et al. (2024) that repeatedly samples N random perturbations of a harmful prompt (via text, image, or audio modifications) and succeeds if any single perturbation bypasses the target model's safety filter. Conceptually identical to pass@k sampling for problem-solving. The paper uses this as a second domain demonstrating power-law aggregate scaling and the heavy-tail distributional explanation."
+    }
+  ],
+  "context": "This paper (arXiv 2502.17578, Feb 2025) by Schaeffer et al. investigates why the negative log of the average success rate scales as a power law in the number of independent attempts k when language models tackle benchmark problems with repeated sampling. The core empirical phenomenon comes from two prior works: Brown et al. (2024), 'Large Language Monkeys,' which studied Pythia language models (70M, 160M, 410M, 1B, 2.8B, 6.9B, 12B parameters) solving 128 problems from the MATH benchmark using up to 10,000 independent attempts per problem; and Hughes et al. (2024), 'Best-of-N Jailbreaking,' which studied frontier AI models (Claude 3.5 Sonnet, Claude 3.5 Opus, Gemini 1.5 Flash, Gemini 1.5 Pro, GPT4o Mini, GPT4o, Llama 3 8B IT) on 159 prompts from HarmBench using up to 10,000 jailbreaking attempts per prompt. Both works observed that the negative log of the dataset-averaged success rate follows a power law: -log(passD@k) approximately equals a*k^(-b), for model- and benchmark-specific constants a and b greater than zero. Fitted power law parameters for Pythia models on MATH range from a=8.026, b=0.194 (Pythia 70M) to a=4.113, b=0.370 (Pythia 12B). For Best-of-N jailbreaking, parameters include Claude 3.5 Opus (a=2.630, b=0.448), Claude 3.5 Sonnet (a=3.436, b=0.312), GPT4o (a=3.639, b=0.395), GPT4o Mini (a=3.637, b=0.492), Gemini 1.5 Flash (a=6.158, b=0.303), Gemini 1.5 Pro (a=6.296, b=0.256). Llama 3 8B IT does not exhibit power law scaling. The paper identifies and resolves a puzzle: mathematically, for any single problem i, pass_i@k = 1 - (1 - pass_i@1)^k, so -log(pass_i@k) approximately equals (1 - pass_i@1)^k, meaning per-problem failure probability falls exponentially with k. This is confirmed empirically across all models and both benchmarks. The resolution is that the distribution over problems of single-attempt success probabilities pass_i@1 must have a heavy (power-law) left tail near zero. Theorems 3.1 (sufficiency) and 3.2 (necessity) formalize this: the aggregate -log(passD@k) scales as C*Gamma(b)*k^(-b) if and only if the density f(p) of pass_i@1 behaves like C*p^(b-1) as p approaches 0+. The paper derives aggregate scaling behavior for several parametric distributions: Uniform(0, beta<=1) yields exponent -1; Beta(alpha, beta) yields exponent -alpha; Kumaraswamy(alpha, beta) yields exponent -alpha; ContinuousBernoulli(lambda<1/2) yields exponent -1; Reciprocal(0<a<b<1) yields exponential scaling (1-a)^k / k, not a power law. Empirically, the distributions of pass_i@1 across problems are well fit by a scaled 3-parameter Kumaraswamy distribution (Kumaraswamy(alpha, beta, a=0, c)) with scale parameter c, using maximum likelihood estimation under a discretized Kumaraswamy-Binomial PMF computed via numerical integration with Python's mpmath library. A standard Beta-Binomial MLE is also derived and applied. The Llama 3 8B IT model lacks a power-law left tail in its pass_i@1 distribution, which explains why it does not exhibit aggregate power law scaling. Two estimators for the power law exponent b are compared: (1) standard least-squares regression of -log(passD@k) vs k in log-log space, and (2) a distributional estimator that fits the scaled Kumaraswamy-Binomial to pass_i@1 data and simulates passD@k. Both estimators agree closely when all available data are used. In backtesting on synthetic data with known ground-truth exponents (Beta(0.15, 3.5, 0, 0.1), Beta(0.15, 5, 0, 0.1), Beta(0.15, 3.5, 0, 0.8), Beta(0.15, 5, 0, 0.8), with 64 or 128 problems), the distributional estimator achieves approximately one order of magnitude lower relative error |b_hat - b|/b compared to least squares, equivalent to 2-4 orders of magnitude less inference compute required to achieve the same estimation accuracy. The distributional estimator performs well even under distributional mismatch. A clarification in Appendix A notes that Best-of-N Jailbreaking data were not strictly independent: samples were drawn until a successful jailbreak or 10,000 attempts, in minibatches of 60, whereas Large Language Monkeys used exactly 10,000 independent attempts per problem. This sampling difference is cited as the likely reason the two estimators agree less closely for Best-of-N Jailbreaking than for Large Language Monkeys. A corrected model using a scaled Beta-Negative Binomial distribution is derived in Appendix H. The paper uses Chen et al. (2021)'s unbiased estimator for pass_i@k: pass_i@k_hat = 1 - C(n-c, k)/C(n, k), where n is total attempts and c is successes, implemented as a numerically stable Python function. The paper also proposes a hypothesis extending the analysis to pretraining compute scaling laws, suggesting that neural scaling laws L(C) approximately A/C^alpha emerge asymptotically from a sum of terms with different decay rates, with the lowest-order polynomial term dominating at large compute, while slower-decaying terms constitute what the authors call 'dark matter of neural scaling laws.' Coverage (fraction of problems solved in at least one of k attempts) is shown to be mathematically equivalent to the average pass_i@k.",
+  "source_hash": "sha256:f92c1a62f7e7a5aa"
+}
