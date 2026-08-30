@@ -52,6 +52,35 @@
       "summary": "Adaptively allocating extra computation at inference time, matched to problem difficulty, can outperform a 14× larger pretrained model on easy-to-medium tasks."
     },
     {
+      "id": "architecturesearchframeworkinference-timetechniques",
+      "title": "An Architecture Search Framework for Inference-Time Techniques",
+      "authors": [
+        "Jon Saad-Falcon",
+        "Adrian Gamarra Lafuente",
+        "Shlok Natarajan",
+        "Nahum Maru",
+        "Hristo Todorov",
+        "Etash Guha",
+        "E. Kelly Buchanan",
+        "Mayee Chen",
+        "Neel Guha",
+        "Christopher Ré",
+        "Azalia Mirhoseini"
+      ],
+      "venue": "arXiv",
+      "year": 2025,
+      "added": "2026-08-30",
+      "tags": [
+        "inference-time-compute",
+        "llm-ensembling",
+        "architecture-search",
+        "bayesian-optimization",
+        "multi-agent-systems",
+        "benchmark-evaluation"
+      ],
+      "summary": "ARCHON automatically searches for optimal combinations of inference-time techniques (ensembling, fusion, ranking, critiquing) across multiple LLMs to outperform frontier models by 15.1% on average."
+    },
+    {
       "id": "arxiv-2407.21787",
       "title": "Large Language Monkeys: Scaling Inference Compute with Repeated Sampling",
       "authors": [
