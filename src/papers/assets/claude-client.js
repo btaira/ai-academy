@@ -57,7 +57,7 @@ export async function callClaude(system, messages, { maxTokens = 1200 } = {}) {
     let detail = res.status + "";
     try { const j = await res.json(); detail = j?.error?.message || detail; } catch {}
     if (res.status === 401) detail = "Key rejected. Check it in Settings.";
-    else if (!workspace && /workspace/i.test(detail)) detail = "This key needs a workspace id — add it under key settings, then try again.";
+    else if (!workspace && /workspace/i.test(detail)) detail = "This key needs a workspace id — find it at console.anthropic.com → Settings → Workspaces, add it under key settings, then try again.";
     throw new Error(detail);
   }
 
