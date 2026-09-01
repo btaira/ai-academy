@@ -29,11 +29,15 @@
   ],
   "course_links": [],
   "summary": "ARCHON automatically searches for optimal combinations of inference-time techniques (ensembling, fusion, ranking, critiquing) across multiple LLMs to outperform frontier models by 15.1% on average.",
-  "thesis": "Combining multiple LLMs with layered inference-time operations—generation, critique, ranking, and fusion—automated via Bayesian architecture search, produces systems that surpass single frontier models. This matters because it provides a principled, compute-budget-aware method for squeezing more quality out of existing models without retraining.",
+  "thesis": "What if, instead of asking one AI model a question, you built a small assembly line of models that each play a different role — one generates answers, another critiques them, another ranks them, another merges the best parts into one final response? This paper shows a system built that way can outperform even the best single frontier model, without retraining anything, just by orchestrating existing models more cleverly. The clever part is that instead of hand-designing which roles to use and how many of each, they use an automated search to find a near-optimal combination for a given task and compute budget. The catch, which the authors are upfront about, is that all this extra machinery costs real money and time — you're making dozens of model calls instead of one, so it's a genuine tradeoff between quality and cost, not a free lunch.",
   "claims": [
     {
       "tag": "component roles",
       "h": "Seven distinct LLM component types each serve a specific function in the pipeline",
+      "plain": [
+        "The system is built out of specialized roles, like a small team: one part generates candidate answers, another critiques them, another ranks them, another merges the best ones into a single polished response, and others check the reasoning or run tests on it.",
+        "Each role does one job well, and chaining them together produces a better final answer than any single model working alone."
+      ],
       "body": [
         "A **Generator** produces candidate responses and can be called in parallel across multiple models (ensembling) or repeatedly on one model (repeated sampling). A **Fuser** synthesizes multiple candidates into a single higher-quality response, improving performance by 8.9% on average across benchmarks.",
         "A **Critic** lists strengths and weaknesses of each candidate to guide downstream ranking and fusion. A **Ranker** orders candidates by quality, filtering to the top-K for the next stage.",
@@ -43,6 +47,10 @@
     {
       "tag": "architecture search",
       "h": "Bayesian optimization finds near-optimal architectures far more efficiently than exhaustive or greedy search",
+      "plain": [
+        "There are thousands of ways to combine these roles — how many generators, how many rounds of critique, whether to include a ranker — far too many to try by hand.",
+        "Instead of testing all of them, the system uses a smart search that finds a near-best combination while trying only a small fraction of the possibilities."
+      ],
       "body": [
         "The **search space** is defined by six hyperparameter axes: number of generator models (1–10), samples per generator (1–5), fusion layers (1–4), fusers per layer (2–10), whether to include critic/ranker layers, and which evaluation layer to add. After removing invalid configurations, 9,576 valid combinations remain.",
         "**Bayesian optimization** uses a Gaussian Process surrogate model and Expected Improvement acquisition function, initialized with 230–240 random samples. It finds the best architecture in 96% of searches while requiring 88.5% fewer evaluations than greedy search and 90.4% fewer than random search.",
@@ -52,6 +60,9 @@
     {
       "tag": "performance gains",
       "h": "ARCHON architectures consistently outperform frontier single-call models and prior inference-time systems",
+      "plain": [
+        "The best combinations this system finds beat top single models like GPT-4o and Claude 3.5 Sonnet by about 15% on average across a range of benchmarks — while actually using fewer API calls and tokens than earlier multi-model systems."
+      ],
       "body": [
         "Across MT-Bench, AlpacaEval 2.0, Arena-Hard-Auto, MixEval, MATH, and CodeContests, the best ARCHON configurations beat GPT-4o, Claude 3.5 Sonnet, and OpenAI o1 by an average of 15.1%. Open-source-only ARCHON exceeds the best open-source baselines by 11.2%.",
         "ARCHON achieves these gains while using 20% fewer inference calls, 15.1% fewer input tokens, and 13.5% fewer output tokens than competing inference-time frameworks (MoA, ADAS, AFlow). Generalized architectures trained on all tasks retain 91–94% of task-specific performance on held-out domains (GPQA, MMLU, MMLU Pro)."
@@ -60,6 +71,9 @@
     {
       "tag": "task-specific behavior",
       "h": "Optimal component combinations differ substantially by task type",
+      "plain": [
+        "The best setup isn't the same for every kind of task. Writing and instruction-following benefit most from lots of critique and merging; coding benefits most from generating tons of candidates and running automated tests on them; math benefits from generating broadly at first, then quickly narrowing down to one checked answer."
+      ],
       "body": [
         "For **instruction-following** tasks, multiple layers of critic and fusion with diverse LLMs provide the largest gains; the Ranker is particularly effective because pairwise style comparisons are well-defined.",
         "For **coding** tasks, ensembling and fusion alone have limited impact because one or two models dominate. Adding unit test generation/evaluation with high sample counts (up to 1000) yields a 56% boost in Pass@1 on CodeContests.",
@@ -69,6 +83,10 @@
     {
       "tag": "limitations & cost",
       "h": "ARCHON's gains come with significant latency and cost increases that the authors acknowledge openly",
+      "plain": [
+        "Running this system costs real money and time — around 30-40 separate model calls per question instead of just one, making it roughly 5 times slower and more expensive than asking a single model.",
+        "It also only works well with larger, more capable models; smaller models aren't good enough at the critique and merging roles to make the extra machinery worth it."
+      ],
       "body": [
         "Running a full ARCHON architecture requires roughly 32–44 LLM API calls per query versus 1 for a single-model baseline, resulting in approximately 5× higher latency and cost. Per-query costs range from $0.19 to $0.45 compared to $0.017–$0.056 for single frontier models.",
         "Bayesian optimization is less effective when the inference call budget is below 20 calls, at which point greedy or random search performs comparably. The framework also performs best with 70B+ parameter models; 7B models provide only a 7.5% improvement and are poorly suited for critique and fusion roles.",

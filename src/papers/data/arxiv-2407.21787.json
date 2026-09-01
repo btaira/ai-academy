@@ -10,11 +10,15 @@
   "tags": ["inference-scaling", "verification", "benchmarks", "cost-efficiency", "scaling-laws"],
   "course_links": [],
   "summary": "Sampling a model thousands of times per problem keeps raising the fraction of problems solved by at least one attempt — but only pays off where a verifier can find the right attempt.",
-  "thesis": "Instead of asking a model once and accepting the answer, ask it thousands of times and keep the best. Across five benchmarks the fraction of problems solved by at least one attempt keeps climbing over four orders of magnitude of sample count — but only if you have some way to tell which attempt was right.",
+  "thesis": "Here's a strange but simple idea: instead of asking a language model a question once and taking whatever it says, ask it the same question thousands of times and see what comes back. Because these models don't answer the same way twice, you end up with a pile of different attempts — some right, most wrong. This paper shows that piling up more attempts keeps paying off far longer than you'd expect, across five very different benchmarks spanning four orders of magnitude of sample count. But there's a catch the paper is upfront about: all that upside only cashes out if you have some reliable way to pick the right answer out of the pile. Without a good verifier, the extra attempts barely help — which turns out to be the real bottleneck, not the sampling itself.",
   "claims": [
     {
       "tag": "the frame",
       "h": "Two separate problems, not one",
+      "plain": [
+        "Getting repeated sampling to work is really two separate questions: can you find a right answer at all if you try enough times, and can you actually pick it out once you have a pile of mostly-wrong attempts?",
+        "Most of the confusion around this technique comes from mixing those two questions up."
+      ],
       "body": [
         "The paper splits \"did repeated sampling work\" into two questions that fail independently.",
         "**Coverage** — of all the problems in the benchmark, how many were solved by *at least one* of the k attempts? This is the ceiling.",
@@ -25,6 +29,10 @@
     {
       "tag": "result 1",
       "h": "Coverage scales, and it scales a long way",
+      "plain": [
+        "Giving a model 10,000 tries instead of one raised its success rate on every model tested, from tiny to huge.",
+        "The effect is biggest for weak models — a cheap model given many tries can end up beating a strong model given just one shot."
+      ],
       "body": [
         "Sampling 10,000 times per problem raised coverage on every model family tested — 70M to 70B parameters, base and instruction-tuned, Llama / Gemma / Pythia.",
         "The gains are largest for the *weakest* models, because they start with so much headroom. Gemma-2B on CodeContests went from a 0.02% one-shot solve rate to 7.1% — over 300×.",
@@ -34,6 +42,10 @@
     {
       "tag": "result 2",
       "h": "The curve has a shape you can fit",
+      "plain": [
+        "The relationship between how many tries you give a model and how often it eventually succeeds follows a predictable curve, not a random one.",
+        "That means you can estimate ahead of time roughly how many attempts you'd need to hit a target success rate, instead of just guessing and hoping."
+      ],
       "body": [
         "Coverage vs. sample count is close to log-linear over several decades, and fits an exponentiated power law: c ≈ exp(a·k^b).",
         "That is a scaling law for *inference*, analogous to the training scaling laws. It is not as tight as the training laws — MiniF2F fits poorly — but it means you can extrapolate a budget instead of guessing one.",
@@ -43,6 +55,10 @@
     {
       "tag": "result 3",
       "h": "Verification is the binding constraint",
+      "plain": [
+        "When there's an automatic way to check an answer — like running code and seeing if the tests pass — more attempts reliably turns into more real successes.",
+        "When there isn't, extra attempts barely help, because you can't tell which one of your 10,000 guesses is actually the right one."
+      ],
       "body": [
         "Where a machine can check the answer — Lean proof checker, unit tests, test cases — coverage converts one-for-one into real solve rate.",
         "Where it can't, the wheels come off. On MATH with Llama-3-8B-Instruct, coverage went 82.9% → 98.44% between 100 and 10,000 samples. Actual score using majority voting or a reward model went 40.50% → 41.41%.",
@@ -52,6 +68,10 @@
     {
       "tag": "the honest part",
       "h": "Their own verifiers were partly broken",
+      "plain": [
+        "Even the tools used to grade correctness in this paper had bugs — some tests gave different results on different runs, and some marked genuinely correct answers as wrong.",
+        "The lesson: before trusting a big jump in a benchmark score, check whether the grader itself can be trusted."
+      ],
       "body": [
         "11.3% of SWE-bench Lite problems have flaky test suites — the same candidate patch passes sometimes and fails other times. In 30 of the 34 flagged problems, even the dataset's own gold solution was flaky.",
         "In CodeContests, 35 of the 122 Python-solvable test problems reject solutions the dataset itself labels correct, usually because the problem allows several valid outputs and the tests demand one.",

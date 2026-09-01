@@ -19,7 +19,7 @@
       "description": "Repo-relative paths to academy modules this paper backs, e.g. course-04/module-12. Rendered as links back into the course."
     },
     "summary": { "type": "string", "description": "One sentence under 30 words for the library card." },
-    "thesis": { "type": "string", "description": "Two sentences: the claim and why it matters." },
+    "thesis": { "type": "string", "description": "3-5 sentences of flowing, conversational prose explaining the paper's core idea and why it matters — a discussion, not an abstract. Shown prominently above the tabs regardless of plain/engineer depth, so it's the one field every reader reads whether they ever toggle depth or not." },
 
     "claims": {
       "type": "array", "minItems": 2,
@@ -28,7 +28,8 @@
         "properties": {
           "tag": { "type": "string", "description": "2-3 word label. Tags matching /honest|limit|caveat|caution|weak/ render in the caveat colour." },
           "h": { "type": "string" },
-          "body": { "type": "array", "items": { "type": "string" }, "description": "Paragraphs. **bold** is rendered." }
+          "plain": { "type": "array", "items": { "type": "string" }, "description": "1-2 short, jargon-free sentences per claim. Shown at the plain-english depth on the Thesis tab; falls back to body if absent (older records)." },
+          "body": { "type": "array", "items": { "type": "string" }, "description": "Paragraphs for the engineer depth. **bold** is rendered." }
         }
       }
     },

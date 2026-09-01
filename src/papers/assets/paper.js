@@ -94,7 +94,7 @@ function setLevel(v) {
   $("#lvl-plain").setAttribute("aria-pressed", String(v === "plain"));
   $("#lvl-eng").setAttribute("aria-pressed", String(v === "eng"));
   $("#lvl-note").textContent = v === "plain" ? "No background assumed." : "Assumes technical fluency, not ML fluency.";
-  if (tab === "concepts") renderTab();
+  if (tab === "concepts" || tab === "thesis") renderTab();
 }
 
 /* ---------- rendering ---------- */
@@ -120,7 +120,9 @@ function viewThesis(p) {
     const warn = /honest|limit|caveat|caution|weak/i.test(c.tag || "");
     card.append(el("span", "tag" + (warn ? " warn" : ""), c.tag || "claim"));
     card.append(el("h3", null, c.h));
-    for (const b of c.body || []) { const para = el("p"); bold(b, para); card.append(para); }
+    // Older records may not have a plain rewrite yet — fall back to body rather than show nothing.
+    const usePlain = level === "plain" && c.plain && c.plain.length;
+    for (const b of (usePlain ? c.plain : c.body) || []) { const para = el("p"); bold(b, para); card.append(para); }
     g.append(card);
   }
   p.append(g);

@@ -21,12 +21,15 @@ const PASSES = [
  "url": string ("" if unknown),
  "tags": [string]  // 3-6 lowercase-hyphenated topic tags
  "summary": string  // one sentence, under 30 words, for the library card
- "thesis": string,  // 2 sentences: what the document claims and why it matters
- "claims": [ {"tag": string, "h": string, "body": [string]} ]  // 3-5 claims. tag is 2-3 words. body is 2-4 items, each 1-3 sentences. Use **bold** for terms being defined. Include at least one claim covering limitations or what the document is honest about.
+ "thesis": string,  // 3-5 sentences of flowing, conversational prose — not an abstract. Write it like you're explaining the paper's core idea and why it matters to a smart colleague over coffee: plain language, a concrete mental picture or analogy if one helps, no unexplained jargon. This is the first thing every reader sees, so it has to work as a stand-alone read, not a summary of what follows.
+ "claims": [ {"tag": string, "h": string, "plain": [string], "body": [string]} ]  // 3-5 claims. tag is 2-3 words.
+   // "plain" = 1-2 short sentences per claim, zero jargon, as if telling a smart friend outside tech what this finding means. This is what most readers actually read.
+   // "body" = 2-4 items, each 1-3 sentences, for a reader with technical fluency. Use **bold** for terms being defined.
+   // Include at least one claim covering limitations or what the document is honest about.
 }`],
   ["concepts", `Return JSON: {"concepts":[{"t":string,"plain":string,"eng":string}]}
 6-10 concepts a reader must understand to follow the document.
-"plain" = 2-3 sentences assuming zero background.
+"plain" = 2-3 short sentences, zero jargon, as if explaining to a curious friend with no technical background. Use a concrete analogy if it helps. Spell out or avoid every acronym and term of art — this must read noticeably simpler than "eng", not as a denser rewording of it.
 "eng" = 3-5 sentences for a senior engineer from another field: the mechanism, why it behaves that way, and the practical caveat.
 Prioritise ideas the reader is least likely to already know.`],
   ["sections and numbers", `Return JSON:

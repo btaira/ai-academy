@@ -28,11 +28,15 @@
   ],
   "course_links": [],
   "summary": "Explains why repeated LLM sampling yields aggregate power-law scaling even though each individual problem scales exponentially, via heavy-tailed difficulty distributions.",
-  "thesis": "When a language model makes k independent attempts at each problem in a benchmark, the aggregate failure rate follows a power law in k because a heavy-tailed distribution of per-problem difficulty warps the sum of exponentials into a polynomial. Understanding this mechanism lets practitioners predict the power-law exponent with far less compute than standard regression.",
+  "thesis": "If you let a language model try a problem k times instead of once, how fast does its success rate improve? For any single problem, the answer is simple: it climbs exponentially fast, because each extra attempt is another independent shot at getting it right. But when researchers looked at the average across a whole benchmark of many problems, they kept seeing something different — a much slower power-law curve, not an exponential one. This paper explains why: the underlying process isn't actually different, it's that a handful of much harder problems act like a stubborn tail dragging the average down, even while every individual problem is being solved exponentially quickly underneath. Once you understand that mechanism, you can predict how the whole curve will bend using far less compute than the usual approach of running lots of trials and fitting a line to the results.",
   "claims": [
     {
       "tag": "per-problem vs aggregate",
       "h": "Individual problems scale exponentially; only the aggregate looks like a power law.",
+      "plain": [
+        "For any one problem, giving a model more tries makes it succeed at a fast, predictable exponential rate — each try is basically an independent shot at cracking it.",
+        "But average across a whole benchmark of many problems, and that fast per-problem improvement blends into something that looks like a much slower curve overall — which seems contradictory until you see why."
+      ],
       "body": [
         "For any single problem i, the probability of failing all k attempts is (1 - pass_i@1)^k, so **pass_i@k** approaches 1 exponentially fast in k.",
         "When you average across all problems in a benchmark, this exponential per-problem improvement produces an aggregate curve that looks like a power law, which is surprising and non-obvious.",
@@ -42,6 +46,10 @@
     {
       "tag": "heavy tail mechanism",
       "h": "A power-law left tail in the distribution of single-attempt success rates is both necessary and sufficient for aggregate power-law scaling.",
+      "plain": [
+        "The reason the average looks slower than any individual problem is that a small number of unusually hard problems drag it down.",
+        "As long as there's a 'long tail' of especially difficult problems in the mix, the average success rate will always climb slowly — no matter how fast the model is actually improving on each individual problem underneath."
+      ],
       "body": [
         "**Theorem 3.1 (Sufficiency)** states: if the density of per-problem single-attempt success rates behaves as C * p^(b-1) near p=0, then -log(pass_D@k) ~ C*Gamma(b)*k^(-b) for large k.",
         "**Theorem 3.2 (Necessity)** proves the converse: observing aggregate power-law decay with exponent b implies the density must have exactly that polynomial weight near zero.",
@@ -51,6 +59,10 @@
     {
       "tag": "distributional estimator",
       "h": "Fitting a distribution to single-attempt success rates predicts the power-law exponent far more efficiently than least-squares regression.",
+      "plain": [
+        "Instead of running a bunch of trials and eyeballing a trend line — the standard way people estimate this curve — the authors fit a statistical model to how hard each problem is, then use that to predict the whole curve directly.",
+        "This new approach gets a far more accurate answer using dramatically fewer trials — roughly hundreds to thousands of times less compute for the same accuracy."
+      ],
       "body": [
         "The **distributional estimator** fits a scaled Kumaraswamy-Binomial (or Beta-Binomial) distribution to the observed success counts per problem, then simulates how pass_D@k scales with k to extract the exponent b.",
         "In backtesting on synthetic data with known ground-truth exponents, the distributional estimator achieves roughly an order of magnitude lower relative error |b_hat - b|/b than the standard least-squares log-log regression.",
@@ -60,6 +72,10 @@
     {
       "tag": "deviation explanation",
       "h": "Models without a heavy left tail in per-problem difficulty do not exhibit aggregate power-law scaling.",
+      "plain": [
+        "This theory also explains a puzzling result from earlier work: one particular model didn't show the expected slow-curve pattern when researchers tried repeatedly to \"jailbreak\" it.",
+        "The explanation falls right out of the theory — that model could be broken on every single prompt they tried, so there were no truly hard, resistant prompts left to form the slow-dragging tail. No tail, no slow curve."
+      ],
       "body": [
         "Llama 3 8B Instruction Tuned failed to show power-law scaling under Best-of-N jailbreaking, a result that previously lacked a principled explanation.",
         "The distributional view immediately explains this: Llama 3 8B IT could be successfully jailbroken on every prompt within the sampling budget, so there were no ultra-hard prompts forming the required heavy left tail.",
@@ -69,6 +85,10 @@
     {
       "tag": "limitations and caveats",
       "h": "The framework assumes independent attempts and continuous distributions, and the Best-of-N jailbreaking data violates these assumptions.",
+      "plain": [
+        "The math behind this relies on each attempt being independent of the others, but one of the real-world datasets they tested against didn't actually work that way — attempts were run in batches with a cutoff, not purely independently.",
+        "The authors are upfront that this mismatch is why their predictions fit that particular dataset a bit less precisely than the cleaner math-benchmark data."
+      ],
       "body": [
         "Best-of-N Jailbreaking sampled attempts sequentially until success or until a 10,000-attempt cap, in minibatches of 60, rather than drawing all attempts independently. The paper simplifies this to independent attempts for analytical tractability.",
         "The authors acknowledge this nuance explains why the distributional and least-squares exponent estimates agree less closely for jailbreaking data than for the math benchmark data.",
