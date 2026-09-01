@@ -107,10 +107,6 @@ function renderTab() {
   ({ overview: viewOverview, concepts: viewConcepts, ask: viewAsk }[tab])(p);
 }
 
-function infoHead(p, label) {
-  p.append(el("div", "infohead", label));
-}
-
 function bold(text, node) {
   for (const part of text.split(/(\*\*[^*]+\*\*)/g)) {
     if (part.startsWith("**")) node.append(Object.assign(el("strong"), { textContent: part.slice(2, -2) }));
@@ -118,30 +114,47 @@ function bold(text, node) {
   }
 }
 
+// Overview is one continuous poster, not four stacked sections: a single spine
+// runs top to bottom, claims and numbers alternate left/right off it like a
+// classic timeline infographic, walkthrough continues the same spine in
+// reading order, and glossary breaks out at the bottom as a dense reference
+// grid — deliberately NOT on the spine, since it's browsed, not read in order.
 function viewOverview(p) {
-  infoHead(p, "the claims");
-  viewThesis(p);
-  infoHead(p, "the numbers");
-  viewNumbers(p);
-  infoHead(p, "section by section");
-  viewWalk(p);
-  infoHead(p, "glossary");
-  viewJargon(p);
+  const poster = el("div", "poster");
+  const spined = el("div", "poster-spine-wrap");
+  spined.append(el("div", "poster-spine"));
+  spined.append(posterZone("the claims", "tint", claimRows()));
+  spined.append(posterZone("the numbers", "", numberRows(), "This document doesn't report quantitative results."));
+  spined.append(posterZone("section by section", "tint", walkRows()));
+  poster.append(spined, glossaryZone());
+  p.append(poster);
 }
 
-function viewThesis(p) {
-  const g = el("div", "grid");
-  for (const c of doc.claims || []) {
-    const card = el("div", "card");
+function posterZone(label, extraClass, rows, emptyNote) {
+  const zone = el("div", "poster-zone" + (extraClass ? " " + extraClass : ""));
+  zone.append(el("div", "zone-label", label));
+  if (rows.length) rows.forEach(r => zone.append(r));
+  else zone.append(el("p", "note", emptyNote || "Nothing here."));
+  return zone;
+}
+
+function posterRow(index, cardEl) {
+  const row = el("div", "poster-row " + (index % 2 === 0 ? "left" : "right"));
+  row.append(el("div", "poster-node", String(index + 1)), cardEl);
+  return row;
+}
+
+function claimRows() {
+  return (doc.claims || []).map((c, i) => {
+    const card = el("div", "card poster-card");
     const warn = /honest|limit|caveat|caution|weak/i.test(c.tag || "");
     card.append(el("span", "tag" + (warn ? " warn" : ""), c.tag || "claim"));
     card.append(el("h3", null, c.h));
     // Older records may not have a plain rewrite yet — fall back to body rather than show nothing.
     const usePlain = level === "plain" && c.plain && c.plain.length;
     for (const b of (usePlain ? c.plain : c.body) || []) { const para = el("p"); bold(b, para); card.append(para); }
-    g.append(card);
-  }
-  p.append(g);
+    return posterRow(i, card);
+  });
 }
 
 function viewConcepts(p) {
@@ -176,41 +189,56 @@ function viewConcepts(p) {
   p.append(g);
 }
 
-function viewWalk(p) {
-  const tl = el("div", "timeline");
-  for (const s of doc.sections || []) {
-    const item = el("div", "tl-item");
-    item.append(el("div", "tl-dot"));
-    const body = el("div", "tl-body");
-    if (s.n) body.append(el("div", "tl-n", s.n));
-    body.append(el("h4", null, s.h));
-    body.append(el("p", null, s.s));
+function walkRows() {
+  return (doc.sections || []).map((s, i) => {
+    const card = el("div", "card poster-card");
+    if (s.n) card.append(el("div", "tl-n", s.n));
+    card.append(el("h3", null, s.h));
+    card.append(el("p", null, s.s));
     if (s.read) {
       const cls = /read/i.test(s.read) ? "read" : /skim/i.test(s.read) ? "skim" : "ref";
-      body.append(el("span", "tl-pill " + cls, s.read));
+      card.append(el("span", "tl-pill " + cls, s.read));
     }
-    item.append(body);
-    tl.append(item);
-  }
-  p.append(tl);
+    return posterRow(i, card);
+  });
 }
 
 // Numbers that are an explicit before -> after pair (the paper's most common
-// shape for a headline result) get a dumbbell; everything else — ratios,
-// multipliers, formulas — gets a stat tile instead. Per the dataviz skill's
-// choosing-a-form guide: "before -> after per item" is a dumbbell's job, one
-// hue in two shades, not a bar chart or a big number.
+// shape for a headline result) get a dumbbell. "A vs B" gets a two-bar
+// comparison. A lone percentage (optionally a tight range) gets a meter.
+// Only what's left without a real numeric shape — formulas, bare counts,
+// wide multi-way splits — falls back to a stat tile. Per the dataviz skill's
+// choosing-a-form guide: pick the form the data's job actually calls for
+// before reaching for a big number.
 const ARROW_PAIR = /^\s*([\d.,]+)\s*%\s*(?:→|->)\s*([\d.,]+)\s*%\s*$/;
+const VS_PAIR = /^\s*(.+?)\s+vs\.?\s+(.+?)\s*$/i;
+const SINGLE_PCT = /^\s*[~>≥]?\s*([\d.]+)\s*(?:[–-]\s*([\d.]+)\s*)?%\s*$/;
+const RATIO = /^\s*([\d,]+)\s*\/\s*([\d,]+)\s*$/;
 
-function viewNumbers(p) {
-  const nums = doc.numbers || [];
-  if (!nums.length) { p.append(el("p", "note", "This document doesn't report quantitative results.")); return; }
-  const g = el("div", "grid two");
-  for (const n of nums) {
-    const match = ARROW_PAIR.exec(n.v);
-    g.append(match ? dumbbellCard(n, +match[1], +match[2]) : statCard(n));
-  }
-  p.append(g);
+function numberRows() {
+  return (doc.numbers || []).map((n, i) => {
+    let card;
+    let m;
+    if ((m = ARROW_PAIR.exec(n.v))) {
+      card = dumbbellCard(n, +m[1], +m[2]);
+    } else if ((m = VS_PAIR.exec(n.v))) {
+      const aNum = parseFloat(m[1].replace(/[^0-9.]/g, ""));
+      const bNum = parseFloat(m[2].replace(/[^0-9.]/g, ""));
+      card = (isFinite(aNum) && isFinite(bNum) && (aNum || bNum))
+        ? compareCard(n, m[1].trim(), aNum, m[2].trim(), bNum)
+        : statCard(n);
+    } else if ((m = SINGLE_PCT.exec(n.v))) {
+      const lo = +m[1], hi = m[2] ? +m[2] : lo;
+      card = meterCard(n, (lo + hi) / 2);
+    } else if ((m = RATIO.exec(n.v)) && +m[2].replace(/,/g, "") > 0) {
+      const part = +m[1].replace(/,/g, ""), whole = +m[2].replace(/,/g, "");
+      card = meterCard(n, (part / whole) * 100);
+    } else {
+      card = statCard(n);
+    }
+    card.classList.add("poster-card");
+    return posterRow(i, card);
+  });
 }
 
 function statCard(n) {
@@ -248,9 +276,45 @@ function dumbbellCard(n, before, after) {
   return card;
 }
 
-function viewJargon(p) {
+function meterCard(n, pct) {
+  const card = el("div", "num meter-card");
+  card.append(el("div", "v", n.v));
+  card.append(el("div", "k", n.k));
+  const track = el("div", "meter-track");
+  const fill = el("div", "meter-fill");
+  fill.style.width = Math.max(0, Math.min(100, pct)) + "%";
+  track.append(fill);
+  card.append(track);
+  card.append(el("div", "m", n.m));
+  if (n.c) card.append(el("div", "caveat", n.c));
+  return card;
+}
+
+function compareCard(n, aLabel, aNum, bLabel, bNum) {
+  const card = el("div", "num compare-card");
+  card.append(el("div", "k", n.k));
+  const bars = el("div", "compare-bars");
+  const max = Math.max(aNum, bNum) || 1;
+  for (const [label, num, shade] of [[aLabel, aNum, "after"], [bLabel, bNum, "before"]]) {
+    const row = el("div", "compare-row");
+    const track = el("div", "compare-track");
+    const fill = el("div", "compare-fill " + shade);
+    fill.style.width = Math.max(2, (num / max) * 100) + "%";
+    track.append(fill);
+    row.append(track, el("span", "compare-label", label));
+    bars.append(row);
+  }
+  card.append(bars);
+  card.append(el("div", "m", n.m));
+  if (n.c) card.append(el("div", "caveat", n.c));
+  return card;
+}
+
+function glossaryZone() {
+  const zone = el("div", "poster-zone glossary-zone");
+  zone.append(el("div", "zone-label", "glossary"));
+
   const lookup = el("div", "card");
-  lookup.style.marginTop = "22px";
   lookup.append(el("span", "tag", "open lookup"));
   lookup.append(el("h3", null, "Look up any term"));
   lookup.append(el("p", "note", "Anything in the paper, or anything adjacent — attention, KV cache, LoRA, distillation, MoE routing."));
@@ -275,9 +339,9 @@ function viewJargon(p) {
   go.addEventListener("click", run);
   input.addEventListener("keydown", e => { if (e.key === "Enter") run(); });
   row.append(input, go); lookup.append(row);
-  p.append(lookup);
+  zone.append(lookup);
 
-  const g = el("div", "grid"); g.style.gap = "8px";
+  const g = el("div", "glossary-grid");
   for (const j of doc.jargon || []) {
     const box = el("div", "term");
     const head = el("button");
@@ -293,7 +357,8 @@ function viewJargon(p) {
     box.append(head, body);
     g.append(box);
   }
-  p.append(g);
+  zone.append(g);
+  return zone;
 }
 
 function viewAsk(p) {
