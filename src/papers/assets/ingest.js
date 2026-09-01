@@ -1,9 +1,11 @@
 // In-browser "add paper" flow. Runs the same five extraction passes as
 // tools/decode-paper.mjs, using the visitor's own key (see claude-client.js).
-// A static page can't write into the repo, so the result is two downloads —
-// the record and an updated index — that get dropped into src/papers/data/
-// and committed like any other file.
+// A static page can't write into the repo, so the result is either published
+// straight to GitHub (see github-client.js, if a token is configured) or
+// offered as two downloads — the record and an updated index — to drop into
+// src/papers/data/ and commit by hand.
 import { callClaude, keyStore, NoKeyError } from "./claude-client.js";
+import { readFile, writeFile, githubStore, NoGitHubTokenError } from "./github-client.js";
 
 const $ = (s) => document.querySelector(s);
 const el = (t, cls, txt) => { const n = document.createElement(t); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
@@ -43,6 +45,7 @@ let mode = "pdf";
 
 function boot() {
   wireKeyPanel();
+  wireGitHubPanel();
   wireSourceTabs();
   $("#add-btn").addEventListener("click", () => {
     $("#ingestpanel").classList.toggle("hide");
@@ -52,7 +55,7 @@ function boot() {
 }
 
 function wireKeyPanel() {
-  $("#settings-btn").addEventListener("click", () => { $("#keypanel").classList.toggle("hide"); keyState(); });
+  $("#settings-btn").addEventListener("click", () => { $("#keypanel").classList.toggle("hide"); keyState(); githubState(); });
   $("#key-save").addEventListener("click", saveKey);
   $("#key-input").addEventListener("keydown", e => { if (e.key === "Enter") saveKey(); });
   $("#key-clear").addEventListener("click", () => { keyStore.clear(); keyState(); });
@@ -60,6 +63,34 @@ function wireKeyPanel() {
   $("#workspace-input").value = keyStore.workspace();
   $("#workspace-input").addEventListener("keydown", e => { if (e.key === "Enter") saveKey(); });
   keyState();
+}
+
+function wireGitHubPanel() {
+  $("#github-token-save").addEventListener("click", saveGitHub);
+  $("#github-token-input").addEventListener("keydown", e => { if (e.key === "Enter") saveGitHub(); });
+  $("#github-repo-input").addEventListener("keydown", e => { if (e.key === "Enter") saveGitHub(); });
+  $("#github-branch-input").addEventListener("keydown", e => { if (e.key === "Enter") saveGitHub(); });
+  $("#github-token-clear").addEventListener("click", () => { githubStore.clear(); githubState(); });
+  $("#github-repo-input").value = githubStore.repo();
+  $("#github-branch-input").value = githubStore.branch();
+  githubState();
+}
+
+function saveGitHub() {
+  const v = $("#github-token-input").value.trim();
+  const ok = v ? githubStore.set(v) : true;
+  githubStore.setRepo($("#github-repo-input").value);
+  githubStore.setBranch($("#github-branch-input").value);
+  if (ok && v) $("#github-token-input").value = "";
+  githubState(!ok);
+}
+
+function githubState(saveFailed) {
+  $("#github-state").textContent = saveFailed
+    ? "Couldn't save — this browser is blocking local storage for this site."
+    : githubStore.has()
+    ? `Token set. Publishing to ${githubStore.repo()} @ ${githubStore.branch()}.`
+    : "No token set. \"Decode a new paper\" will offer downloads instead of publishing.";
 }
 
 function saveKey() {
@@ -127,11 +158,17 @@ async function loadSource() {
   // arxiv
   const id = $("#arxiv-input").value.trim();
   if (!/^\d{4}\.\d{4,5}(v\d+)?$/.test(id)) throw new Error('That doesn\'t look like an arXiv id (expected e.g. "2407.21787").');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
   let res;
   try {
-    res = await fetch(`https://arxiv.org/pdf/${id}`);
+    res = await fetch(`https://arxiv.org/pdf/${id}`, { signal: controller.signal });
   } catch (e) {
-    throw new Error("Couldn't reach arxiv.org from this browser (likely blocked cross-origin). Download the PDF and use \"upload pdf\" instead.");
+    throw new Error(e.name === "AbortError"
+      ? "arxiv.org didn't respond within 30s. Try again, or download the PDF and use \"upload pdf\" instead."
+      : "Couldn't reach arxiv.org from this browser (likely blocked cross-origin). Download the PDF and use \"upload pdf\" instead.");
+  } finally {
+    clearTimeout(timer);
   }
   if (!res.ok) throw new Error(`arXiv fetch failed (${res.status}).`);
   const buf = new Uint8Array(await res.arrayBuffer());
@@ -174,10 +211,16 @@ async function run() {
   btn.disabled = true;
   status.textContent = "";
 
+  // A running step ticks its elapsed time so a genuinely slow pass (a full PDF gets
+  // re-read from scratch on every pass) doesn't look identical to a frozen one.
   const step = (label) => {
     const row = el("div", "step");
-    row.append(el("span", "mark", "·"), el("span", null, label));
+    const elapsed = el("span", "elapsed");
+    row.append(el("span", "mark", "·"), el("span", null, label), elapsed);
     log.append(row);
+    const start = Date.now();
+    const timer = setInterval(() => { elapsed.textContent = Math.round((Date.now() - start) / 1000) + "s"; }, 1000);
+    row._stop = () => { clearInterval(timer); elapsed.textContent = ""; };
     return row;
   };
 
@@ -186,9 +229,9 @@ async function run() {
     let src;
     try {
       src = await loadSource();
-      loading.classList.add("ok"); loading.querySelector(".mark").textContent = "✓";
+      loading._stop(); loading.classList.add("ok"); loading.querySelector(".mark").textContent = "✓";
     } catch (e) {
-      loading.classList.add("err"); loading.querySelector(".mark").textContent = "✗";
+      loading._stop(); loading.classList.add("err"); loading.querySelector(".mark").textContent = "✗";
       throw e;
     }
 
@@ -198,9 +241,9 @@ async function run() {
       try {
         const text = await callClaude(SYS, [{ role: "user", content: block(src, instruction) }], { maxTokens: 8000 });
         Object.assign(out, parseJSON(text, label));
-        row.classList.add("ok"); row.querySelector(".mark").textContent = "✓";
+        row._stop(); row.classList.add("ok"); row.querySelector(".mark").textContent = "✓";
       } catch (e) {
-        row.classList.add("err"); row.querySelector(".mark").textContent = "✗";
+        row._stop(); row.classList.add("err"); row.querySelector(".mark").textContent = "✗";
         throw e;
       }
     }
@@ -270,9 +313,6 @@ async function showResult(record, problems) {
     index = await res.json();
   } catch (e) { indexError = e; }
 
-  const dlRow = el("div", "dl-row");
-  dlRow.append(dlButton(`${record.id}.json`, record, "download record"));
-
   if (index) {
     index.papers = (index.papers || []).filter(p => p.id !== record.id);
     index.papers.push({
@@ -280,13 +320,55 @@ async function showResult(record, problems) {
       year: record.year, added: record.added, tags: record.tags, summary: record.summary
     });
     index.papers.sort((a, b) => String(b.added).localeCompare(String(a.added)));
-    dlRow.append(dlButton("index.json", index, "download updated index"));
   } else {
-    box.append(el("p", "note", "Couldn't load the current index.json (" + indexError.message + ") — merge this paper into it by hand instead of downloading a fresh one."));
+    box.append(el("p", "note", "Couldn't load the current index.json (" + indexError.message + ") — merge this paper into it by hand."));
   }
 
+  if (githubStore.has()) {
+    const pubRow = el("div", "dl-row");
+    const pubBtn = el("button", "solid", "publish to GitHub");
+    const pubStatus = el("span", "note");
+    pubRow.append(pubBtn, pubStatus);
+    box.append(pubRow);
+    pubBtn.addEventListener("click", () => publishToGitHub(record, index, pubBtn, pubStatus));
+  }
+
+  const dlRow = el("div", "dl-row");
+  dlRow.append(dlButton(`${record.id}.json`, record, "download record"));
+  if (index) dlRow.append(dlButton("index.json", index, "download updated index"));
   box.append(dlRow);
-  box.append(el("p", "note", `Save both files into src/papers/data/ (overwriting index.json), then reload this page. Reader: paper.html?id=${record.id}`));
+  box.append(el("p", "note", githubStore.has()
+    ? `Or download instead and place both files in src/papers/data/ by hand. Reader once published: paper.html?id=${record.id}`
+    : `Save both files into src/papers/data/ (overwriting index.json), then reload this page. Reader: paper.html?id=${record.id}. Add a GitHub token under key settings to publish directly instead.`));
+}
+
+async function publishToGitHub(record, index, btn, statusEl) {
+  btn.disabled = true;
+  const recordPath = `src/papers/data/${record.id}.json`;
+  const indexPath = "src/papers/data/index.json";
+  try {
+    statusEl.textContent = "Committing record…";
+    await writeFile(recordPath, JSON.stringify(record, null, 2) + "\n", `Add decoded paper: ${record.title}`);
+
+    statusEl.textContent = "Committing index…";
+    // Re-read the index right before writing it — it may have moved since the
+    // page loaded (another paper published in the meantime) — and merge fresh
+    // rather than reuse the stale copy fetched when this run started.
+    const current = await readFile(indexPath);
+    if (!current) throw new Error("index.json not found on GitHub at that repo/branch.");
+    const freshIndex = JSON.parse(current.content);
+    freshIndex.papers = (freshIndex.papers || []).filter(p => p.id !== record.id);
+    freshIndex.papers.push(...index.papers.filter(p => p.id === record.id));
+    freshIndex.papers.sort((a, b) => String(b.added).localeCompare(String(a.added)));
+    await writeFile(indexPath, JSON.stringify(freshIndex, null, 2) + "\n", `Add ${record.id} to papers index`, current.sha);
+
+    statusEl.textContent = `Published to ${githubStore.repo()} @ ${githubStore.branch()}. GitHub Pages will pick it up in a minute or two.`;
+  } catch (e) {
+    btn.disabled = false;
+    statusEl.textContent = e instanceof NoGitHubTokenError
+      ? "Add a GitHub token under key settings first."
+      : "Publish failed: " + e.message + " — use the downloads below instead.";
+  }
 }
 
 function dlButton(filename, obj, label) {

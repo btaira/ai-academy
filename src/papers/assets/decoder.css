@@ -137,9 +137,10 @@ input[type=text],input[type=password],input[type=search],textarea{
 .ingest-log .step .mark{width:14px;flex-shrink:0;color:var(--ink3)}
 .ingest-log .step.ok .mark{color:var(--verify)}
 .ingest-log .step.err .mark{color:var(--flag)}
+.ingest-log .step .elapsed{margin-left:auto;color:var(--ink3);font-size:10.5px}
 .ingest-result{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 .ingest-result .warn-list{color:var(--flag);font-size:13.5px;margin:0 0 12px;padding-left:18px}
-.ingest-result .dl-row{display:flex;gap:8px;flex-wrap:wrap}
+.ingest-result .dl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 
 /* course links */
 .linkback{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}

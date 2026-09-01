@@ -180,7 +180,7 @@ Pages (the Pages workflow copies `src/papers/` alongside the renamed `index.html
 src/papers/
   index.html            library: search, tag filter, sort, in-browser "add paper"
   paper.html            reader: ?id=<paper-id>
-  assets/               decoder.css, library.js, paper.js, claude-client.js, ingest.js
+  assets/               decoder.css, library.js, paper.js, claude-client.js, github-client.js, ingest.js
   data/
     index.json          manifest — cards only, no bodies
     <paper-id>.json     one decoded record per paper
@@ -200,20 +200,24 @@ tools/
 - **Ids are stable and URL-safe.** `arxiv-2407.21787` for arXiv, otherwise a slug. The id
   is the filename stem, the `?id=` parameter, and the foreign key in the corpus export.
   Renaming one breaks inbound links — don't.
-- **Never commit an API key.** The live features read a key from the visitor's own
-  `localStorage` (`ai-academy.anthropic-key`). Anyone without one gets the static views,
-  which is the whole page minus go-deeper, term lookup, Ask and the in-browser ingest
-  flow. This is a deliberate, scoped exception to the repo's no-localStorage rule:
-  `papers/` is a separate static site (not previewed as a Claude.ai artifact), and every
-  storage call is wrapped so it degrades gracefully wherever storage is genuinely
-  unavailable.
-- **Two ways to add a record, same output shape:** `node tools/decode-paper.mjs
-  <source>` from a terminal (or the `/decode-paper` command in Claude Code), or the
-  "+ add paper" button on the library page, which runs the same extraction passes
-  client-side with the visitor's own key and produces a record + index.json download —
-  since a static page can't write to the repo, the visitor still drops the downloaded
-  file(s) into `src/papers/data/` and commits them. Hand-editing an existing record
-  afterwards is expected and fine.
+- **Never commit an API key or token.** The live features read an Anthropic key from
+  the visitor's own `localStorage` (`ai-academy.anthropic-key`), and the in-browser
+  publish flow reads a GitHub personal access token the same way
+  (`ai-academy.github-token`, see `github-client.js`). Anyone without the Anthropic key
+  gets the static views, which is the whole page minus go-deeper, term lookup, Ask and
+  the in-browser ingest flow. This is a deliberate, scoped exception to the repo's
+  no-localStorage rule: `papers/` is a separate static site (not previewed as a
+  Claude.ai artifact), and every storage call is wrapped so it degrades gracefully
+  wherever storage is genuinely unavailable.
+- **Three ways to add a record, same output shape:** `node tools/decode-paper.mjs
+  <source>` from a terminal (or the `/decode-paper` command in Claude Code, which also
+  commits); the "+ add paper" button on the library page with a GitHub token configured,
+  which commits the record and updated index straight to GitHub via the Contents API
+  (`github-client.js`, two commits — record then index, not atomic); or the same button
+  with no token, which produces a record + index.json download to drop into
+  `src/papers/data/` and commit by hand — a static page can't write to the repo or run
+  git on its own otherwise. Hand-editing an existing record afterwards is expected and
+  fine.
 
 ### Quality bar for a record
 
@@ -247,4 +251,6 @@ a `concept` chunk answer different questions. This is the intended bridge to the
 document corpus; keep the schema stable.
 
 ## Current Focus
-Papers library lives at `src/papers/` (colocated with `ai-academy.html`) and is linked from the sidebar as the "Research Papers" pill. Building an in-browser "add paper" ingest flow on `src/papers/index.html` so records can be added without a terminal.
+Papers library lives at `src/papers/` (colocated with `ai-academy.html`) and is linked from the sidebar as the "Research Papers" pill. The in-browser "add paper" flow can now publish straight to GitHub via a personal access token (`github-client.js`), for use when running the site outside GitHub Pages (e.g. the Docker image) where there's no other way to get a decoded record back into the repo.
+
+A `Dockerfile`/`.dockerignore` at the repo root build an nginx image serving the same output the GitHub Pages workflow deploys (`src/ai-academy.html` as `index.html`, `src/papers/` alongside it) — see the Dockerfile's comment for the exact mirroring.

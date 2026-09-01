@@ -34,7 +34,7 @@ export class NoKeyError extends Error {
   constructor() { super("No API key set on this browser."); this.name = "NoKeyError"; }
 }
 
-export async function callClaude(system, messages, { maxTokens = 1200 } = {}) {
+export async function callClaude(system, messages, { maxTokens = 1200, timeoutMs = 180000 } = {}) {
   const key = keyStore.get();
   if (!key) throw new NoKeyError();
 
@@ -47,11 +47,22 @@ export async function callClaude(system, messages, { maxTokens = 1200 } = {}) {
   const workspace = keyStore.workspace();
   if (workspace) headers["anthropic-workspace-id"] = workspace;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ model: keyStore.model(), max_tokens: maxTokens, system, messages })
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res;
+  try {
+    res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({ model: keyStore.model(), max_tokens: maxTokens, system, messages })
+    });
+  } catch (e) {
+    if (e.name === "AbortError") throw new Error(`Timed out after ${Math.round(timeoutMs / 1000)}s waiting on the model. Large PDFs can be slow — try again, or use a smaller/text source.`);
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     let detail = res.status + "";

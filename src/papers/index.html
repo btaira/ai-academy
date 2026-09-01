@@ -37,6 +37,24 @@
       <span class="note" style="align-self:center">only if you saw a "workspace id" error — find it at console.anthropic.com → Settings → Workspaces</span>
     </div>
     <div id="key-state" class="note" style="margin-top:10px"></div>
+
+    <hr class="rule" style="margin:18px 0">
+    <span class="tag warn">also local only</span>
+    <h3>Publish to GitHub (optional)</h3>
+    <p class="note">A fine-grained personal access token, scoped to just this repo's Contents (read and
+      write), lets "decode a new paper" below commit the record straight to GitHub instead of only
+      downloading it. Stored the same way as the key above — never committed, never sent anywhere but
+      api.github.com. Skip this and use the download buttons if you'd rather commit by hand.</p>
+    <div class="keyrow">
+      <input type="password" id="github-token-input" placeholder="github_pat_…" style="flex:1 1 260px" autocomplete="off">
+      <button class="solid" id="github-token-save">save</button>
+      <button class="ghost" id="github-token-clear">clear</button>
+    </div>
+    <div class="keyrow">
+      <input type="text" id="github-repo-input" placeholder="owner/repo" style="flex:1 1 160px" aria-label="Repository">
+      <input type="text" id="github-branch-input" placeholder="branch" style="flex:1 1 100px" aria-label="Branch">
+    </div>
+    <div id="github-state" class="note" style="margin-top:10px"></div>
   </div>
 
   <header class="hero">
@@ -97,6 +115,8 @@
       <button class="solid" id="ingest-run">decode</button>
       <span class="note" id="ingest-status"></span>
     </div>
+    <p class="note" style="margin-top:8px">Each pass re-reads the whole document from scratch — a full PDF can take a
+      couple of minutes end to end. The timer on the running step keeps ticking; it isn't stuck.</p>
 
     <div id="ingest-log" class="ingest-log"></div>
     <div id="ingest-result" class="hide"></div>
