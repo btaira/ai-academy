@@ -1,0 +1,7 @@
+.git
+docs
+prompts
+scripts
+scratch
+node_modules
+*.md
