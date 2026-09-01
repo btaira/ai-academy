@@ -5,10 +5,12 @@ const el = (t, cls, txt) => { const n = document.createElement(t); if (cls) n.cl
 
 let doc = null;
 let level = "eng";
-let tab = "thesis";
+let tab = "overview";
 
-const TABS = [["thesis", "Thesis"], ["concepts", "Concepts"], ["walk", "Walkthrough"],
-              ["numbers", "Numbers"], ["jargon", "Jargon"], ["ask", "Ask"]];
+// Thesis, walkthrough, numbers and jargon are dense but each thin on its own,
+// so they're combined into one scannable "Overview" infogram instead of four
+// separate tabs. Concepts stays separate — it's the one place worth lingering.
+const TABS = [["overview", "Overview"], ["concepts", "Concepts"], ["ask", "Ask"]];
 
 /* ---------- boot ---------- */
 
@@ -94,7 +96,7 @@ function setLevel(v) {
   $("#lvl-plain").setAttribute("aria-pressed", String(v === "plain"));
   $("#lvl-eng").setAttribute("aria-pressed", String(v === "eng"));
   $("#lvl-note").textContent = v === "plain" ? "No background assumed." : "Assumes technical fluency, not ML fluency.";
-  if (tab === "concepts" || tab === "thesis") renderTab();
+  if (tab === "concepts" || tab === "overview") renderTab();
 }
 
 /* ---------- rendering ---------- */
@@ -102,8 +104,11 @@ function setLevel(v) {
 function renderTab() {
   const p = $("#panel");
   p.textContent = "";
-  ({ thesis: viewThesis, concepts: viewConcepts, walk: viewWalk,
-     numbers: viewNumbers, jargon: viewJargon, ask: viewAsk }[tab])(p);
+  ({ overview: viewOverview, concepts: viewConcepts, ask: viewAsk }[tab])(p);
+}
+
+function infoHead(p, label) {
+  p.append(el("div", "infohead", label));
 }
 
 function bold(text, node) {
@@ -111,6 +116,17 @@ function bold(text, node) {
     if (part.startsWith("**")) node.append(Object.assign(el("strong"), { textContent: part.slice(2, -2) }));
     else node.append(document.createTextNode(part));
   }
+}
+
+function viewOverview(p) {
+  infoHead(p, "the claims");
+  viewThesis(p);
+  infoHead(p, "the numbers");
+  viewNumbers(p);
+  infoHead(p, "section by section");
+  viewWalk(p);
+  infoHead(p, "glossary");
+  viewJargon(p);
 }
 
 function viewThesis(p) {
@@ -161,34 +177,75 @@ function viewConcepts(p) {
 }
 
 function viewWalk(p) {
-  const g = el("div", "grid");
-  g.style.gap = "8px";
+  const tl = el("div", "timeline");
   for (const s of doc.sections || []) {
-    const row = el("div", "row");
-    row.append(el("div", "clause", s.n || ""));
-    const body = el("div");
+    const item = el("div", "tl-item");
+    item.append(el("div", "tl-dot"));
+    const body = el("div", "tl-body");
+    if (s.n) body.append(el("div", "tl-n", s.n));
     body.append(el("h4", null, s.h));
     body.append(el("p", null, s.s));
-    if (s.read) body.append(el("span", "readif", s.read));
-    row.append(body);
-    g.append(row);
+    if (s.read) {
+      const cls = /read/i.test(s.read) ? "read" : /skim/i.test(s.read) ? "skim" : "ref";
+      body.append(el("span", "tl-pill " + cls, s.read));
+    }
+    item.append(body);
+    tl.append(item);
   }
-  p.append(g);
+  p.append(tl);
 }
+
+// Numbers that are an explicit before -> after pair (the paper's most common
+// shape for a headline result) get a dumbbell; everything else — ratios,
+// multipliers, formulas — gets a stat tile instead. Per the dataviz skill's
+// choosing-a-form guide: "before -> after per item" is a dumbbell's job, one
+// hue in two shades, not a bar chart or a big number.
+const ARROW_PAIR = /^\s*([\d.,]+)\s*%\s*(?:→|->)\s*([\d.,]+)\s*%\s*$/;
 
 function viewNumbers(p) {
   const nums = doc.numbers || [];
   if (!nums.length) { p.append(el("p", "note", "This document doesn't report quantitative results.")); return; }
   const g = el("div", "grid two");
   for (const n of nums) {
-    const card = el("div", "num");
-    card.append(el("div", "v", n.v));
-    card.append(el("div", "k", n.k));
-    card.append(el("div", "m", n.m));
-    if (n.c) card.append(el("div", "caveat", n.c));
-    g.append(card);
+    const match = ARROW_PAIR.exec(n.v);
+    g.append(match ? dumbbellCard(n, +match[1], +match[2]) : statCard(n));
   }
   p.append(g);
+}
+
+function statCard(n) {
+  const card = el("div", "num");
+  card.append(el("div", "v", n.v));
+  card.append(el("div", "k", n.k));
+  card.append(el("div", "m", n.m));
+  if (n.c) card.append(el("div", "caveat", n.c));
+  return card;
+}
+
+function dumbbellCard(n, before, after) {
+  const card = el("div", "num dumbbell-card");
+  card.append(el("div", "k", n.k));
+
+  const track = el("div", "dumbbell-track");
+  const lo = Math.min(before, after), hi = Math.max(before, after);
+  const line = el("div", "dumbbell-line");
+  line.style.left = lo + "%"; line.style.width = (hi - lo) + "%";
+  track.append(line);
+
+  const beforeVal = el("div", "dumbbell-val before", before + "%");
+  beforeVal.style.left = before + "%";
+  const beforeDot = el("div", "dumbbell-dot before");
+  beforeDot.style.left = before + "%";
+  const afterVal = el("div", "dumbbell-val after", after + "%");
+  afterVal.style.left = after + "%";
+  const afterDot = el("div", "dumbbell-dot after");
+  afterDot.style.left = after + "%";
+  track.append(beforeVal, beforeDot, afterVal, afterDot);
+
+  card.append(track);
+  card.append(el("div", "m", n.m));
+  if (n.c) card.append(el("div", "caveat", n.c));
+  return card;
 }
 
 function viewJargon(p) {

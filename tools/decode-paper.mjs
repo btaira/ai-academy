@@ -110,8 +110,8 @@ const PASSES = [
 
   ["concepts", `Return JSON: {"concepts":[{"t":string,"plain":string,"eng":string}]}
 6-10 concepts a reader must understand to follow the document.
-"plain" = 2-3 short sentences, zero jargon, as if explaining to a curious friend with no technical background. Use a concrete analogy if it helps. Spell out or avoid every acronym and term of art — this must read noticeably simpler than "eng", not as a denser rewording of it.
-"eng" = 3-5 sentences for a senior engineer from another field: the mechanism, why it behaves that way, and the practical caveat.
+"plain" = 4-5 short sentences, zero jargon, as if explaining to a curious friend with no technical background. Use a concrete analogy if it helps. Spell out or avoid every acronym and term of art — this must read noticeably simpler than "eng", not as a denser rewording of it.
+"eng" = 4-5 sentences for a senior engineer from another field: the mechanism, why it behaves that way, and the practical caveat.
 Prioritise ideas the reader is least likely to already know.`],
 
   ["sections and numbers", `Return JSON:

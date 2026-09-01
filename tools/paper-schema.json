@@ -28,7 +28,7 @@
         "properties": {
           "tag": { "type": "string", "description": "2-3 word label. Tags matching /honest|limit|caveat|caution|weak/ render in the caveat colour." },
           "h": { "type": "string" },
-          "plain": { "type": "array", "items": { "type": "string" }, "description": "1-2 short, jargon-free sentences per claim. Shown at the plain-english depth on the Thesis tab; falls back to body if absent (older records)." },
+          "plain": { "type": "array", "items": { "type": "string" }, "description": "1-2 short, jargon-free sentences per claim. Shown at the plain-english depth in the Overview infogram; falls back to body if absent (older records)." },
           "body": { "type": "array", "items": { "type": "string" }, "description": "Paragraphs for the engineer depth. **bold** is rendered." }
         }
       }
@@ -40,8 +40,8 @@
         "type": "object", "required": ["t", "plain", "eng"],
         "properties": {
           "t": { "type": "string" },
-          "plain": { "type": "string", "description": "Zero background assumed. Shown at the plain-english depth." },
-          "eng": { "type": "string", "description": "Senior engineer from another field. Mechanism, behaviour, caveat." }
+          "plain": { "type": "string", "description": "4-5 sentences, zero background assumed, noticeably simpler than eng rather than a denser reword of it. Shown at the plain-english depth." },
+          "eng": { "type": "string", "description": "4-5 sentences for a senior engineer from another field: mechanism, behaviour, caveat." }
         }
       }
     },
