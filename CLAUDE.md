@@ -184,6 +184,7 @@ src/papers/
   data/
     index.json          manifest — cards only, no bodies
     <paper-id>.json     one decoded record per paper
+    <paper-id>-figN.png rendered PDF page for figure N of that paper (browser-ingested PDFs only)
 tools/
   decode-paper.mjs      source document -> record + index update (CLI / Claude Code)
   export-corpus.mjs     records -> SQL for the retrieval corpus
@@ -218,6 +219,16 @@ tools/
   `src/papers/data/` and commit by hand — a static page can't write to the repo or run
   git on its own otherwise. Hand-editing an existing record afterwards is expected and
   fine.
+- **`figures` are whole rendered PDF pages, not cropped figure regions.** A `figures`
+  pass asks Claude for up to 4 important figures' page numbers and captions (both
+  `decode-paper.mjs` and `ingest.js`, same prompt); only the in-browser flow can turn a
+  page number into an actual image, since that needs pdf.js and a `<canvas>`, which Node
+  doesn't have. This is `papers/`'s second scoped exception to the no-dependency rule
+  (after the localStorage one above): `ingest.js` loads pdf.js from cdnjs as an ES module
+  purely to rasterize pages — nothing else in the repo depends on it. CLI-decoded records
+  get `page`/`caption` with `image: ""`; the reader skips a figure entirely rather than
+  show a broken image when `image` is empty. True figure-region cropping (vs. a whole
+  page) is out of scope — it needs real image-region detection this doesn't attempt.
 
 ### Quality bar for a record
 
@@ -252,5 +263,7 @@ document corpus; keep the schema stable.
 
 ## Current Focus
 Papers library lives at `src/papers/` (colocated with `ai-academy.html`) and is linked from the sidebar as the "Research Papers" pill. The in-browser "add paper" flow can now publish straight to GitHub via a personal access token (`github-client.js`), for use when running the site outside GitHub Pages (e.g. the Docker image) where there's no other way to get a decoded record back into the repo.
+
+The Overview poster now also pulls real images out of the source PDF (`figures` in the schema, rendered client-side with pdf.js in `ingest.js`) rather than relying only on text-derived charts.
 
 A `Dockerfile`/`.dockerignore` at the repo root build an nginx image serving the same output the GitHub Pages workflow deploys (`src/ai-academy.html` as `index.html`, `src/papers/` alongside it) — see the Dockerfile's comment for the exact mirroring.

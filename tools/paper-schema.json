@@ -88,6 +88,19 @@
       "type": "string", "minLength": 800,
       "description": "Dense factual digest, 500-900 words, written for a model rather than a human. Grounds the Ask feature and becomes the paper-level row in the retrieval corpus."
     },
-    "source_hash": { "type": "string", "description": "Truncated sha256 of the source, so re-decodes of the same file are detectable." }
+    "source_hash": { "type": "string", "description": "Truncated sha256 of the source, so re-decodes of the same file are detectable." },
+
+    "figures": {
+      "type": "array",
+      "description": "Up to 4 of the paper's own figures, rendered as full source-PDF pages (not cropped to just the figure — that needs real image-region extraction, which this doesn't do). PDF sources only; empty for text/paste decodes. The in-browser ingest flow (a browser has a canvas to rasterize into) fills in `image`; the CLI script populates page/caption only, leaving `image` empty, since Node has no canvas.",
+      "items": {
+        "type": "object", "required": ["page", "caption"],
+        "properties": {
+          "page": { "type": "integer", "description": "1-indexed PDF page number the figure appears on." },
+          "caption": { "type": "string", "description": "One sentence: what the figure shows." },
+          "image": { "type": "string", "description": "Filename of the rendered page image alongside this record in src/papers/data/, e.g. <id>-fig1.png. Empty string if not rendered." }
+        }
+      }
+    }
   }
 }

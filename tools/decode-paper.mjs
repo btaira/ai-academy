@@ -125,7 +125,10 @@ numbers: up to 8 headline figures. "v" is the figure, "k" is a short caption of 
 Weight heavily toward vocabulary, benchmark names, model names and metrics a non-specialist engineer would not know.`],
 
   ["grounding context", `Return JSON: {"context": string}
-A dense factual digest of the document, 500-900 words, written for another model to answer questions from. Include the method, every headline result with its exact numbers, hyperparameters, datasets, named limitations and any self-reported defects. Plain prose, no markdown. This is reference data, not an explanation.`]
+A dense factual digest of the document, 500-900 words, written for another model to answer questions from. Include the method, every headline result with its exact numbers, hyperparameters, datasets, named limitations and any self-reported defects. Plain prose, no markdown. This is reference data, not an explanation.`],
+
+  ["figures", `Return JSON: {"figures":[{"page":number,"caption":string}]}
+Up to 4 of the most important figures or diagrams in the document — the ones a reader would actually want to see, not tables of pure text. "page" is the 1-indexed PDF page number it appears on. "caption" is one sentence: what the figure shows. Empty array if there are no meaningful figures.`]
 ];
 
 /* ------------------------------ main ------------------------------ */
@@ -133,7 +136,10 @@ A dense factual digest of the document, 500-900 words, written for another model
 const src = await loadSource(input);
 const out = {};
 
-for (const [label, instruction] of PASSES) {
+// "figures" needs a PDF page number to mean anything — skip it for pasted text.
+const passes = src.kind === "pdf" ? PASSES : PASSES.filter(([label]) => label !== "figures");
+
+for (const [label, instruction] of passes) {
   process.stderr.write(`· ${label}…`);
   const text = await claude(SYS, block(src, instruction));
   Object.assign(out, parseJSON(text, label));
@@ -162,7 +168,10 @@ const record = {
   numbers: out.numbers || [],
   jargon: out.jargon || [],
   context: out.context || "",
-  source_hash: "sha256:" + crypto.createHash("sha256").update(src.data).digest("hex").slice(0, 16)
+  source_hash: "sha256:" + crypto.createHash("sha256").update(src.data).digest("hex").slice(0, 16),
+  // Page numbers and captions only — Node has no canvas to rasterize a page into
+  // an image. Only the in-browser ingest flow (which does) fills in `image`.
+  figures: (out.figures || []).map(f => ({ page: f.page, caption: f.caption, image: "" }))
 };
 
 /* ---------------------------- validation -------------------------- */

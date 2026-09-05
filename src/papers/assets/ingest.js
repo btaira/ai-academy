@@ -6,6 +6,9 @@
 // src/papers/data/ and commit by hand.
 import { callClaude, keyStore, NoKeyError } from "./claude-client.js";
 import { readFile, writeFile, githubStore, NoGitHubTokenError } from "./github-client.js";
+import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.1.200/pdf.min.mjs";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.1.200/pdf.worker.min.mjs";
 
 const $ = (s) => document.querySelector(s);
 const el = (t, cls, txt) => { const n = document.createElement(t); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
@@ -41,7 +44,10 @@ numbers: up to 8 headline figures. "v" is the figure, "k" is a short caption of 
 8-16 terms. "h" is a 3-5 word gloss. "d" is 60-100 words: what it is, why it exists, how this document uses it.
 Weight heavily toward vocabulary, benchmark names, model names and metrics a non-specialist engineer would not know.`],
   ["grounding context", `Return JSON: {"context": string}
-A dense factual digest of the document, 500-900 words, written for another model to answer questions from. Include the method, every headline result with its exact numbers, hyperparameters, datasets, named limitations and any self-reported defects. Plain prose, no markdown. This is reference data, not an explanation.`]
+A dense factual digest of the document, 500-900 words, written for another model to answer questions from. Include the method, every headline result with its exact numbers, hyperparameters, datasets, named limitations and any self-reported defects. Plain prose, no markdown. This is reference data, not an explanation.`],
+
+  ["figures", `Return JSON: {"figures":[{"page":number,"caption":string}]}
+Up to 4 of the most important figures or diagrams in the document — the ones a reader would actually want to see, not tables of pure text. "page" is the 1-indexed PDF page number it appears on. "caption" is one sentence: what the figure shows. Empty array if there are no meaningful figures.`]
 ];
 
 let mode = "pdf";
@@ -143,6 +149,29 @@ async function sha256Hex16(bytes) {
   return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
 }
 
+// Rasterizes specific PDF pages to PNG blobs, keyed by page number. This is a
+// whole-page render, not a crop of just the figure — extracting the actual
+// figure region would need real image-region detection, which this doesn't
+// attempt. Pages that don't exist or fail to render are simply absent from
+// the returned map; callers treat a missing page as "no image", not a fatal error.
+async function renderPdfPages(bytes, pageNumbers) {
+  const pdf = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+  const out = new Map();
+  for (const n of new Set(pageNumbers)) {
+    if (!Number.isInteger(n) || n < 1 || n > pdf.numPages) continue;
+    try {
+      const page = await pdf.getPage(n);
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width; canvas.height = viewport.height;
+      await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+      if (blob) out.set(n, blob);
+    } catch { /* leave this page out of the map */ }
+  }
+  return out;
+}
+
 /* ---------- source loading ---------- */
 
 async function loadSource() {
@@ -239,7 +268,9 @@ async function run() {
     }
 
     const out = {};
-    for (const [label, instruction] of PASSES) {
+    // "figures" needs a PDF page number to mean anything — skip it for pasted text.
+    const passes = src.kind === "pdf" ? PASSES : PASSES.filter(([label]) => label !== "figures");
+    for (const [label, instruction] of passes) {
       const row = step(label + "…");
       try {
         const text = await callClaude(SYS, [{ role: "user", content: block(src, instruction) }], { maxTokens: 8000 });
@@ -277,8 +308,30 @@ async function run() {
       numbers: out.numbers || [],
       jargon: out.jargon || [],
       context: out.context || "",
-      source_hash: "sha256:" + await sha256Hex16(src.bytes)
+      source_hash: "sha256:" + await sha256Hex16(src.bytes),
+      figures: (out.figures || []).map(f => ({ page: f.page, caption: f.caption, image: "" }))
     };
+
+    // Rendering is best-effort and non-fatal: a figure that fails to rasterize
+    // just ships with an empty `image` (caption/page still there) rather than
+    // failing the whole decode over a rendering hiccup.
+    const figureBlobs = [];
+    if (src.kind === "pdf" && record.figures.length) {
+      const row = step("rendering figures…");
+      try {
+        const pages = await renderPdfPages(src.bytes, record.figures.map(f => f.page));
+        record.figures = record.figures.map((f, i) => {
+          const blob = pages.get(f.page);
+          if (!blob) return f;
+          const filename = `${id}-fig${i + 1}.png`;
+          figureBlobs.push({ filename, blob });
+          return { ...f, image: filename };
+        });
+        row._stop(); row.classList.add("ok"); row.querySelector(".mark").textContent = "✓";
+      } catch (e) {
+        row._stop(); row.classList.add("err"); row.querySelector(".mark").textContent = "✗";
+      }
+    }
 
     const problems = [];
     if (!record.title || record.title === "Untitled") problems.push("no title extracted");
@@ -287,7 +340,7 @@ async function run() {
     if (record.jargon.length < 5) problems.push("fewer than 5 glossary terms");
     if (record.context.length < 800) problems.push("grounding context is thin — Ask will be weak");
 
-    await showResult(record, problems);
+    await showResult(record, problems, figureBlobs);
     status.textContent = "Done.";
   } catch (e) {
     status.textContent = e instanceof NoKeyError ? "Add your API key under key settings first." : e.message;
@@ -295,7 +348,7 @@ async function run() {
   btn.disabled = false;
 }
 
-async function showResult(record, problems) {
+async function showResult(record, problems, figureBlobs) {
   const box = $("#ingest-result");
   box.classList.remove("hide");
 
@@ -306,6 +359,12 @@ async function showResult(record, problems) {
     box.append(p, ul);
   } else {
     box.append(el("p", "note", "Passed the quality bar — no thin spots flagged."));
+  }
+
+  if (figureBlobs.length) {
+    box.append(el("p", "note", `Rendered ${figureBlobs.length} figure page${figureBlobs.length === 1 ? "" : "s"} from the source PDF (full pages, not cropped to just the figure).`));
+  } else if (record.figures.length) {
+    box.append(el("p", "note", "Figures were flagged in the text but none rendered — page numbers may not have matched the PDF."));
   }
 
   let index = null;
@@ -333,23 +392,29 @@ async function showResult(record, problems) {
     const pubStatus = el("span", "note");
     pubRow.append(pubBtn, pubStatus);
     box.append(pubRow);
-    pubBtn.addEventListener("click", () => publishToGitHub(record, index, pubBtn, pubStatus));
+    pubBtn.addEventListener("click", () => publishToGitHub(record, index, figureBlobs, pubBtn, pubStatus));
   }
 
   const dlRow = el("div", "dl-row");
   dlRow.append(dlButton(`${record.id}.json`, record, "download record"));
   if (index) dlRow.append(dlButton("index.json", index, "download updated index"));
+  for (const { filename, blob } of figureBlobs) dlRow.append(dlBlobButton(filename, blob, `download ${filename}`));
   box.append(dlRow);
   box.append(el("p", "note", githubStore.has()
-    ? `Or download instead and place both files in src/papers/data/ by hand. Reader once published: paper.html?id=${record.id}`
-    : `Save both files into src/papers/data/ (overwriting index.json), then reload this page. Reader: paper.html?id=${record.id}. Add a GitHub token under key settings to publish directly instead.`));
+    ? `Or download instead and place the files in src/papers/data/ by hand. Reader once published: paper.html?id=${record.id}`
+    : `Save the files into src/papers/data/ (overwriting index.json), then reload this page. Reader: paper.html?id=${record.id}. Add a GitHub token under key settings to publish directly instead.`));
 }
 
-async function publishToGitHub(record, index, btn, statusEl) {
+async function publishToGitHub(record, index, figureBlobs, btn, statusEl) {
   btn.disabled = true;
   const recordPath = `src/papers/data/${record.id}.json`;
   const indexPath = "src/papers/data/index.json";
   try {
+    for (const { filename, blob } of figureBlobs) {
+      statusEl.textContent = `Committing ${filename}…`;
+      await writeFile(`src/papers/data/${filename}`, await blob.arrayBuffer(), `Add figure page for ${record.title}`);
+    }
+
     statusEl.textContent = "Committing record…";
     await writeFile(recordPath, JSON.stringify(record, null, 2) + "\n", `Add decoded paper: ${record.title}`);
 
@@ -375,9 +440,12 @@ async function publishToGitHub(record, index, btn, statusEl) {
 }
 
 function dlButton(filename, obj, label) {
+  return dlBlobButton(filename, new Blob([JSON.stringify(obj, null, 2) + "\n"], { type: "application/json" }), label);
+}
+
+function dlBlobButton(filename, blob, label) {
   const btn = el("button", "ghost", label);
   btn.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(obj, null, 2) + "\n"], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = el("a"); a.href = url; a.download = filename;
     document.body.append(a); a.click(); a.remove();

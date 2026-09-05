@@ -80,6 +80,10 @@ input[type=text],input[type=password],input[type=search],textarea{
 .poster-node{position:absolute;left:50%;top:14px;transform:translate(-50%,-50%);width:28px;height:28px;
   border-radius:50%;background:var(--panel);border:2px solid var(--signal);display:flex;align-items:center;
   justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--signal)}
+.figure-card{padding:10px}
+.figure-card img{width:100%;display:block;border:1px solid var(--line)}
+.figure-caption{margin:10px 4px 2px;color:var(--ink3);font-size:12.5px;font-family:var(--mono)}
+
 .glossary-zone{padding:30px 22px}
 .glossary-zone .card{margin-bottom:18px}
 .glossary-grid{display:grid;gap:8px}

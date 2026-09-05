@@ -30,7 +30,9 @@ Run this end to end without stopping to ask unless something actually fails.
 5. If `--links` was passed, confirm those module paths exist in the repo. Report any
    that don't rather than silently keeping a dead link.
 6. Report: the id, the title, the counts (claims / concepts / sections / numbers /
-   jargon), anything you edited and why, and the local URL
-   `src/papers/paper.html?id=<id>`.
+   jargon / figures), anything you edited and why, and the local URL
+   `src/papers/paper.html?id=<id>`. Note that `figures` here only has page numbers and
+   captions — this CLI path can't render the actual images (no browser canvas); only
+   the in-browser "add paper" flow does that.
 
 Do not commit. Leave the working tree for review.

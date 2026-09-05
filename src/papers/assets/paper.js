@@ -123,11 +123,39 @@ function viewOverview(p) {
   const poster = el("div", "poster");
   const spined = el("div", "poster-spine-wrap");
   spined.append(el("div", "poster-spine"));
-  spined.append(posterZone("the claims", "tint", claimRows()));
-  spined.append(posterZone("the numbers", "", numberRows(), "This document doesn't report quantitative results."));
-  spined.append(posterZone("section by section", "tint", walkRows()));
+
+  const zoneSpecs = [["the claims", claimRows()]];
+  const figRows = figureRows();
+  if (figRows.length) zoneSpecs.push(["figures from the paper", figRows]);
+  zoneSpecs.push(["the numbers", numberRows(), "This document doesn't report quantitative results."]);
+  zoneSpecs.push(["section by section", walkRows()]);
+  // Tint alternates by position rather than being hardcoded per zone, so
+  // inserting the figures zone (only present when a paper actually has one)
+  // doesn't throw off the banding.
+  zoneSpecs.forEach(([label, rows, emptyNote], i) => {
+    spined.append(posterZone(label, i % 2 === 0 ? "tint" : "", rows, emptyNote));
+  });
+
   poster.append(spined, glossaryZone());
   p.append(poster);
+}
+
+// Full source-PDF pages, not cropped to just the figure — see the schema note
+// on `figures`. Only shown when at least one actually rendered; older records
+// and CLI-decoded ones (no browser canvas to render with) have none.
+function figureRows() {
+  return (doc.figures || [])
+    .filter(f => f.image)
+    .map((f, i) => {
+      const card = el("div", "card poster-card figure-card");
+      const img = el("img");
+      img.src = `data/${f.image}`;
+      img.alt = f.caption || `Figure, page ${f.page}`;
+      img.loading = "lazy";
+      card.append(img);
+      card.append(el("p", "figure-caption", [f.page ? `p. ${f.page}` : "", f.caption].filter(Boolean).join(" — ")));
+      return posterRow(i, card);
+    });
 }
 
 function posterZone(label, extraClass, rows, emptyNote) {

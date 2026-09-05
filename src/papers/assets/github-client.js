@@ -33,12 +33,15 @@ export class NoGitHubTokenError extends Error {
   constructor() { super("No GitHub token set on this browser."); this.name = "NoGitHubTokenError"; }
 }
 
-function utf8ToBase64(str) {
-  const bytes = new TextEncoder().encode(str);
+function bytesToBase64(bytes) {
   let binary = "";
   const chunk = 0x8000;
   for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   return btoa(binary);
+}
+
+function utf8ToBase64(str) {
+  return bytesToBase64(new TextEncoder().encode(str));
 }
 
 function base64ToUtf8(b64) {
@@ -93,14 +96,19 @@ export async function readFile(path) {
   return { sha: j.sha, content: base64ToUtf8(j.content) };
 }
 
-// Creates or updates one file as its own commit. Pass `sha` when updating an
-// existing file (from a prior readFile) — omit it to create a new one.
-export async function writeFile(path, contentStr, message, sha) {
+// Creates or updates one file as its own commit. `content` is a UTF-8 string
+// for text files, or a Uint8Array/ArrayBuffer for binary ones (e.g. a
+// rendered figure image) — either way it goes to GitHub as base64. Pass `sha`
+// when updating an existing file (from a prior readFile) — omit it to create
+// a new one.
+export async function writeFile(path, content, message, sha) {
+  const bytes = content instanceof ArrayBuffer ? new Uint8Array(content) : content;
+  const base64 = bytes instanceof Uint8Array ? bytesToBase64(bytes) : utf8ToBase64(content);
   const res = await gh(`/repos/${githubStore.repo()}/contents/${encodeURIComponent(path).replace(/%2F/g, "/")}`, {
     method: "PUT",
     body: JSON.stringify({
       message,
-      content: utf8ToBase64(contentStr),
+      content: base64,
       branch: githubStore.branch(),
       ...(sha ? { sha } : {})
     })
